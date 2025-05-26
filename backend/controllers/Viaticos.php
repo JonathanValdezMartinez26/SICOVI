@@ -79,7 +79,7 @@ class Viaticos extends Controller
                     if (!comprobante) return showError("El campo comprobante es obligatorio")
                     if (montoComprobante < 1) return showError("Debe ingresar un monto mayor a 0")
                     comprobante = com
-
+                    //commit test
                     $("#montoVG").val((getInputMonto("#montoVG") + montoComprobante))
                     const fila = $("#tablaComprobantes tbody tr").first().clone()
                     fila.find("td").eq(0).text("")
