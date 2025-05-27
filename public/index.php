@@ -26,8 +26,8 @@ define('METODO_DEFECTO', 'index');
 require_once LIBRERIAS . '/BrowserDetection/BrowserDetection.php';
 
 session_start();
-if (!$_SESSION['login'] && !$this->validaNavegador()) {
-    echo $this->getErrorNavegador();
+if (!$_SESSION['login'] && !validaNavegador()) {
+    echo getErrorNavegador();
     exit;
 }
 
