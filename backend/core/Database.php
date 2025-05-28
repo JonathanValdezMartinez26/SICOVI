@@ -87,7 +87,7 @@ class Database
     {
         $error = "Error en DB: {$e->getMessage()}\n";
 
-        if ($sql != null) $error .= "Sql: $sql\n";
+        if ($sql != null) $error .= "Query: $sql\n";
         if ($parametros != null) $error .= 'Datos: ' . print_r($parametros, 1);
         //echo $error . "\n";
         return $error;
@@ -102,7 +102,6 @@ class Database
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->execute($parametros);
-            $stmt->execute();
             return $stmt;
         } catch (\PDOException $e) {
             throw new \Exception($this->getError($e, $sql, $parametros));
@@ -143,8 +142,7 @@ class Database
     {
         try {
             $stmt = $this->runQuery($sql, $parametros);
-            return $stmt->lastInsertId();
-            // return $stmt->rowCount();
+            return $stmt->rowCount();
         } catch (\Exception $e) {
             throw $e;
         }

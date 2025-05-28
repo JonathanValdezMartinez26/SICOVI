@@ -95,7 +95,7 @@
                                         placeholder="Ingresa la contraseña"
                                         aria-describedby="password" />
                                     <span class="input-group-text cursor-pointer z-5">
-                                        <i class="fa-solid fa-eye"></i>
+                                        <i class="icon-base fa-solid fa-eye"></i>
                                     </span>
                                 </div>
                             </div>

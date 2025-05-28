@@ -122,8 +122,8 @@ class Login extends Controller
         if ($validacion['success'] && count($validacion['datos']) > 0) {
             $datos = $validacion['datos'];
 
-            $_SESSION['usuario'] = $datos['USUARIO'];
-            $_SESSION['nombre'] = $datos['NOMBRE'];
+            $_SESSION['usuario_id'] = $datos['USUARIO_ID'];
+            $_SESSION['usuario_nombre'] = $datos['USUARIO_NOMBRE'];
             $_SESSION['perfil_id'] = $datos['PERFIL_ID'];
             $_SESSION['perfil_nombre'] = $datos['PERFIL_NOMBRE'];
             $_SESSION['sucursal_id'] = $datos['SUCURSAL_ID'];

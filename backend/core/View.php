@@ -127,7 +127,7 @@ function getMenu()
 
     <!-- Icons -->
     <link rel="stylesheet" href="/assets/vendor/fonts/fontawesome.css" />
-    <link rel="stylesheet" href="/assets/vendor/fonts/flag-icons.css" />
+    <!-- <link rel="stylesheet" href="/assets/vendor/fonts/flag-icons.css" /> -->
 
     <!-- Core CSS -->
     <link rel="stylesheet" href="/assets/vendor/css/core.css" />
@@ -149,20 +149,21 @@ function getMenu()
     <link rel="stylesheet" href="/assets/vendor/libs/datatables-rowgroup-bs5/rowgroup.bootstrap5.css">
     <link rel="stylesheet" href="/assets/vendor/libs/datatables-select-bs5/select.bootstrap5.css">
     <link rel="stylesheet" href="/assets/vendor/libs/dropzone/dropzone.css">
+    <link rel="stylesheet" href="/assets/vendor/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.css">
     <link rel="stylesheet" href="/assets/vendor/libs/flatpickr/flatpickr.css">
     <link rel="stylesheet" href="/assets/vendor/libs/fullcalendar/fullcalendar.css">
     <link rel="stylesheet" href="/assets/vendor/libs/jkanban/jkanban.css">
     <link rel="stylesheet" href="/assets/vendor/libs/jquery-timepicker/jquery-timepicker.css">
     <link rel="stylesheet" href="/assets/vendor/libs/jstree/jstree.css">
-    <link rel="stylesheet" href="/assets/vendor/libs/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/assets/vendor/libs/mapbox-gl/mapbox-gl.css">
+    <!-- <link rel="stylesheet" href="/assets/vendor/libs/leaflet/leaflet.css"> -->
+    <!-- <link rel="stylesheet" href="/assets/vendor/libs/mapbox-gl/mapbox-gl.css"> -->
     <link rel="stylesheet" href="/assets/vendor/libs/nouislider/nouislider.css">
     <link rel="stylesheet" href="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css">
-    <link rel="stylesheet" href="/assets/vendor/libs/pickr/pickr-themes.css">
-    <link rel="stylesheet" href="/assets/vendor/libs/plyr/plyr.css">
-    <link rel="stylesheet" href="/assets/vendor/libs/quill/editor.css">
-    <link rel="stylesheet" href="/assets/vendor/libs/quill/katex.css">
-    <link rel="stylesheet" href="/assets/vendor/libs/quill/typography.css">
+    <!-- <link rel="stylesheet" href="/assets/vendor/libs/pickr/pickr-themes.css"> -->
+    <!-- <link rel="stylesheet" href="/assets/vendor/libs/plyr/plyr.css"> -->
+    <!-- <link rel="stylesheet" href="/assets/vendor/libs/quill/editor.css"> -->
+    <!-- <link rel="stylesheet" href="/assets/vendor/libs/quill/katex.css"> -->
+    <!-- <link rel="stylesheet" href="/assets/vendor/libs/quill/typography.css"> -->
     <link rel="stylesheet" href="/assets/vendor/libs/select2/select2.css">
     <link rel="stylesheet" href="/assets/vendor/libs/shepherd/shepherd.css">
     <link rel="stylesheet" href="/assets/vendor/libs/spinkit/spinkit.css">
@@ -242,7 +243,7 @@ function getMenu()
                                             </div>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <h6 class="mb-0"><?= $_SESSION['nombre']; ?></h6>
+                                            <h6 class="mb-0"><?= $_SESSION['usuario_nombre']; ?></h6>
                                             <small class="text-muted"><?= $_SESSION['perfil_nombre']; ?></small>
                                         </div>
                                     </div>
@@ -286,7 +287,6 @@ function getMenu()
     <!-- / Layout wrapper -->
 
     <!-- Core JS -->
-    <!-- build:js assets/vendor/js/core.js -->
     <script src="/assets/vendor/libs/jquery/jquery.js"></script>
     <script src="/assets/vendor/libs/popper/popper.js"></script>
     <script src="/assets/vendor/js/bootstrap.js"></script>
@@ -313,22 +313,24 @@ function getMenu()
     <script src="/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
     <script src="/assets/vendor/libs/dropzone/dropzone.js"></script>
     <script src="/assets/vendor/libs/flatpickr/flatpickr.js"></script>
+    <script src="/assets/js/flatpickr_es.js"></script>
+    <script src="/assets/vendor/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js"></script>
     <script src="/assets/vendor/libs/fullcalendar/fullcalendar.js"></script>
-    <script src="/assets/vendor/libs/i18n/i18n.js"></script>
+    <!-- <script src="/assets/vendor/libs/i18n/i18n.js"></script> -->
     <script src="/assets/vendor/libs/jkanban/jkanban.js"></script>
     <script src="/assets/vendor/libs/jquery-repeater/jquery-repeater.js"></script>
     <script src="/assets/vendor/libs/jquery-timepicker/jquery-timepicker.js"></script>
     <script src="/assets/vendor/libs/jstree/jstree.js"></script>
-    <script src="/assets/vendor/libs/leaflet/leaflet.js"></script>
-    <script src="/assets/vendor/libs/mapbox-gl/mapbox-gl.js"></script>
+    <!-- <script src="/assets/vendor/libs/leaflet/leaflet.js"></script> -->
+    <!-- <script src="/assets/vendor/libs/mapbox-gl/mapbox-gl.js"></script> -->
     <script src="/assets/vendor/libs/masonry/masonry.js"></script>
     <script src="/assets/vendor/libs/moment/moment.js"></script>
     <script src="/assets/vendor/libs/nouislider/nouislider.js"></script>
     <script src="/assets/vendor/libs/numeral/numeral.js"></script>
-    <script src="/assets/vendor/libs/pickr/pickr.js"></script>
-    <script src="/assets/vendor/libs/plyr/plyr.js"></script>
-    <script src="/assets/vendor/libs/quill/katex.js"></script>
-    <script src="/assets/vendor/libs/quill/quill.js"></script>
+    <!-- <script src="/assets/vendor/libs/pickr/pickr.js"></script> -->
+    <!-- <script src="/assets/vendor/libs/plyr/plyr.js"></script> -->
+    <!-- <script src="/assets/vendor/libs/quill/katex.js"></script> -->
+    <!-- <script src="/assets/vendor/libs/quill/quill.js"></script> -->
     <script src="/assets/vendor/libs/select2/select2.js"></script>
     <script src="/assets/vendor/libs/shepherd/shepherd.js"></script>
     <script src="/assets/vendor/libs/sortablejs/sortable.js"></script>

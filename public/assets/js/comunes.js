@@ -1,3 +1,18 @@
+/*
+ * Configuraciones globales de librerías
+ */
+moment.locale("es-MX")
+const NUMERAL_MONEDA = "$ 0,0.00"
+
+flatpickr.localize(flatpickr.l10ns.es)
+
+const MOMENT_FRONT = "DD/MM/YYYY"
+const MOMENT_BACK = "YYYY-MM-DD"
+
+/*
+ * Templates para mensajes de alerta
+ * Usando SweetAlert2
+ */
 const tipoMensaje = (mensaje, icono, config = null) => {
     let configMensaje = typeof mensaje === "object" ? { html: mensaje } : { text: mensaje }
     configMensaje.icon = icono
@@ -21,6 +36,10 @@ const showWait = (mensaje = null) => {
     return tipoMensaje(mensaje, null, config)
 }
 
+/*
+ * Funcion para manejar peticiones AJAX
+ * Usando jQuery
+ */
 const consultaServidor = (
     url,
     datos,
@@ -37,17 +56,6 @@ const consultaServidor = (
         url: url,
         data: datos,
         success: (res) => {
-            if (tipo === "JSON") {
-                try {
-                    res = JSON.parse(res)
-                } catch (error) {
-                    console.error(error)
-                    res = {
-                        success: false,
-                        mensaje: "Ocurrió un error al procesar la respuesta del servidor."
-                    }
-                }
-            }
             if (tipo === "blob") res = new Blob([res], { type: "application/pdf" })
 
             Swal.close()
@@ -64,21 +72,13 @@ const consultaServidor = (
 
     $.ajax(configuracion)
 }
-/*
- * Funciones para formatear datos
- */
-const formatoMoneda = (numero) =>
-    parseFloat(numero).toLocaleString("es-MX", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })
 
 /*
- * Funciones para las Datatables
+ * Funciones para configuracion y uso de Datatables
  */
 const configuraTabla = (
     selector,
-    { regXvista = true, buscar = true, footerInfo = true, paginacion = false, ordenar = true } = {}
+    { regXvista = true, buscar = true, footerInfo = true, paginacion = true, ordenar = true } = {}
 ) => {
     const configuracion = {
         lengthMenu: [
@@ -89,18 +89,11 @@ const configuraTabla = (
         autoWidth: false,
         language: {
             emptyTable: "No hay datos disponibles",
-            paginate: {
-                previous: "Anterior",
-                next: "Siguiente"
-            },
             info: "Mostrando de _START_ a _END_ de _TOTAL_ registros",
             infoEmpty: "Sin registros para mostrar",
             zeroRecords: "No se encontraron registros",
             lengthMenu: "Mostrar _MENU_ registros por página",
             search: "Buscar:"
-        },
-        createdRow: (row) => {
-            $(row).find("td").css("vertical-align", "middle")
         }
     }
 
@@ -135,55 +128,82 @@ const buscarEnTabla = (selector, columna, texto) => {
 }
 
 /*
- * Funciones para manejar inputs segun su tipo, funcion o finalidad
+ * Configuracion para inputs de tipo fecha
+ * Usando Flatpickr
  */
-const setInputMonto = (selector) => {
+const setRangoFechas = (
+    selector,
+    { diasAntes = 0, diasDespues = 0, min = 0, max = 0, enModal = false } = {}
+) => {
+    const rangoDefecto = [
+        moment().subtract(diasAntes, "days").format(MOMENT_FRONT),
+        moment().add(diasDespues, "days").format(MOMENT_FRONT)
+    ]
+
+    const config = {
+        mode: "range",
+        dateFormat: "d/m/Y",
+        defaultDate: rangoDefecto,
+        static: enModal
+    }
+
+    if (min > 0) config.minDate = moment().subtract(min, "days").format(MOMENT_FRONT)
+    if (max > 0) config.maxDate = moment().add(max, "days").format(MOMENT_FRONT)
+    if (enModal) config.appendTo = $(selector).parent()[0]
+
+    $(selector).flatpickr(config)
+}
+
+const getRangoFechas = (selector, back = true) => {
+    const fecha = $(selector)[0]._flatpickr
+    if (fecha.selectedDates.length === 0) return null
+
+    const MOMENT_FORMAT = back ? MOMENT_BACK : MOMENT_FRONT
+    const inicio = moment(fecha.selectedDates[0]).format(MOMENT_FORMAT)
+    const fin =
+        fecha.selectedDates.length > 1
+            ? moment(fecha.selectedDates[1]).format(MOMENT_FORMAT)
+            : inicio
+    return { inicio, fin }
+}
+
+/*
+ * Funciones utilitarias
+ */
+const setInputMoneda = (selector, opciones = {}) => {
+    const config = {
+        valorMinimo: null,
+        valorMaximo: null,
+        permitirNegativos: false
+    }
+
     $(document).on("input", selector, function () {
         let input = $(this)
         let valorOriginal = input.val()
-        let valorNumerico = valorOriginal.replace(/[^\d.]/g, "")
-        let partes = valorNumerico.split(".")
 
-        if (partes.length > 2) valorNumerico = partes[0] + "." + partes[1]
+        let caracteresPermitidos = config.permitirNegativos ? /[^\d.-]/g : /[^\d.]/g
+        let valorLimpio = valorOriginal.replace(caracteresPermitidos, "")
 
-        let [entero, decimal] = valorNumerico.split(".")
-        entero = entero.replace(/^0+(?!$)/, "")
-        let enteroFormateado = entero.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-        let valorFinal = decimal !== undefined ? `${enteroFormateado}.${decimal}` : enteroFormateado
-
-        input.val(valorFinal)
-    })
-}
-
-const getInputMonto = (selector) => {
-    let valor = $(selector).val()
-    if (!valor) return 0
-
-    valor = valor.replace(/,/g, "").trim()
-    let numero = parseFloat(valor)
-    return isNaN(numero) ? 0 : numero
-}
-
-const setValidacionRangoFechas = (fechaInicioSelector, fechaFinSelector) => {
-    const parsearFecha = (valor) => new Date(valor)
-
-    $(document).on("input", fechaInicioSelector, () => {
-        const fechaInicio = $(fechaInicioSelector).val()
-        const fechaFin = $(fechaFinSelector).val()
-
-        if (fechaInicio && fechaFin && parsearFecha(fechaInicio) > parsearFecha(fechaFin)) {
-            $(fechaInicioSelector).val(fechaFin)
-            showWarning("La fecha inicial no puede ser mayor que la fecha final.")
+        let partes = valorLimpio.split(".")
+        if (partes.length > 2) {
+            valorLimpio = partes[0] + "." + partes.slice(1).join("")
         }
-    })
 
-    $(document).on("input", fechaFinSelector, () => {
-        const fechaInicio = $(fechaInicioSelector).val()
-        const fechaFin = $(fechaFinSelector).val()
+        let numero = numeral(valorLimpio).value()
 
-        if (fechaInicio && fechaFin && parsearFecha(fechaInicio) > parsearFecha(fechaFin)) {
-            $(fechaFinSelector).val(fechaInicio)
-            showWarning("La fecha final no puede ser menor que la fecha inicial.")
+        if (config.valorMinimo !== null && numero < config.valorMinimo) {
+            numero = config.valorMinimo
         }
+        if (config.valorMaximo !== null && numero > config.valorMaximo) {
+            numero = config.valorMaximo
+        }
+
+        let valorFormateado = numeral(numero).format("0,0.00")
+
+        if (valorOriginal.endsWith(".")) {
+            valorFormateado = valorFormateado.replace(".00", ".")
+        }
+
+        input.val(valorFormateado)
     })
 }
