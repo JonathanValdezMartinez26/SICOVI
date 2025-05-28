@@ -4,17 +4,14 @@
     <div class="row justify-content-between m-4">
         <div class="col-4">
             <label for="fechasSolicitudes" class="form-label">Rango de fechas mostrado</label>
-            <div class="input-group">
-                <input type="text" id="fechasSolicitudes" class="form-control dob-picker flatpickr-input" readonly="readonly">
-                <a class="input-button" title="toggle" data-toggle>
-                    <i class="icon-calendar"></i>
-                </a>
+            <div class="input-group input-group-merge">
+                <input type="text" id="fechasSolicitudes" class="form-control cursor-pointer">
+                <i class="input-group-text fa fa-calendar-days"></i>
                 <button id="btnBuscarSolicitudes" class="btn btn-outline-primary">Actualizar</button>
             </div>
         </div>
         <div class="col-4 d-flex align-self-end justify-content-end">
-            <button id="btnAgregar" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalNuevaSolicitud"><i class="fa-solid fa-plus">&nbsp;</i>Nueva Solicitud</button>
-            <!-- <button id="btnExportar" class="btn btn-success mb-2"><i class="fa-solid fa-file-excel">&nbsp;</i>Exportar</button> -->
+            <button id="btnAgregar" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalNuevaSolicitud"><i class="fa fa-plus">&nbsp;</i>Nueva Solicitud</button>
         </div>
     </div>
 
@@ -47,28 +44,35 @@
                     <h4 class="address-title mb-2">Nueva solicitud de viáticos/gastos</h4>
                     <p class="address-subtitle">Capture los datos solicitados</p>
                 </div>
-                <div class="row gy-2">
+                <div class="row">
                     <div class="form-group col-3">
-                        <label for="tipoSolicitud">Tipo</label>
+                        <label for="tipoSolicitud" class="form-label">Tipo</label>
                         <select class="form-select" id="tipoSolicitud">
-                            <option value="1">Viáticos</option>
-                            <option value="2">Gastos</option>
+                            <option value="1">Viáticos (por comprobar)</option>
+                            <option value="2">Gastos (reembolso)</option>
                         </select>
-                    </div>
-                    <div class="form-group col-9">
-                        <label for="proyecto">Proyecto</label>
-                        <input type="text" id="proyecto" class="form-control" placeholder="Nombre del proyecto">
                     </div>
                     <div class="form-group col-5">
                         <label for="fechasNuevaSolicitud" class="form-label">Rango de fechas</label>
-                        <input type="text" id="fechasNuevaSolicitud" class="form-control dob-picker flatpickr-input" readonly="readonly">
-                        <a class="input-button" title="toggle" data-toggle>
-                            <i class="fa-solid fa-calendar-days"></i>
-                        </a>
+                        <div class="input-group input-group-merge">
+                            <input type="text" id="fechasNuevaSolicitud" name="fechasNuevaSolicitud" class="form-control cursor-pointer">
+                            <i class="input-group-text fa fa-calendar-days"></i>
+                        </div>
                     </div>
                     <div class="form-group col-4">
-                        <label id="lblMontoVG" for="montoVG">Monto Solicitado</label>
-                        <input type="text" id="montoVG" class="form-control" placeholder="0.00">
+                        <label id="lblMontoVG" for="montoVG" class="form-label">Monto Solicitado</label>
+                        <div class="input-group input-group-merge">
+                            <span class="input-group-text cursor-pointer">
+                                <i class="icon-base fa fa-dollar-sign"></i>
+                            </span>
+                            <input type="text" id="montoVG" name="montoVG" class="form-control" placeholder="0.00">
+                        </div>
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                    </div>
+                    <div class="form-group col-12">
+                        <label for="proyecto" class="form-label">Proyecto</label>
+                        <input type="text" id="proyecto" name="proyecto" class="form-control" placeholder="Nombre del proyecto">
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                 </div>
 
@@ -90,7 +94,7 @@
                                 <tr>
                                     <td colspan="4" class="text-center">
                                         <button type="button" id="btnAgregarComprobante" class="btn btn-success btn-sm">
-                                            <i class="fa-solid fa-plus">&nbsp;</i>Agregar
+                                            <i class="fa fa-plus">&nbsp;</i>Agregar
                                         </button>
                                     </td>
                                 </tr>
@@ -101,7 +105,7 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
+                <button type="button" id="cancelaSolicitud" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
                 <button type="button" id="registraSolicitud" class="btn btn-primary">Guardar</button>
             </div>
         </div>
@@ -121,15 +125,18 @@
                 </div>
                 <div class="row gy-2">
                     <div class="form-group col-8">
-                        <label for="comprobante">Comprobante</label>
+                        <label for="comprobante" class="form-label">Comprobante</label>
                         <input type="file" id="comprobante" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
                     </div>
                     <div class="form-group col-4">
-                        <label for="montoComprobante">Monto</label>
-                        <input type="text" id="montoComprobante" class="form-control" placeholder="0.00">
+                        <label for="montoComprobante" class="form-label">Monto</label>
+                        <div class="input-group input-group-merge">
+                            <i class="input-group-text fa fa-dollar-sign"></i>
+                            <input type="text" id="montoComprobante" class="form-control" placeholder="0.00">
+                        </div>
                     </div>
                     <div class="form-group col-12">
-                        <label for="observacionesComprobante">Observaciones</label>
+                        <label for="observacionesComprobante" class="form-label">Observaciones</label>
                         <input type="text" id="observacionesComprobante" class="form-control"
                             placeholder="Observaciones del comprobante">
                     </div>

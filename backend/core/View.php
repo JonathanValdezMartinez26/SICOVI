@@ -299,10 +299,9 @@ function getMenu()
     <script src="/assets/vendor/js/dropdown-hover.js"></script>
     <script src="/assets/vendor/js/helpers.js"></script>
     <script src="/assets/vendor/js/mega-dropdown.js"></script>
-    <script src="/assets/vendor/js/template-customizer.js"></script>
-    <script src="/assets/vendor/libs/@form-validation/auto-focus.js"></script>
-    <script src="/assets/vendor/libs/@form-validation/bootstrap5.js"></script>
     <script src="/assets/vendor/libs/@form-validation/popular.js"></script>
+    <script src="/assets/vendor/libs/@form-validation/bootstrap5.js"></script>
+    <script src="/assets/vendor/libs/@form-validation/auto-focus.js"></script>
     <script src="/assets/vendor/libs/animate-on-scroll/animate-on-scroll.js"></script>
     <script src="/assets/vendor/libs/apex-charts/apexcharts.js"></script>
     <script src="/assets/vendor/libs/bloodhound/bloodhound.js"></script>
@@ -313,8 +312,6 @@ function getMenu()
     <script src="/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
     <script src="/assets/vendor/libs/dropzone/dropzone.js"></script>
     <script src="/assets/vendor/libs/flatpickr/flatpickr.js"></script>
-    <script src="/assets/js/flatpickr_es.js"></script>
-    <script src="/assets/vendor/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js"></script>
     <script src="/assets/vendor/libs/fullcalendar/fullcalendar.js"></script>
     <!-- <script src="/assets/vendor/libs/i18n/i18n.js"></script> -->
     <script src="/assets/vendor/libs/jkanban/jkanban.js"></script>
@@ -325,6 +322,7 @@ function getMenu()
     <!-- <script src="/assets/vendor/libs/mapbox-gl/mapbox-gl.js"></script> -->
     <script src="/assets/vendor/libs/masonry/masonry.js"></script>
     <script src="/assets/vendor/libs/moment/moment.js"></script>
+    <script src="/assets/vendor/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js"></script>
     <script src="/assets/vendor/libs/nouislider/nouislider.js"></script>
     <script src="/assets/vendor/libs/numeral/numeral.js"></script>
     <!-- <script src="/assets/vendor/libs/pickr/pickr.js"></script> -->

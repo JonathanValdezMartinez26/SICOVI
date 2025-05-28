@@ -83,37 +83,51 @@ class Database
         exit();
     }
 
-    private function getError($e, $sql = null, $parametros = null)
+    private function getError($e, $sql = null, $valores = null)
     {
         $error = "Error en DB: {$e->getMessage()}\n";
 
         if ($sql != null) $error .= "Query: $sql\n";
-        if ($parametros != null) $error .= 'Datos: ' . print_r($parametros, 1);
+        if ($valores != null) $error .= 'Datos: ' . print_r($valores, 1);
         //echo $error . "\n";
         return $error;
     }
 
-    public function runQuery($sql, $parametros = [])
+    public function runQuery($sql, $valores = [], &$retorno = [])
     {
         if ($this->db == null) return false;
         if (!is_object($this->db)) return false;
-        if (!is_array($parametros)) throw new \Exception("Los parámetros deben ser un array.");
+        if (!is_array($valores)) throw new \Exception("Los parámetros deben ser un array.");
 
         try {
             $stmt = $this->db->prepare($sql);
-            $stmt->execute($parametros);
+            if ($stmt === false) throw new \Exception("Error al preparar la consulta SQL: $sql");
+
+            if (is_array($valores) && count($valores) > 0) {
+                foreach ($valores as $key => $value) {
+                    $stmt->bindValue(":$key", $value);
+                }
+            }
+
+            if (is_array($retorno) && count($retorno) > 0) {
+                foreach ($retorno as $key => &$value) {
+                    $stmt->bindParam(":$key", $value['valor'], $value['tipo'], $value['largo'] ?? null);
+                }
+            }
+
+            $stmt->execute();
             return $stmt;
         } catch (\PDOException $e) {
-            throw new \Exception($this->getError($e, $sql, $parametros));
+            throw new \Exception($this->getError($e, $sql, $valores));
         } catch (\Exception $e) {
-            throw new \Exception($this->getError($e, $sql, $parametros));
+            throw new \Exception($this->getError($e, $sql, $valores));
         }
     }
 
-    public function queryOne($sql, $parametros = null)
+    public function queryOne($sql, $valores = [])
     {
         try {
-            $stmt = $this->runQuery($sql, $parametros);
+            $stmt = $this->runQuery($sql, $valores);
             if ($stmt === false) throw new \Exception("Error de conexión a la base de datos.");
 
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -124,10 +138,10 @@ class Database
         }
     }
 
-    public function queryAll($sql, $parametros = null)
+    public function queryAll($sql, $valores = [])
     {
         try {
-            $stmt = $this->runQuery($sql, $parametros);
+            $stmt = $this->runQuery($sql, $valores);
             if ($stmt === false) throw new \Exception("Error de conexión a la base de datos.");
 
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -138,10 +152,10 @@ class Database
         }
     }
 
-    public function IDU($sql, $parametros = null)
+    public function CRUD($sql, $valores = [], &$retorno = [])
     {
         try {
-            $stmt = $this->runQuery($sql, $parametros);
+            $stmt = $this->runQuery($sql, $valores, $retorno);
             return $stmt->rowCount();
         } catch (\Exception $e) {
             throw $e;

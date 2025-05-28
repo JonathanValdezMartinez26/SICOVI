@@ -1,11 +1,10 @@
 /*
  * Configuraciones globales de librerías
  */
-moment.locale("es-MX")
+numeral.zeroFormat("")
 const NUMERAL_MONEDA = "$ 0,0.00"
 
-flatpickr.localize(flatpickr.l10ns.es)
-
+moment.locale("es-MX")
 const MOMENT_FRONT = "DD/MM/YYYY"
 const MOMENT_BACK = "YYYY-MM-DD"
 
@@ -44,10 +43,7 @@ const consultaServidor = (
     url,
     datos,
     fncOK,
-    metodo = "POST",
-    tipo = "JSON",
-    tipoContenido = null,
-    procesar = null
+    { metodo = "POST", tipo = "JSON", tipoContenido = null, procesar = null } = {}
 ) => {
     showWait()
 
@@ -135,35 +131,35 @@ const setRangoFechas = (
     selector,
     { diasAntes = 0, diasDespues = 0, min = 0, max = 0, enModal = false } = {}
 ) => {
-    const rangoDefecto = [
-        moment().subtract(diasAntes, "days").format(MOMENT_FRONT),
-        moment().add(diasDespues, "days").format(MOMENT_FRONT)
-    ]
-
     const config = {
-        mode: "range",
-        dateFormat: "d/m/Y",
-        defaultDate: rangoDefecto,
-        static: enModal
+        locale: {
+            format: MOMENT_FRONT,
+            applyLabel: "Aplicar",
+            cancelLabel: "Cancelar",
+            fromLabel: "Desde",
+            toLabel: "Hasta",
+            customRangeLabel: "Personalizado",
+            separator: " ➝ "
+        },
+        showDropdowns: true,
+        minYear: 2025,
+        maxYear: moment().add(1, "years").year()
     }
 
+    if (diasAntes > 0) config.startDate = moment().subtract(diasAntes, "days").format(MOMENT_FRONT)
+    if (diasDespues > 0) config.endDate = moment().add(diasDespues, "days").format(MOMENT_FRONT)
     if (min > 0) config.minDate = moment().subtract(min, "days").format(MOMENT_FRONT)
     if (max > 0) config.maxDate = moment().add(max, "days").format(MOMENT_FRONT)
-    if (enModal) config.appendTo = $(selector).parent()[0]
+    if (enModal) config.parentEl = $(selector).closest(".modal-content")[0]
 
-    $(selector).flatpickr(config)
+    $(selector).daterangepicker(config)
 }
 
 const getRangoFechas = (selector, back = true) => {
-    const fecha = $(selector)[0]._flatpickr
-    if (fecha.selectedDates.length === 0) return null
-
-    const MOMENT_FORMAT = back ? MOMENT_BACK : MOMENT_FRONT
-    const inicio = moment(fecha.selectedDates[0]).format(MOMENT_FORMAT)
-    const fin =
-        fecha.selectedDates.length > 1
-            ? moment(fecha.selectedDates[1]).format(MOMENT_FORMAT)
-            : inicio
+    const fecha = $(selector).data("daterangepicker")
+    if (!fecha) return null
+    const inicio = back ? moment(fecha.startDate).format(MOMENT_BACK) : fecha.startDate
+    const fin = back ? moment(fecha.endDate).format(MOMENT_BACK) : fecha.endDate
     return { inicio, fin }
 }
 
@@ -177,7 +173,7 @@ const setInputMoneda = (selector, opciones = {}) => {
         permitirNegativos: false
     }
 
-    $(document).on("input", selector, function () {
+    $(document).on("blur", selector, function () {
         let input = $(this)
         let valorOriginal = input.val()
 

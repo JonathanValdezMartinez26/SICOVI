@@ -14,21 +14,64 @@ class Viaticos extends Controller
                 const tabla = "#historialSolicitudes"
                 const comprobantesGastos = []
 
+                const validacionSolicitud = () => {
+                    const modal = $("#modalNuevaSolicitud").find(".modal-body")[0]
+                    const validacion = FormValidation.formValidation(modal, {
+                        fields: {
+                            montoVG: {
+                                validators: {
+                                    notEmpty: {
+                                        message: "Debe ingresar un monto"
+                                    },
+                                    greaterThan: {
+                                        min: 1,
+                                        message: "El monto debe ser mayor a 0"
+                                    }
+                                }
+                            },
+                            proyecto: {
+                                validators: {
+                                    notEmpty: {
+                                        message: "Debe ingresar el nombre del proyecto"
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            trigger: new FormValidation.plugins.Trigger(),
+                            autoFocus: new FormValidation.plugins.AutoFocus(),
+                            bootstrap5: new FormValidation.plugins.Bootstrap5({
+                                defaultMessageContainer: false,
+                            }),
+                            message: new FormValidation.plugins.Message({
+                                container: function (field, element) {
+                                    return $(element).closest(".form-group").find(".fv-message")[0];
+                                }
+                            })
+                        }
+                    })
+
+                    $("#registraSolicitud").on("click", (e) => {
+                        validacion.validate().then((validacion) => {
+                            if (validacion === "Valid") registraSolicitud()
+                            else showError("Debe corregir los errores marcados antes de continuar.")
+                        })
+                    })
+
+                    $("#cancelaSolicitud").on("click", () => {
+                        validacion.resetForm(true)
+                        limpiaComprobantes()
+                    })
+                }
+
                 const getParametros = () => {
+                    const fechas = getRangoFechas("#fechasNuevaSolicitud")
+
                     const tipo = $("#tipoSolicitud").val()
                     const proyecto = $("#proyecto").val()
-                    const fechaI = $("#fechaI").val()
-                    const fechaF = $("#fechaF").val()
+                    const fechaI = fechas.inicio
+                    const fechaF = fechas.fin
                     const monto = numeral($("#montoVG").val()).value()
-
-                    if (!proyecto) {
-                        showError("El campo proyecto es obligatorio")
-                        return false
-                    }
-                    if (parseFloat(monto) < 1) {
-                        showError("Debe ingresar un monto mayor a 0")
-                        return false
-                    }
 
                     return {
                         usuario: $_SESSION[usuario_id],
@@ -87,38 +130,50 @@ class Viaticos extends Controller
                         else {
                             const hoy = moment().format(MOMENT_BACK)
 
-                            $("#tipoSolicitud").val("1").change()
-                            $("#proyecto").val("")
-                            $("#fechaI_Solicitud").val(hoy)
-                            $("#fechaF_Solicitud").val(hoy)
-                            $("#montoVG").val("")
-                            $("#modalNuevaSolicitud").modal("hide")
-                            getSolicitudes()
-
-                            if (datos.tipo === "2") {
+                            if (datos.tipo === "1") {
+                                $("#modalNuevaSolicitud").modal("hide")
+                                showSuccess("Solicitud registrada correctamente").then(() => {
+                                    $("#tipoSolicitud").val("1").change()
+                                    $("#proyecto").val("")
+                                    $("#fechaI_Solicitud").val(hoy)
+                                    $("#fechaF_Solicitud").val(hoy)
+                                    $("#montoVG").val("")
+                                    $("#modalNuevaSolicitud").modal("hide")
+                                    getSolicitudes()
+                                }) 
+                            } else {
                                 const formData = new FormData()
-                                formData.append("usuario", datos.usuario)
-                                formData.append("tipo", datos.tipo)
-                                formData.append("proyecto", datos.proyecto)
-                                formData.append("fechaI", datos.fechaI)
-                                formData.append("fechaF", datos.fechaF)
-                                formData.append("monto", datos.monto)
+                                const tblComprobantes = $("#tablaComprobantes tbody tr").toArray()
 
-                                comprobantesGastos.forEach((comprobante, index) => {
-                                    formData.append(comprobante[index], comprobante)
+                                tblComprobantes.forEach((comprobante) => {
+                                    const columnas = $(comprobante).find("td")
+                                    const monto = numeral(columnas[1].innerText).value()
+
+                                    formData.append("viaticos[]", respuesta.datos.id)
+                                    formData.append("fecha[]", hoy)
+                                    formData.append("concepto[]", 'in progress')
+                                    formData.append("observaciones[]", columnas[2].innerText)
+                                    formData.append("subtotal[]", monto)
+                                    formData.append("total[]", monto)
                                 })
 
                                 consultaServidor("/viaticos/registraComprobaciones", formData, (respuesta) => {
                                     if (!respuesta.success) return showError(respuesta.mensaje)
-                                    
-                                    $("#tablaComprobantes tbody").empty()
-                                    comprobantesGastos.length = 0
-                                })
+                                    // limpiaComprobantes()
+                                }, {
+                                    processData: false,
+                                    contentType: false
+                                });
                             }
                         }
 
                         btn.attr("disabled", false)
                     })                        
+                }
+
+                const limpiaComprobantes = () => {
+                    $("#tbodyComprobantes").empty()
+                    comprobantesGastos.length = 0
                 }
 
                 const configuraModales = () => {
@@ -145,8 +200,7 @@ class Viaticos extends Controller
                         $("#lblMontoVG").text("Monto Solicitado")
                         $("#montoVG").val("")
                         $("#montoVG").prop("disabled", false)
-                        $("#tbodyComprobantes").empty()
-                        comprobantesGastos.length = 0
+                        limpiaComprobantes()
                         $("#comprobantesGastos").hide()
                     } else {
                         $("#lblMontoVG").text("Monto Comprobado")
@@ -191,14 +245,14 @@ class Viaticos extends Controller
                     setRangoFechas("#fechasSolicitudes", {diasAntes: 30})
                     setRangoFechas("#fechasNuevaSolicitud", {max: 30, enModal: true})
                     setInputMoneda("#montoVG, #montoComprobante")
-
+                    
+                    validacionSolicitud()
                     configuraTabla(tabla)
                     configuraModales()
 
                     $("#btnBuscarSolicitudes").click(getSolicitudes)
                     $("#tipoSolicitud").change(changeTipoSolicitud)
                     $("#agregarComprobante").click(clickAgregarComprobante)
-                    $("#registraSolicitud").click(registraSolicitud)
                     
                     getSolicitudes()
                 });
