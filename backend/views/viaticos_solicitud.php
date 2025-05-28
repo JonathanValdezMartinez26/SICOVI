@@ -1,33 +1,30 @@
 <h4>Mis Solicitudes de Viáticos y Gastos</h4>
 
 <div class="card">
-    <div class="row m-10">
-        <div class="col-8 d-flex flex-row align-items-end justify-content-start">
-            <div class="form-group m-2">
-                <label>Desde</label>
-                <input type="date" id="fechaI" class="form-control" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>">
+    <div class="row justify-content-between m-4">
+        <div class="col-4">
+            <label for="fechasSolicitudes" class="form-label">Rango de fechas mostrado</label>
+            <div class="input-group input-group-merge">
+                <input type="text" id="fechasSolicitudes" class="form-control cursor-pointer">
+                <i class="input-group-text fa fa-calendar-days"></i>
+                <button id="btnBuscarSolicitudes" class="btn btn-outline-primary">Actualizar</button>
             </div>
-            <div class="form-group m-2">
-                <label>Hasta</label>
-                <input type="date" id="fechaF" class="form-control" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>">
-            </div>
-            <button class="btn btn-primary m-2" id="btnBuscar">Buscar</button>
         </div>
-        <div class="col-4 d-flex align-items-end justify-content-between">
-            <button id="btnAgregar" class="btn btn-info mb-2" data-bs-toggle="modal" data-bs-target="#modalNuevaSolicitud"><i class="fa-solid fa-plus">&nbsp;</i>Nueva Solicitud</button>
-            <button id="btnExportar" class="btn btn-success mb-2"><i class="fa-solid fa-file-excel">&nbsp;</i>Exportar</button>
+        <div class="col-4 d-flex align-self-end justify-content-end">
+            <button id="btnAgregar" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalNuevaSolicitud"><i class="fa fa-plus">&nbsp;</i>Nueva Solicitud</button>
         </div>
     </div>
 
-    <div class="card-datatable">
-        <table id="historialSolicitudes" class="table table-bordered table-striped">
+    <div class="card-datatable pt-0">
+        <table id="historialSolicitudes" class="table table-bordered datatables-basic">
             <thead>
                 <tr>
+                    <th>ID</th>
+                    <th>Tipo</th>
                     <th>Proyecto</th>
-                    <th>Fecha de Inicio</th>
-                    <th>Fecha de Fin</th>
-                    <th>Monto Solicitado</th>
-                    <th>Estado</th>
+                    <th>Fecha de Registro</th>
+                    <th>Monto</th>
+                    <th>Estatus</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -41,36 +38,41 @@
 <div class="modal fade" id="modalNuevaSolicitud" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-simple">
         <div class="modal-content">
-
             <div class="modal-body">
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 <div class="text-center mb-6">
                     <h4 class="address-title mb-2">Nueva solicitud de viáticos/gastos</h4>
                     <p class="address-subtitle">Capture los datos solicitados</p>
                 </div>
-                <div class="row gy-2">
-                    <div id="grpTipoSolicitud" class="form-group col-4">
-                        <label for="tipoSolicitud">Tipo</label>
+                <div class="row">
+                    <div class="form-group col-3">
+                        <label for="tipoSolicitud" class="form-label">Tipo</label>
                         <select class="form-select" id="tipoSolicitud">
-                            <option value="1">Viáticos</option>
-                            <option value="2">Gastos</option>
+                            <option value="1">Viáticos (por comprobar)</option>
+                            <option value="2">Gastos (reembolso)</option>
                         </select>
                     </div>
-                    <div id="grpProyecto" class="form-group col-12">
-                        <label for="proyecto">Proyecto</label>
-                        <input type="text" id="proyecto" class="form-control" placeholder="Nombre del proyecto">
+                    <div class="form-group col-5">
+                        <label for="fechasNuevaSolicitud" class="form-label">Rango de fechas</label>
+                        <div class="input-group input-group-merge">
+                            <input type="text" id="fechasNuevaSolicitud" name="fechasNuevaSolicitud" class="form-control cursor-pointer">
+                            <i class="input-group-text fa fa-calendar-days"></i>
+                        </div>
                     </div>
-                    <div id="grpFechaI" class="form-group col-4">
-                        <label for="fechaI">Fecha de Inicio</label>
-                        <input type="date" id="fechaI" class="form-control" value="<?= date('Y-m-d') ?>">
+                    <div class="form-group col-4">
+                        <label id="lblMontoVG" for="montoVG" class="form-label">Monto Solicitado</label>
+                        <div class="input-group input-group-merge">
+                            <span class="input-group-text cursor-pointer">
+                                <i class="icon-base fa fa-dollar-sign"></i>
+                            </span>
+                            <input type="text" id="montoVG" name="montoVG" class="form-control" placeholder="0.00">
+                        </div>
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
-                    <div id="grpFechaF" class="form-group col-4">
-                        <label for="fechaF">Fecha de Fin</label>
-                        <input type="date" id="fechaF" class="form-control" value="<?= date('Y-m-d') ?>">
-                    </div>
-                    <div id="grpMontoVG" class="form-group col-4">
-                        <label id="lblMontoVG" for="montoVG">Monto Solicitado</label>
-                        <input type="text" id="montoVG" class="form-control" placeholder="0.00">
+                    <div class="form-group col-12">
+                        <label for="proyecto" class="form-label">Proyecto</label>
+                        <input type="text" id="proyecto" name="proyecto" class="form-control" placeholder="Nombre del proyecto">
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                 </div>
 
@@ -86,25 +88,24 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tbodyComprobantes">
+                            </tbody>
+                            <tfoot>
                                 <tr>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td>
+                                    <td colspan="4" class="text-center">
                                         <button type="button" id="btnAgregarComprobante" class="btn btn-success btn-sm">
-                                            <i class="fa-solid fa-plus"></i>
+                                            <i class="fa fa-plus">&nbsp;</i>Agregar
                                         </button>
                                     </td>
                                 </tr>
-                            </tbody>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
+                <button type="button" id="cancelaSolicitud" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
                 <button type="button" id="registraSolicitud" class="btn btn-primary">Guardar</button>
             </div>
         </div>
@@ -123,17 +124,19 @@
                     <p class="address-subtitle">Capture los datos del comprobante</p>
                 </div>
                 <div class="row gy-2">
-                    <div id="grpComprobante" class="form-group col-8">
-                        <label for="comprobante">Comprobante</label>
-                        <input type="file" id="comprobante" class="form-control"
-                            placeholder="Seleccione un archivo" accept=".pdf,.jpg,.jpeg,.png">
+                    <div class="form-group col-8">
+                        <label for="comprobante" class="form-label">Comprobante</label>
+                        <input type="file" id="comprobante" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
                     </div>
-                    <div id="grpMontoComprobante" class="form-group col-4">
-                        <label for="montoComprobante">Monto</label>
-                        <input type="text" id="montoComprobante" class="form-control" placeholder="0.00">
+                    <div class="form-group col-4">
+                        <label for="montoComprobante" class="form-label">Monto</label>
+                        <div class="input-group input-group-merge">
+                            <i class="input-group-text fa fa-dollar-sign"></i>
+                            <input type="text" id="montoComprobante" class="form-control" placeholder="0.00">
+                        </div>
                     </div>
-                    <div id="grpObservacionesComprobante" class="form-group col-12">
-                        <label for="observacionesComprobante">Observaciones</label>
+                    <div class="form-group col-12">
+                        <label for="observacionesComprobante" class="form-label">Observaciones</label>
                         <input type="text" id="observacionesComprobante" class="form-control"
                             placeholder="Observaciones del comprobante">
                     </div>

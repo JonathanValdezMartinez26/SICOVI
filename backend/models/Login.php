@@ -11,8 +11,8 @@ class Login extends Model
     {
         $query = <<<SQL
             SELECT
-                USUARIO.USUARIO
-                , CONCATENA_NOMBRE(PERSONA.NOMBRE, '', PERSONA.APELLIDO_1, PERSONA.APELLIDO_2) AS NOMBRE
+                USUARIO.ID AS USUARIO_ID
+                , GET_NOMBRE_PERSONA(USUARIO.ID) AS USUARIO_NOMBRE
                 , PERFIL.ID AS PERFIL_ID
                 , PERFIL.NOMBRE AS PERFIL_NOMBRE
                 , SUCURSAL.ID AS SUCURSAL_ID
