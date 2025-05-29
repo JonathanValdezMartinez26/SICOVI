@@ -15,9 +15,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
 
-    <title>Demo : Login Basic - Pages | sneat - Bootstrap Dashboard PRO</title>
-
-    <meta name="description" content="" />
+    <title>Login | <?= CONFIGURACION['EMPRESA']; ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/assets/img/logo_ico.svg" />

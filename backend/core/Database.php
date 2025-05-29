@@ -4,15 +4,11 @@ namespace Core;
 
 use PDO;
 
-/**
- * @class Conn
- */
-
 class Database
 {
     public $db;
 
-    function __construct($servidor_ = null, $puerto_ = null, $esquema_ = null, $usuario_ = null, $password = null)
+    function __construct($servidor_ = null, $puerto_ = null, $esquema_ = null, $usuario_ = null, $password_ = null)
     {
         $servidor = $servidor_ ?? CONFIGURACION['SERVIDOR'];
         $puerto = $puerto_ ?? CONFIGURACION['PUERTO'];
@@ -20,7 +16,7 @@ class Database
 
         $cadena = "oci:dbname=//$servidor:$puerto/$esquema;charset=UTF8";
         $usuario = $usuario_ ?? CONFIGURACION['USUARIO'];
-        $password = $password ?? CONFIGURACION['PASSWORD'];
+        $password = $password_ ?? CONFIGURACION['PASSWORD'];
 
         try {
             $this->db = new PDO($cadena, $usuario, $password);
@@ -93,6 +89,45 @@ class Database
         return $error;
     }
 
+    public function beginTransaction()
+    {
+        if ($this->db == null) throw new \Exception("No se ha establecido una conexión a la base de datos.");
+        if (!is_object($this->db)) throw new \Exception("La conexión a la base de datos no es válida.");
+        if ($this->db->inTransaction()) return;
+
+        try {
+            $this->db->beginTransaction();
+        } catch (\PDOException $e) {
+            throw new \Exception($this->getError($e));
+        }
+    }
+
+    public function commit()
+    {
+        if ($this->db == null) throw new \Exception("No se ha establecido una conexión a la base de datos.");
+        if (!is_object($this->db)) throw new \Exception("La conexión a la base de datos no es válida.");
+        if ($this->db->inTransaction() === false) return;
+
+        try {
+            $this->db->commit();
+        } catch (\PDOException $e) {
+            throw new \Exception($this->getError($e));
+        }
+    }
+
+    public function rollback()
+    {
+        if ($this->db == null) throw new \Exception("No se ha establecido una conexión a la base de datos.");
+        if (!is_object($this->db)) throw new \Exception("La conexión a la base de datos no es válida.");
+        if ($this->db->inTransaction() === false) return;
+
+        try {
+            $this->db->rollBack();
+        } catch (\PDOException $e) {
+            throw new \Exception($this->getError($e));
+        }
+    }
+
     public function runQuery($sql, $valores = [], &$retorno = [])
     {
         if ($this->db == null) return false;
@@ -158,6 +193,24 @@ class Database
             $stmt = $this->runQuery($sql, $valores, $retorno);
             return $stmt->rowCount();
         } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+
+    public function CRUD_multiple($sql = [], $valores = [], &$retorno = [])
+    {
+        try {
+            $this->beginTransaction();
+
+            foreach ($sql as $key => $query) {
+                $stmt = $this->runQuery($query, $valores[$key], $retorno[$key] ?? []);
+                if (!$stmt) throw new \Exception("Error de conexión a la base de datos.");
+            }
+
+            $this->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->rollback();
             throw $e;
         }
     }

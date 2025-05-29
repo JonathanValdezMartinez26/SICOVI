@@ -129,6 +129,9 @@ function getMenu()
     <link rel="stylesheet" href="/assets/vendor/fonts/fontawesome.css" />
     <!-- <link rel="stylesheet" href="/assets/vendor/fonts/flag-icons.css" /> -->
 
+    <!-- Preload resources -->
+    <link rel="preload" href="/assets/img/wait.svg" as="image">
+
     <!-- Core CSS -->
     <link rel="stylesheet" href="/assets/vendor/css/core.css" />
     <link rel="stylesheet" href="/assets/css/demo.css" />

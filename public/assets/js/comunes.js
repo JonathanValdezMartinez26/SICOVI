@@ -43,23 +43,40 @@ const consultaServidor = (
     url,
     datos,
     fncOK,
-    { metodo = "POST", tipo = "JSON", tipoContenido = null, procesar = null } = {}
+    { metodo = "POST", tipoEsperado = "JSON", procesar = null, tipoContenido = null } = {}
 ) => {
     showWait()
 
     const configuracion = {
-        type: metodo,
-        url: url,
+        url,
         data: datos,
-        success: (res) => {
-            if (tipo === "blob") res = new Blob([res], { type: "application/pdf" })
+        type: metodo,
+        headers: { "Front-Request": "true" },
+        success: (respuesta) => {
+            if (typeof respuesta === "string") {
+                try {
+                    switch (tipoEsperado) {
+                        case "JSON":
+                            respuesta = JSON.parse(respuesta)
+                            break
+                        case "blob":
+                            respuesta = new Blob([respuesta], { type: "application/pdf" })
+                            break
+                    }
+                } catch (e) {
+                    Swal.close()
+                    return {
+                        success: false,
+                        mensaje: "Error al procesar la respuesta del servidor."
+                    }
+                }
+            }
 
             Swal.close()
-            fncOK(res)
+            fncOK(respuesta)
         },
-        error: (error) => {
-            console.error(error)
-            showError("Ocurrió un error al procesar la solicitud.")
+        error: () => {
+            showError("El servidor responde con un error.\nIntente más tarde.")
         }
     }
 
@@ -125,11 +142,11 @@ const buscarEnTabla = (selector, columna, texto) => {
 
 /*
  * Configuracion para inputs de tipo fecha
- * Usando Flatpickr
+ * Usando Bootstrap Daterange Picker
  */
-const setRangoFechas = (
+const setInputFechas = (
     selector,
-    { diasAntes = 0, diasDespues = 0, min = 0, max = 0, enModal = false } = {}
+    { rango = false, diasAntes = 0, diasDespues = 0, min = -1, max = -1, enModal = false } = {}
 ) => {
     const config = {
         locale: {
@@ -141,25 +158,33 @@ const setRangoFechas = (
             customRangeLabel: "Personalizado",
             separator: " ➝ "
         },
+        linkedCalendars: false,
         showDropdowns: true,
         minYear: 2025,
-        maxYear: moment().add(1, "years").year()
+        minDate: moment("01/01/2025", MOMENT_FRONT).format(MOMENT_FRONT),
+        maxYear: moment().add(1, "years").year(),
+        maxDate: moment().add(1, "years").format(MOMENT_FRONT),
+        singleDatePicker: !rango,
+        autoApply: !rango
     }
 
     if (diasAntes > 0) config.startDate = moment().subtract(diasAntes, "days").format(MOMENT_FRONT)
     if (diasDespues > 0) config.endDate = moment().add(diasDespues, "days").format(MOMENT_FRONT)
-    if (min > 0) config.minDate = moment().subtract(min, "days").format(MOMENT_FRONT)
-    if (max > 0) config.maxDate = moment().add(max, "days").format(MOMENT_FRONT)
+    if (min >= 0) config.minDate = moment().subtract(min, "days").format(MOMENT_FRONT)
+    if (max >= 0) config.maxDate = moment().add(max, "days").format(MOMENT_FRONT)
     if (enModal) config.parentEl = $(selector).closest(".modal-content")[0]
 
     $(selector).daterangepicker(config)
 }
 
-const getRangoFechas = (selector, back = true) => {
+const getInputFechas = (selector, rango = false, back = true) => {
     const fecha = $(selector).data("daterangepicker")
     if (!fecha) return null
-    const inicio = back ? moment(fecha.startDate).format(MOMENT_BACK) : fecha.startDate
-    const fin = back ? moment(fecha.endDate).format(MOMENT_BACK) : fecha.endDate
+    const formato = back ? MOMENT_BACK : MOMENT_FRONT
+    const inicio = moment(fecha.startDate).format(formato)
+    if (!rango) return inicio
+
+    const fin = moment(fecha.endDate).format(formato)
     return { inicio, fin }
 }
 

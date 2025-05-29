@@ -35,7 +35,6 @@ class Controller
     private function compruebaArchivo($archivo)
     {
         if (!file_exists(VISTAS . "/$archivo.php")) {
-            // header('HTTP/1.0 404 Not Found');
             header('Location: /' . VISTA_DEFECTO);
             exit;
         }

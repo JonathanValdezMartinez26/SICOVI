@@ -48,12 +48,11 @@ class Viaticos extends Model
         }
     }
 
-    public static function registraSolicitud_VG($datos)
+    public static function registraSolicitud_V($datos)
     {
         $query = <<<SQL
             INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, DESDE, HASTA, MONTO)
             VALUES (:tipo, :usuario, :proyecto, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto)
-            RETURNING ID INTO :id
         SQL;
 
         $values = [
@@ -65,7 +64,34 @@ class Viaticos extends Model
             'usuario' => $datos['usuario']
         ];
 
-        $returning = [
+        try {
+            $db = new Database();
+            $result = $db->CRUD($query, $values);
+            if ($result < 1) return self::resultado(false, 'La solicitud no se guardo.');
+            return self::resultado(true, 'Solicitud guardada correctamente.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function registraSolicitud_G($datos, $comprobantes = null)
+    {
+        $queryV = <<<SQL
+            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, DESDE, HASTA, MONTO)
+            VALUES (:tipo, :usuario, :proyecto, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto)
+            RETURNING ID INTO :id
+        SQL;
+
+        $valuesV = [
+            'tipo' => $datos['tipo'],
+            'proyecto' => $datos['proyecto'],
+            'fechaI' => $datos['fechaI'],
+            'fechaF' => $datos['fechaF'],
+            'monto' => $datos['monto'],
+            'usuario' => $datos['usuario']
+        ];
+
+        $returningV = [
             'id' => [
                 'valor' => '',
                 'tipo' => \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT,
@@ -75,41 +101,45 @@ class Viaticos extends Model
 
         try {
             $db = new Database();
-            $result = $db->CRUD($query, $values, $returning);
-            if ($result < 1) return self::resultado(false, 'La solicitud no se guardo.');
 
-            $response = [
-                'id' => $returning['id']['valor']
-            ];
-            return self::resultado(true, 'Solicitud guardada correctamente.', $response);
+            $db->beginTransaction();
+
+            $db->CRUD($queryV, $valuesV, $returningV);
+
+            if ($returningV['id']['valor'] !== '' && count($comprobantes) > 0) {
+                foreach ($comprobantes as $comprobante) {
+                    $queryC = <<<SQL
+                        INSERT INTO COMPROBACION_VIATICOS (VIATICOS, COMPROBANTE_ARCHIVO, COMPROBANTE_FECHA, CONCEPTO, OBSERVACIONES, SUBTOTAL, TOTAL)
+                        VALUES (:viaticos, EMPTY_BLOB(), TO_DATE(:fecha, 'YYYY-MM-DD'), :concepto, :observaciones, :subtotal, :total)
+                        RETURNING COMPROBANTE_ARCHIVO INTO :comprobante
+                    SQL;
+
+                    $valuesC = [
+                        'viaticos' => $returningV['id']['valor'],
+                        'fecha' => $comprobante['fecha'],
+                        'concepto' => $comprobante['concepto'],
+                        'observaciones' => $comprobante['observaciones'],
+                        'subtotal' => $comprobante['monto'],
+                        'total' => $comprobante['monto']
+                    ];
+
+                    $returningC = [
+                        'comprobante' => [
+                            'valor' => $comprobante['comprobante'],
+                            'tipo' => \PDO::PARAM_LOB
+                        ]
+                    ];
+
+                    $db->CRUD($queryC, $valuesC, $returningC);
+                }
+            }
+
+            $db->commit();
+
+            return self::resultado(true, 'Solicitud de gastos registrada correctamente.', $returningV['id']['valor']);
         } catch (\Exception $e) {
-            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
-        }
-    }
-
-    public static function registraComprobaciones()
-    {
-        $query = <<<SQL
-            INSERT INTO VIATICOS_COMPROBACIONES (VIATICOS, COMPROBANTE, MONTO)
-            VALUES (:viatico, :comprobante, :monto)
-            RETURNING ID INTO :id
-        SQL;
-
-        $values = [
-            'viatico' => $_POST['viatico'],
-            'comprobante' => $_POST['comprobante'],
-            'monto' => $_POST['monto']
-        ];
-
-        return self::resultado(true, 'Comprobaciones registradas correctamente.');
-
-        try {
-            $db = new Database();
-            $r = $db->CRUD($query, $values);
-            if ($r > 0) return self::resultado(true, 'Comprobaciones registradas correctamente.');
-            return self::resultado(false, 'Las comprobaciones no fueron registradas.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al guardar las comprobaciones.', null, $e->getMessage());
+            $db->rollback();
+            return self::resultado(false, 'Error al registrar la solicitud de gastos.', null, $e->getMessage());
         }
     }
 }
