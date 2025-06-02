@@ -6,7 +6,9 @@
  */
 moment.locale("es-MX")
 const MOMENT_FRONT = "DD/MM/YYYY"
+const MOMENT_FRONT_HORA = "DD/MM/YYYY HH:mm:ss"
 const MOMENT_BACK = "YYYY-MM-DD"
+const MOMENT_BACK_HORA = "YYYY-MM-DD HH:mm:ss"
 
 numeral.zeroFormat("")
 const NUMERAL_MONEDA = "$ 0,0.00"
@@ -271,6 +273,25 @@ const getInputFechas = (selector, rango = false, paraBack = true) => {
 
     const fin = moment(fecha.endDate).format(formato)
     return { inicio, fin }
+}
+
+const updateInputFechas = (selector, { inicio = null, fin = null, min = -1, max = -1 } = {}) => {
+    const fecha = $(selector).data("daterangepicker")
+    if (!fecha) return
+
+    inicio = fecha.startDate || inicio
+    fin = fecha.endDate || fin
+
+    if (min >= 0) fecha.minDate = moment().subtract(min, "days")
+    if (max >= 0) fecha.maxDate = moment().add(max, "days")
+
+    fecha.setStartDate(inicio)
+    fecha.setEndDate(fin)
+
+    inputFechasRestart[selector] = {
+        inicio: fecha.startDate,
+        fin: fecha.endDate
+    }
 }
 
 /*

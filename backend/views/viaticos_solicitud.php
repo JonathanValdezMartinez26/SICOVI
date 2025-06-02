@@ -59,7 +59,7 @@
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                     <div class="form-group col-5">
-                        <label for="fechasNuevaSolicitud" class="form-label">Rango de fechas</label>
+                        <label for="fechasNuevaSolicitud" class="form-label">Periodo del proyecto</label>
                         <div class="input-group input-group-merge cursor-pointer">
                             <input type="text" id="fechasNuevaSolicitud" name="fechasNuevaSolicitud" class="form-control cursor-pointer" readonly>
                             <span class="input-group-text">
@@ -228,27 +228,145 @@
                 </div>
             </div>
             <div class="modal-body">
-                <div class="row">
-                </div>
-                <div class="row">
-                    <div class="form-group col-12 text-center">
-                        <label class="form-label">Comprobantes registrados</label>
+                <div class="accordion accordion-custom-button" id="acordionVer">
+                    <div class="accordion-item active">
+                        <h2 class="accordion-header">
+                            <button
+                                type="button"
+                                class="accordion-button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#acordionVerSolicitud"
+                                aria-expanded="true">
+                                <i class="fa fa-circle-info">&nbsp;</i>
+                                Solicitud
+                            </button>
+                        </h2>
+                        <div id="acordionVerSolicitud" class="accordion-collapse collapse show" data-bs-parent="#acordionVer">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Tipo de Solicitud</label>
+                                        <input type="text" id="verTipoSol" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Fecha de registro</label>
+                                        <input type="text" id="verFechaReg" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Estatus</label>
+                                        <input type="text" id="verEstatus" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-12">
+                                        <label class="form-label">Proyecto</label>
+                                        <input type="text" id="verProyecto" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Fecha de inicio del proyecto</label>
+                                        <input type="text" id="verFechaI" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Fecha de termino del proyecto</label>
+                                        <input type="text" id="verFechaF" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Monto</label>
+                                        <input type="text" id="verMontoSol" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-12">
-                        <div class="table-responsive text-nowrap">
-                            <table id="tablaComprobantesSolicitud" class="table table-bordered table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha Registro</th>
-                                        <th>Concepto</th>
-                                        <th>Monto</th>
-                                        <th>Archivo</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbodyComprobantesSolicitud">
-                                </tbody>
-                            </table>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button
+                                type="button"
+                                class="accordion-button collapsed"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#acordionVerAutorizacion"
+                                aria-expanded="false">
+                                <i class="fa fa-circle-check">&nbsp;</i>
+                                Autorización
+                            </button>
+                        </h2>
+                        <div id="acordionVerAutorizacion" class="accordion-collapse collapse" data-bs-parent="#acordionVer">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Fecha</label>
+                                        <input type="text" id="verFechaAutorizacion" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Autorizado por</label>
+                                        <input type="text" id="verAutorizadoPor" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Monto autorizado</label>
+                                        <input type="text" id="verMontoAutorizado" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button
+                                type="button"
+                                class="accordion-button collapsed"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#acordionVerEntregado"
+                                aria-expanded="false">
+                                <i class="fa fa-sack-dollar">&nbsp;</i>
+                                Entrega
+                            </button>
+                        </h2>
+                        <div id="acordionVerEntregado" class="accordion-collapse collapse" data-bs-parent="#acordionVer">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Fecha</label>
+                                        <input type="text" id="verFechaEntrega" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Entregado por</label>
+                                        <input type="text" id="verEntregadoPor" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Monto entregado</label>
+                                        <input type="text" id="verMontoEntregado" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button
+                                type="button"
+                                class="accordion-button collapsed"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#acordionVerComprobantes"
+                                aria-expanded="false">
+                                <i class="fa fa-receipt">&nbsp;</i>
+                                Comprobantes
+                            </button>
+                        </h2>
+                        <div id="acordionVerComprobantes" class="accordion-collapse collapse" data-bs-parent="#acordionVer">
+                            <div class="accordion-body">
+                                <div class="table-responsive text-nowrap">
+                                    <table id="tablaComprobantesSolicitud" class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha Registro</th>
+                                                <th>Concepto</th>
+                                                <th>Monto</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbodyComprobantesSolicitud">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -65,6 +65,8 @@ class Viaticos extends Model
                 , TO_CHAR(V.DESDE, 'YYYY-MM-DD') AS DESDE
                 , TO_CHAR(V.HASTA, 'YYYY-MM-DD') AS HASTA
                 , V.MONTO
+                , V.ESTATUS
+                , CEV.NOMBRE AS ESTATUS_NOMBRE
                 , V.AUTORIZACION_FECHA
                 , V.AUTORIZACION_USUARIO
                 , GET_NOMBRE_USUARIO(V.AUTORIZACION_USUARIO) AS AUTORIZACION_NOMBRE
@@ -78,13 +80,14 @@ class Viaticos extends Model
                 , V.COMPROBACION_MONTO
             FROM
                 VIATICOS V
+                LEFT JOIN CAT_ESTATUS_VIATICOS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN CAT_METODO_ENTREGA CME ON CME.ID = V.ENTREGA_METODO
             WHERE
                 V.ID = :id
         SQL;
 
         $params = [
-            'id' => $datos['id']
+            'id' => $datos['solicitudId']
         ];
 
         try {
@@ -216,6 +219,47 @@ class Viaticos extends Model
             return self::resultado(true, 'Solicitud eliminada correctamente.', $result);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al eliminar la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function getSolicitudesEntrega($datos)
+    {
+        $query = <<<SQL
+            SELECT
+                V.ID
+                , V.TIPO AS TIPO_ID
+                , CASE 
+                    WHEN V.TIPO = 1 THEN 'Viáticos'
+                    WHEN V.TIPO = 2 THEN 'Gastos'
+                    ELSE 'Desconocido'
+                END AS TIPO_NOMBRE
+                , V.PROYECTO
+                , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD') AS REGISTRO
+                , V.MONTO
+                , CEV.ID AS ESTATUS_ID
+                , CEV.NOMBRE AS ESTATUS_NOMBRE
+                , CEV.CLASE_FRONT AS ESTATUS_COLOR
+            FROM
+                VIATICOS V
+                LEFT JOIN CAT_ESTATUS_VIATICOS CEV ON CEV.ID = V.ESTATUS
+            WHERE
+                V.ESTATUS IN (2)
+                AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
+            ORDER BY
+                ID DESC
+        SQL;
+
+        $params = [
+            'fechaI' => $datos['fechaI'],
+            'fechaF' => $datos['fechaF']
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryAll($query, $params);
+            return self::resultado(true, 'Solicitudes encontradas.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
         }
     }
 }

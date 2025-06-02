@@ -11,12 +11,12 @@ function getMenu()
             'subItems' => [
                 [
                     'label' => 'Mis Solicitudes',
-                    'url' => 'viaticos/solicitud',
+                    'url' => '/viaticos/solicitud',
                     'permisos' => ['1', '2']
                 ],
                 [
                     'label' => 'Entrega',
-                    'url' => 'app-viaticos-aprobaciones.html',
+                    'url' => '/viaticos/entrega',
                     'permisos' => ['1', '2']
                 ]
             ]
@@ -54,7 +54,7 @@ function getMenu()
         $submenu = '';
         foreach ($item['subItems'] as $subItem) {
             if (in_array($_SESSION['perfil_id'], $subItem['permisos'])) {
-                $activo = "/{$subItem['url']}" == $_SERVER['REQUEST_URI'] ? 'active' : '';
+                $activo = "{$subItem['url']}" == $_SERVER['REQUEST_URI'] ? 'active' : '';
                 $submenu .= <<<HTML
                     <li class="menu-item $activo">
                         <a href="{$subItem['url']}" class="menu-link">

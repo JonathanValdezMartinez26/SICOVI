@@ -15,6 +15,93 @@ class Viaticos extends Controller
                 const comprobantesGastos = []
                 let valSolicitud = null, valComprobante = null
 
+                const getSolicitudes = () => {
+                    const fechas = getInputFechas("#fechasSolicitudes", true)
+
+                    const parametros = {
+                        usuario: $_SESSION[usuario_id],
+                        fechaI: fechas.inicio,
+                        fechaF: fechas.fin
+                    }
+
+                    consultaServidor("/viaticos/getSolicitudesUsuario", parametros, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)                        
+                        const resumen = {}
+                        const datos = respuesta.datos.map(solicitud => {
+                            const e = "<a class='dropdown-item' href='javascript:;' onclick='editarSolicitud(" + solicitud.ID + ")'><i class='fa fa-pen-to-square'>&nbsp;</i>Editar</a>"
+                            const c = "<a class='dropdown-item text-danger delete-record' href='javascript:;' onclick='cancelarSolicitud(" + solicitud.ID + ")'><i class='fa fa-trash'>&nbsp;</i>Cancelar</a>"
+                            let editar = "", cancelar = ""
+
+                            if (solicitud.TIPO_ID == 1) {
+                                editar = solicitud.ESTATUS_ID == 1 ? e : ""
+                                cancelar = solicitud.ESTATUS_ID == 1 || solicitud.ESTATUS_ID == 2 ? c : ""
+                            }
+
+                            if (solicitud.TIPO_ID == 2) {
+                                editar = solicitud.ESTATUS_ID == 4 ? e : ""
+                                cancelar = (solicitud.ESTATUS_ID == 4 || solicitud.ESTATUS_ID == 2) ? c : ""
+                            }
+
+                            const acciones = "<button type='button' class='btn dropdown-toggle hide-arrow' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-vertical'></i></button>" +
+                                            "<div class='dropdown-menu'>" +
+                                            "<a class='dropdown-item' href='javascript:;' onclick='verSolicitud(" + solicitud.ID + ")'><i class='fa fa-eye'>&nbsp;</i>Detalles</a>" +
+                                            (editar !== "" || cancelar !== "" ? "<hr class='dropdown-divider' />" : "") +
+                                            editar +
+                                            cancelar +
+                                            "</div>"
+
+                            const estatusBadge = "<span class='badge rounded-pill " + solicitud.ESTATUS_COLOR + "'>" + solicitud.ESTATUS_NOMBRE + "</span>"
+                            if (!resumen[solicitud.ESTATUS_ID]) {
+                                resumen[solicitud.ESTATUS_ID] = {}
+                                resumen[solicitud.ESTATUS_ID].total = 1
+                                resumen[solicitud.ESTATUS_ID].color = solicitud.ESTATUS_COLOR
+                                resumen[solicitud.ESTATUS_ID].estatus = solicitud.ESTATUS_NOMBRE
+                            }
+                            else resumen[solicitud.ESTATUS_ID].total += 1
+
+                            return [
+                                null,
+                                solicitud.ID,
+                                solicitud.TIPO_NOMBRE,
+                                solicitud.PROYECTO,
+                                moment(solicitud.REGISTRO).format(MOMENT_FRONT),
+                                numeral(solicitud.MONTO).format(NUMERAL_MONEDA),
+                                estatusBadge,
+                                acciones
+                            ]
+                        });
+
+                        actualizaDatosTabla(tabla, datos)
+                        $("#resumenSolicitudes").empty()
+                        if (datos.length === 0) {
+                            $("#resumenSolicitudes").append(getTarjetaSolicitud("text-bg-dark", "Sin solicitudes", 0))
+                        } else {
+                            Object.keys(resumen).sort((a, b) => {
+                                return a - b;
+                            }).forEach(estatusId => {
+                                const tarjeta = getTarjetaSolicitud(resumen[estatusId].color, resumen[estatusId].estatus, resumen[estatusId].total)
+                                $("#resumenSolicitudes").append(tarjeta)
+                            })
+                        }
+                    })
+                }
+
+                const getTarjetaSolicitud = (color, titulo, total) => {
+                    return "<div class='col-2'>" +
+                                    "<div class='card'>" +
+                                    "<div class='card-body'>" +
+                                    "<div class='card-info text-center'>" +
+                                    "<div class='d-flex align-items-center justify-content-between'>" +
+                                    "<span>Estatus:&nbsp;</span>" +
+                                    "<span class='badge rounded-pill " + color + "'>" + titulo + "</span>" +
+                                    "</div>" +
+                                    "<h4 class='card-title mb-0 me-2'>" + total + "</h4>" +
+                                    "</div>" +
+                                    "</div>" +
+                                    "</div>" +
+                                    "</div>"
+                }
+
                 const validacionSolicitud = () => {
                     const campos = {
                         tipoSolicitud: {
@@ -114,81 +201,6 @@ class Viaticos extends Controller
                         fechaF,
                         monto
                     }
-                }
-
-                const getSolicitudes = () => {
-                    const fechas = getInputFechas("#fechasSolicitudes", true)
-
-                    const parametros = {
-                        usuario: $_SESSION[usuario_id],
-                        fechaI: fechas.inicio,
-                        fechaF: fechas.fin
-                    }
-
-                    consultaServidor("/viaticos/getSolicitudesUsuario", parametros, (respuesta) => {
-                        if (!respuesta.success) return showError(respuesta.mensaje)                        
-                        const resumen = {}
-                        const datos = respuesta.datos.map(solicitud => {
-                            const editar = solicitud.ESTATUS_ID == 1 ? "<a class='dropdown-item' href='javascript:;' onclick='editarSolicitud(" + solicitud.ID + ")'><i class='fa-solid fa-pen-to-square'>&nbsp;</i>Editar</a>" : ""
-                            const cancelar = solicitud.ESTATUS_ID == 1 || (solicitud.TIPO_ID == 2 && solicitud.ESTATUS_ID != 5) ? "<a class='dropdown-item text-danger delete-record' href='javascript:;' onclick='cancelarSolicitud(" + solicitud.ID + ")'><i class='fa-solid fa-trash'>&nbsp;</i>Cancelar</a>" : ""
-                            const acciones = "<button type='button' class='btn dropdown-toggle hide-arrow' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-vertical'></i></button>" +
-                                            "<div class='dropdown-menu'>" +
-                                            "<a class='dropdown-item' href='javascript:;' onclick='verSolicitud(" + solicitud.ID + ")'><i class='fa-solid fa-eye'>&nbsp;</i>Ver detalles</a>" +
-                                            (editar !== "" || cancelar !== "" ? "<hr class='dropdown-divider' />" : "") +
-                                            editar +
-                                            cancelar +
-                                            "</div>"
-
-                            const estatusBadge = "<span class='badge rounded-pill " + solicitud.ESTATUS_COLOR + "'>" + solicitud.ESTATUS_NOMBRE + "</span>"
-                            if (!resumen[solicitud.ESTATUS_ID]) {
-                                resumen[solicitud.ESTATUS_ID] = {}
-                                resumen[solicitud.ESTATUS_ID].total = 1
-                                resumen[solicitud.ESTATUS_ID].color = solicitud.ESTATUS_COLOR
-                                resumen[solicitud.ESTATUS_ID].estatus = solicitud.ESTATUS_NOMBRE
-                            }
-                            else resumen[solicitud.ESTATUS_ID].total += 1
-
-                            return [
-                                null,
-                                solicitud.ID,
-                                solicitud.TIPO_NOMBRE,
-                                solicitud.PROYECTO,
-                                moment(solicitud.REGISTRO).format(MOMENT_FRONT),
-                                numeral(solicitud.MONTO).format(NUMERAL_MONEDA),
-                                estatusBadge,
-                                acciones
-                            ]
-                        });
-
-                        actualizaDatosTabla(tabla, datos)
-                        $("#resumenSolicitudes").empty()
-                        if (datos.length === 0) {
-                            $("#resumenSolicitudes").append(getTarjetaSolicitud("text-bg-dark", "Sin solicitudes", 0))
-                        } else {
-                            Object.keys(resumen).sort((a, b) => {
-                                return a - b;
-                            }).forEach(estatusId => {
-                                const tarjeta = getTarjetaSolicitud(resumen[estatusId].color, resumen[estatusId].estatus, resumen[estatusId].total)
-                                $("#resumenSolicitudes").append(tarjeta)
-                            })
-                        }
-                    })
-                }
-
-                const getTarjetaSolicitud = (color, titulo, total) => {
-                    return "<div class='col-2'>" +
-                                    "<div class='card'>" +
-                                    "<div class='card-body'>" +
-                                    "<div class='card-info text-center'>" +
-                                    "<div class='d-flex align-items-center justify-content-between'>" +
-                                    "<span>Estatus:&nbsp;</span>" +
-                                    "<span class='badge rounded-pill " + color + "'>" + titulo + "</span>" +
-                                    "</div>" +
-                                    "<h4 class='card-title mb-0 me-2'>" + total + "</h4>" +
-                                    "</div>" +
-                                    "</div>" +
-                                    "</div>" +
-                                    "</div>"
                 }
 
                 const registraSolicitud = () => {
@@ -299,14 +311,14 @@ class Viaticos extends Controller
                         $("#montoVG").prop("disabled", false)
                         limpiaComprobantes()
                         $("#comprobantesGastos").hide()
-                        setInputFechas("#fechasNuevaSolicitud", { rango:true, max: 30, enModal: true })
+                        updateInputFechas("#fechasNuevaSolicitud", { min: 0, max: 30 })
                     } else {
                         $("#lblMontoVG").text("Monto Comprobado")
                         $("#montoVG").val("0.00")
                         $("#montoVG").prop("disabled", true)
                         $("#conceptoComprobante").val(null).trigger('change');
                         $("#comprobantesGastos").show()
-                        setInputFechas("#fechasNuevaSolicitud", { rango:true, min: 30, enModal: true })
+                        updateInputFechas("#fechasNuevaSolicitud", { min: 30, max: 0 })
                     }
                 }
 
@@ -331,7 +343,7 @@ class Viaticos extends Controller
                     fila.append("<td>" + concepto + "</td>")
                     fila.append("<td>" + moment(fechaComprobante).format(MOMENT_FRONT) + "</td>")
                     fila.append("<td>" + numeral(montoComprobante).format(NUMERAL_MONEDA) + "</td>")
-                    fila.append('<td><button type="button" class="btn btn-danger btn-sm" onclick="clickEliminaComprobante(this)"><i class="fa-solid fa-trash">&nbsp;</i>Eliminar</button></td>')
+                    fila.append('<td><button type="button" class="btn btn-danger btn-sm" onclick="clickEliminaComprobante(this)"><i class="fa fa-trash">&nbsp;</i>Eliminar</button></td>')
                     
                     $("#tablaComprobantes tbody").append(fila)
                     $("#modalAgregarComprobante").modal("hide")
@@ -395,11 +407,19 @@ class Viaticos extends Controller
                 }
 
                 const verSolicitud = (solicitudId) => {
-                    $("#modalVerSolicitud").modal("show");
-                    // consultaServidor("/viaticos/getResumenSolicitud", { solicitudId }, (respuesta) => {
-                    //     if (!respuesta.success) return showError(respuesta.mensaje);
-                    //     const resumen = respuesta
-                    // })
+                    consultaServidor("/viaticos/getResumenSolicitud", { solicitudId }, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const datos = respuesta.datos;
+                        $("#verTipoSol").val(datos.TIPO_NOMBRE)
+                        $("#verFechaReg").val(moment(datos.REGISTRO).format(MOMENT_FRONT_HORA))
+                        $("#verMontoSol").val(numeral(datos.MONTO).format(NUMERAL_MONEDA))
+                        $("#verProyecto").val(datos.PROYECTO)
+                        $("#verFechaI").val(moment(datos.FECHA_I).format(MOMENT_FRONT))
+                        $("#verFechaF").val(moment(datos.FECHA_F).format(MOMENT_FRONT))
+                        $("#verEstatus").val(datos.ESTATUS_NOMBRE)
+
+                        $("#modalVerSolicitud").modal("show")
+                    })
                 }
 
                 const cancelarSolicitud = (idSolicitud) => {
@@ -426,24 +446,24 @@ class Viaticos extends Controller
                     validacionSolicitud()
                     validacionComprobante()
 
-                    $("#btnBuscarSolicitudes").click(getSolicitudes)
-                    $("#tipoSolicitud").change(changeTipoSolicitud)
+                    $("#btnBuscarSolicitudes").on("click", getSolicitudes)
+                    $("#tipoSolicitud").on("change", changeTipoSolicitud)
                     $("#conceptoComprobante").select2({
                         dropdownParent: $('#modalAgregarComprobante'),
                         placeholder: "Seleccione un concepto",
                     })
-                    $("#conceptoComprobante").change(() => {
+                    $("#conceptoComprobante").on("change", () => {
                         const concepto = $("#conceptoComprobante").find("option:selected")
                         $("#descripcionComprobante").text(concepto.attr("lbl-desc") || "")
                     })
 
-                    $("#btnTomarFoto").click(() => {
+                    $("#btnTomarFoto").on("click", () => {
                         $("#modalTomarFoto").modal("show");
                     })
 
                     $("#modalTomarFoto").on("shown.bs.modal", iniciarCamara)
                     $("#modalTomarFoto").on("hidden.bs.modal", detenerCamara)
-                    $("#btnCapturarFoto").click(tomarFoto)
+                    $("#btnCapturarFoto").on("click", tomarFoto)
                     
                     getSolicitudes()
                 });
@@ -524,15 +544,69 @@ class Viaticos extends Controller
 
     public function getResumenSolicitud()
     {
-        // Implementar lógica para obtener el resumen de la solicitud
-        // Aquí se puede consultar la base de datos y devolver los datos necesarios
         self::respuestaJSON(ViaticosDAO::getResumenSolicitud_VG($_POST));
     }
 
     public function eliminarSolicitud()
     {
-        // Implementar lógica para eliminar una solicitud
-        // Aquí se puede consultar la base de datos y realizar la eliminación
         self::respuestaJSON(ViaticosDAO::eliminaSolicitud_VG($_POST));
+    }
+
+    public function Entrega()
+    {
+        $script = <<<HTML
+            <script>
+                const tabla = "#historialSolicitudes"
+
+                const getSolicitudes = () => {
+                    const fechas = getInputFechas("#fechasSolicitudes", true)
+
+                    const parametros = {
+                        usuario: $_SESSION[usuario_id],
+                        fechaI: fechas.inicio,
+                        fechaF: fechas.fin
+                    }
+
+                    consultaServidor("/viaticos/getSolicitudesEntrega", parametros, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const datos = respuesta.datos.map(solicitud => {
+                            const acciones = "<button type='button' class='btn dropdown-toggle hide-arrow' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-vertical'></i></button>" +
+                                            "<div class='dropdown-menu'>" +
+                                            "<a class='dropdown-item' href='javascript:;' onclick='verSolicitud(" + solicitud.ID + ")'><i class='fa fa-eye'>&nbsp;</i>Detalles</a>" +
+                                            "</div>"
+                            
+                            return [
+                                null,
+                                solicitud.ID,
+                                solicitud.TIPO_NOMBRE,
+                                solicitud.PROYECTO,
+                                moment(solicitud.REGISTRO).format(MOMENT_FRONT),
+                                numeral(solicitud.MONTO).format(NUMERAL_MONEDA),
+                                acciones
+                            ]
+                        });
+
+                        actualizaDatosTabla(tabla, datos)
+                    })
+                }
+
+                
+
+                $(document).ready(() => {
+                    setInputFechas("#fechasSolicitudes", { rango:true, inicio: -30 })
+                    configuraTabla(tabla)
+                    getSolicitudes()
+                });
+            </script>
+        HTML;
+
+        self::set("titulo", "Entrega y devolución");
+        self::set("script", $script);
+        self::render("viaticos_entrega");
+    }
+
+    public function getSolicitudesEntrega()
+    {
+        self::respuestaJSON(ViaticosDAO::getSolicitudesEntrega($_POST));
     }
 }
