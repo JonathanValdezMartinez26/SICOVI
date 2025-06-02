@@ -12,7 +12,7 @@ class Login extends Model
         $query = <<<SQL
             SELECT
                 USUARIO.ID AS USUARIO_ID
-                , GET_NOMBRE_PERSONA(USUARIO.ID) AS USUARIO_NOMBRE
+                , GET_NOMBRE_USUARIO(USUARIO.ID) AS USUARIO_NOMBRE
                 , PERFIL.ID AS PERFIL_ID
                 , PERFIL.NOMBRE AS PERFIL_NOMBRE
                 , SUCURSAL.ID AS SUCURSAL_ID

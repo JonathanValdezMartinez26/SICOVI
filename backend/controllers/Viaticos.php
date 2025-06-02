@@ -13,119 +13,88 @@ class Viaticos extends Controller
             <script>
                 const tabla = "#historialSolicitudes"
                 const comprobantesGastos = []
+                let valSolicitud = null, valComprobante = null
 
                 const validacionSolicitud = () => {
-                    const modal = $("#modalNuevaSolicitud").find(".modal-body")[0]
-                    const validacion = FormValidation.formValidation(modal, {
-                        fields: {
-                            montoVG: {
-                                validators: {
-                                    notEmpty: {
-                                        message: "Debe ingresar un monto"
-                                    },
-                                    greaterThan: {
-                                        min: 1,
-                                        message: "Debe ser mayor a 0"
-                                    }
-                                }
-                            },
-                            proyecto: {
-                                validators: {
-                                    notEmpty: {
-                                        message: "Debe ingresar el nombre del proyecto"
-                                    }
-                                }
+                    const campos = {
+                        tipoSolicitud: {
+                            notEmpty: {
+                                message: "Debe seleccionar un tipo de solicitud"
                             }
                         },
-                        plugins: {
-                            trigger: new FormValidation.plugins.Trigger(),
-                            autoFocus: new FormValidation.plugins.AutoFocus(),
-                            bootstrap5: new FormValidation.plugins.Bootstrap5({
-                                defaultMessageContainer: false,
-                            }),
-                            message: new FormValidation.plugins.Message({
-                                container: function (field, element) {
-                                    return $(element).closest(".form-group").find(".fv-message")[0];
-                                }
-                            })
+                        fechasNuevaSolicitud: {
+                            callback: {
+                                callback: (input) => {
+                                    const fechas = getInputFechas("#fechasNuevaSolicitud", true)
+                                    return fechas.inicio !== null && fechas.fin !== null ? true : false
+                                },
+                                message: "Debe seleccionar un rango de fechas"
+                            }
+                        },
+                        montoVG: {
+                            notEmpty: {
+                                message: "Debe ingresar un monto"
+                            },
+                            greaterThan: {
+                                min: 1,
+                                message: "Debe ser mayor a 0"
+                            }
+                        },
+                        proyecto: {
+                            notEmpty: {
+                                message: "Debe ingresar el nombre del proyecto"
+                            }
                         }
-                    })
+                    }
 
-                    $("#registraSolicitud").on("click", (e) => {
-                        validacion.validate().then((validacion) => {
-                            if (validacion === "Valid") registraSolicitud()
-                            else showError("Debe corregir los errores marcados antes de continuar.")
-                        })
-                    })
-
-                    $("#cancelaSolicitud").on("click", () => {
-                        validacion.resetForm(true)
-                        limpiaComprobantes()
+                    valSolicitud = setValidacionModal("#modalNuevaSolicitud", campos, "#registraSolicitud", registraSolicitud, "#cancelaSolicitud", {
+                        accionCancel: limpiaComprobantes
                     })
                 }
 
                 const validacionComprobante = () => {
-                    const modal = $("#modalAgregarComprobante").find(".modal-body")[0]
-                    const validacion = FormValidation.formValidation(modal, {
-                        fields: {
-                            comprobante: {
-                                validators: {
-                                    notEmpty: {
-                                        message: "Debe seleccionar un comprobante o tomar una foto"
-                                    },
-                                    file: {
-                                        maxSize: 5 * 1024 * 1024, // 5 MB
-                                        message: "El archivo no debe exceder 5MB"
-                                    }
-                                }
+                    const campos = {
+                        comprobante: {
+                            notEmpty: {
+                                message: "Debe seleccionar un comprobante o tomar una foto"
                             },
-                            montoComprobante: {
-                                validators: {
-                                    notEmpty: {
-                                        message: "Debe ingresar un monto"
-                                    },
-                                    greaterThan: {
-                                        min: 1,
-                                        message: "El monto debe ser mayor a 0"
-                                    }
-                                }
-                            },
-                            conceptoComprobante: {
-                                validators: {
-                                    callback: {
-                                        message: "Debe seleccionar un concepto",
-                                        callback: (input) => {
-                                            const concepto = $(modal).find("#conceptoComprobante").select2("val")
-                                            return concepto === null || concepto === "" ? false : true
-                                        }
-                                    }
-                                }
+                            file: {
+                                maxSize: 5 * 1024 * 1024, // 5 MB
+                                message: "El archivo no debe exceder 5MB"
                             }
                         },
-                        plugins: {
-                            trigger: new FormValidation.plugins.Trigger(),
-                            autoFocus: new FormValidation.plugins.AutoFocus(),
-                            bootstrap5: new FormValidation.plugins.Bootstrap5({
-                                defaultMessageContainer: false,
-                            }),
-                            message: new FormValidation.plugins.Message({
-                                container: (field, element) => {
-                                    return $(element).closest(".form-group").find(".fv-message")[0];
-                                }
-                            })
+                        fechaComprobante: {
+                            notEmpty: {
+                                message: "Debe ingresar una fecha"
+                            },
+                        },
+                        montoComprobante: {
+                            notEmpty: {
+                                message: "Debe ingresar un monto"
+                            },
+                            greaterThan: {
+                                min: 1,
+                                message: "El monto debe ser mayor a 0"
+                            }
+                        },
+                        conceptoComprobante: {
+                            callback: {
+                                callback: (input) => {
+                                    const concepto = $("#conceptoComprobante").select2("val")
+                                    return concepto === null || concepto === "" ? false : true
+                                },
+                                message: "Debe seleccionar un concepto"
+                            }
+                        },
+                        observacionesComprobante: {
+                            stringLength: {
+                                max: 500,
+                                message: "Las observaciones no deben exceder los 500 caracteres"
+                            }
                         }
-                    })
+                    }
 
-                    $("#agregarComprobante").on("click", (e) => {
-                        validacion.validate().then((validacion) => {
-                            if (validacion === "Valid") clickAgregarComprobante()
-                            else showError("Debe corregir los errores marcados antes de continuar.")
-                        })
-                    })
-
-                    $("#cancelarComprobante").on("click", () => {
-                        validacion.resetForm(true)
-                    })
+                    valComprobante = setValidacionModal("#modalAgregarComprobante", campos, "#agregarComprobante", agregarComprobante,"#cancelaComprobante")
                 }
 
                 const getParametros = () => {
@@ -157,41 +126,87 @@ class Viaticos extends Controller
                     }
 
                     consultaServidor("/viaticos/getSolicitudesUsuario", parametros, (respuesta) => {
-                        if (!respuesta.success) return showError(respuesta.mensaje)
-                        const estatus = {
-                            "1": "warning",
-                            "2": "success",
-                            "3": "danger",
-                            "4": "secondary"
-                        }
-
+                        if (!respuesta.success) return showError(respuesta.mensaje)                        
+                        const resumen = {}
                         const datos = respuesta.datos.map(solicitud => {
+                            const editar = solicitud.ESTATUS_ID == 1 ? "<a class='dropdown-item' href='javascript:;' onclick='editarSolicitud(" + solicitud.ID + ")'><i class='fa-solid fa-pen-to-square'>&nbsp;</i>Editar</a>" : ""
+                            const cancelar = solicitud.ESTATUS_ID == 1 || (solicitud.TIPO_ID == 2 && solicitud.ESTATUS_ID != 5) ? "<a class='dropdown-item text-danger delete-record' href='javascript:;' onclick='cancelarSolicitud(" + solicitud.ID + ")'><i class='fa-solid fa-trash'>&nbsp;</i>Cancelar</a>" : ""
+                            const acciones = "<button type='button' class='btn dropdown-toggle hide-arrow' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-vertical'></i></button>" +
+                                            "<div class='dropdown-menu'>" +
+                                            "<a class='dropdown-item' href='javascript:;' onclick='verSolicitud(" + solicitud.ID + ")'><i class='fa-solid fa-eye'>&nbsp;</i>Ver detalles</a>" +
+                                            (editar !== "" || cancelar !== "" ? "<hr class='dropdown-divider' />" : "") +
+                                            editar +
+                                            cancelar +
+                                            "</div>"
+
+                            const estatusBadge = "<span class='badge rounded-pill " + solicitud.ESTATUS_COLOR + "'>" + solicitud.ESTATUS_NOMBRE + "</span>"
+                            if (!resumen[solicitud.ESTATUS_ID]) {
+                                resumen[solicitud.ESTATUS_ID] = {}
+                                resumen[solicitud.ESTATUS_ID].total = 1
+                                resumen[solicitud.ESTATUS_ID].color = solicitud.ESTATUS_COLOR
+                                resumen[solicitud.ESTATUS_ID].estatus = solicitud.ESTATUS_NOMBRE
+                            }
+                            else resumen[solicitud.ESTATUS_ID].total += 1
+
                             return [
+                                null,
                                 solicitud.ID,
                                 solicitud.TIPO_NOMBRE,
                                 solicitud.PROYECTO,
                                 moment(solicitud.REGISTRO).format(MOMENT_FRONT),
                                 numeral(solicitud.MONTO).format(NUMERAL_MONEDA),
-                                "<span class='badge rounded-pill bg-label-" + estatus[solicitud.ESTATUS_ID] + "'>" + solicitud.ESTATUS + "</span>",
-                                "<button type='button' class='btn btn-primary btn-sm' onclick='verDetalles(" + solicitud.ID + ")'><i class='fa-solid fa-eye'>&nbsp;</i>Ver Detalles</button>"
+                                estatusBadge,
+                                acciones
                             ]
-
                         });
 
                         actualizaDatosTabla(tabla, datos)
+                        $("#resumenSolicitudes").empty()
+                        if (datos.length === 0) {
+                            $("#resumenSolicitudes").append(getTarjetaSolicitud("text-bg-dark", "Sin solicitudes", 0))
+                        } else {
+                            Object.keys(resumen).sort((a, b) => {
+                                return a - b;
+                            }).forEach(estatusId => {
+                                const tarjeta = getTarjetaSolicitud(resumen[estatusId].color, resumen[estatusId].estatus, resumen[estatusId].total)
+                                $("#resumenSolicitudes").append(tarjeta)
+                            })
+                        }
                     })
                 }
 
-                const registraSolicitud = () => {
-                    const datos = getParametros()
-                    if (!datos) return
-                    $("#registraSolicitud").attr("disabled", true)
+                const getTarjetaSolicitud = (color, titulo, total) => {
+                    return "<div class='col-2'>" +
+                                    "<div class='card'>" +
+                                    "<div class='card-body'>" +
+                                    "<div class='card-info text-center'>" +
+                                    "<div class='d-flex align-items-center justify-content-between'>" +
+                                    "<span>Estatus:&nbsp;</span>" +
+                                    "<span class='badge rounded-pill " + color + "'>" + titulo + "</span>" +
+                                    "</div>" +
+                                    "<h4 class='card-title mb-0 me-2'>" + total + "</h4>" +
+                                    "</div>" +
+                                    "</div>" +
+                                    "</div>" +
+                                    "</div>"
+                }
 
-                    if (datos.tipo === "1") {
-                        registraViaticos(datos)
-                    } else {
-                        registraGastos(datos)
-                    }
+                const registraSolicitud = () => {
+                    confirmarMovimiento("¿Está seguro de registrar la solicitud?").then((continuar) => {
+                        if (continuar.isConfirmed) {
+                            const datos = getParametros()
+                            if (!datos) return
+                            $("#registraSolicitud").attr("disabled", true)
+        
+                            if (datos.tipo === "1") {
+                                registraViaticos(datos)
+                            } else {
+                                registraGastos(datos)
+                            }
+                        } else {
+                            $("#registraSolicitud").attr("disabled", false)
+                        }
+                    })
                 }
 
                 const registraViaticos = (datos) => {
@@ -295,7 +310,7 @@ class Viaticos extends Controller
                     }
                 }
 
-                const clickAgregarComprobante = () => {
+                const agregarComprobante = () => {
                     const comprobante = $("#comprobante")[0].files[0]
                     const concepto_id = $("#conceptoComprobante").val()
                     const concepto = $("#conceptoComprobante option:selected").text()
@@ -310,7 +325,7 @@ class Viaticos extends Controller
                         monto: montoComprobante,
                         observaciones
                     })
-                    $("#montoVG").val(numeral($("#montoVG").val()).add(montoComprobante).value())
+                    $("#montoVG").val(numeral($("#montoVG").val()).add(montoComprobante).format(NUMERAL_DECIMAL))
 
                     const fila = $("<tr></tr>")
                     fila.append("<td>" + concepto + "</td>")
@@ -325,11 +340,11 @@ class Viaticos extends Controller
                 const clickEliminaComprobante = (btn) => {
                     const fila = $(btn).closest("tr")
                     const archivo = fila.find("td").eq(0).text().trim()
-                    const monto = numeral(fila.find("td").eq(1).text().trim()).value()
+                    const monto = numeral(fila.find("td").eq(2).text().trim()).value()
                     fila.remove()
 
                     comprobantesGastos.splice(comprobantesGastos.findIndex(c => c.name === archivo), 1)
-                    $("#montoVG").val(numeral($("#montoVG").val()).subtract(monto).value())
+                    $("#montoVG").val(numeral($("#montoVG").val()).subtract(monto).format(NUMERAL_DECIMAL))
                 }
 
                 const iniciarCamara = () => {
@@ -379,8 +394,29 @@ class Viaticos extends Controller
                     }
                 }
 
+                const verSolicitud = (solicitudId) => {
+                    $("#modalVerSolicitud").modal("show");
+                    // consultaServidor("/viaticos/getResumenSolicitud", { solicitudId }, (respuesta) => {
+                    //     if (!respuesta.success) return showError(respuesta.mensaje);
+                    //     const resumen = respuesta
+                    // })
+                }
+
+                const cancelarSolicitud = (idSolicitud) => {
+                    confirmarMovimiento("¿Desea eliminar la solicitud?").then((continuar) => {
+                        if (continuar.isConfirmed) {
+                            consultaServidor("/viaticos/eliminarSolicitud", { idSolicitud }, (respuesta) => {
+                                if (!respuesta.success) return showError(respuesta.mensaje);
+                                showSuccess("Solicitud eliminada correctamente").then(() => {
+                                    getSolicitudes();
+                                });
+                            });
+                        }
+                    });
+                }
+
                 $(document).ready(() => {
-                    setInputFechas("#fechasSolicitudes", { rango:true, diasAntes: 30 })
+                    setInputFechas("#fechasSolicitudes", { rango:true, inicio: -30 })
                     setInputFechas("#fechasNuevaSolicitud", { rango:true, min: 0, max: 30, enModal: true })
                     setInputFechas("#fechaComprobante", { min: 30, max: 0, enModal: true })
                     setInputMoneda("#montoVG, #montoComprobante")
@@ -484,5 +520,19 @@ class Viaticos extends Controller
         }
 
         self::respuestaJSON($resultado);
+    }
+
+    public function getResumenSolicitud()
+    {
+        // Implementar lógica para obtener el resumen de la solicitud
+        // Aquí se puede consultar la base de datos y devolver los datos necesarios
+        self::respuestaJSON(ViaticosDAO::getResumenSolicitud_VG($_POST));
+    }
+
+    public function eliminarSolicitud()
+    {
+        // Implementar lógica para eliminar una solicitud
+        // Aquí se puede consultar la base de datos y realizar la eliminación
+        self::respuestaJSON(ViaticosDAO::eliminaSolicitud_VG($_POST));
     }
 }

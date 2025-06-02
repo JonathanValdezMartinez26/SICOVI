@@ -22,7 +22,8 @@ class Viaticos extends Model
                 , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD') AS REGISTRO
                 , V.MONTO
                 , CEV.ID AS ESTATUS_ID
-                , CEV.NOMBRE AS ESTATUS
+                , CEV.NOMBRE AS ESTATUS_NOMBRE
+                , CEV.CLASE_FRONT AS ESTATUS_COLOR
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_ESTATUS_VIATICOS CEV ON CEV.ID = V.ESTATUS
@@ -43,6 +44,54 @@ class Viaticos extends Model
             $db = new Database();
             $r = $db->queryAll($query, $params);
             return self::resultado(true, 'Solicitudes encontradas.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function getResumenSolicitud_VG($datos)
+    {
+        $query = <<<SQL
+            SELECT
+                V.ID
+                , V.TIPO AS TIPO_ID
+                , CASE 
+                    WHEN V.TIPO = 1 THEN 'Viáticos'
+                    WHEN V.TIPO = 2 THEN 'Gastos'
+                    ELSE 'Desconocido'
+                END AS TIPO_NOMBRE
+                , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD HH24:MI:SS') AS REGISTRO
+                , V.PROYECTO
+                , TO_CHAR(V.DESDE, 'YYYY-MM-DD') AS DESDE
+                , TO_CHAR(V.HASTA, 'YYYY-MM-DD') AS HASTA
+                , V.MONTO
+                , V.AUTORIZACION_FECHA
+                , V.AUTORIZACION_USUARIO
+                , GET_NOMBRE_USUARIO(V.AUTORIZACION_USUARIO) AS AUTORIZACION_NOMBRE
+                , V.ENTREGA_FECHA
+                , CASE
+                    WHEN V.ENTREGA_FECHA IS NULL THEN NULL
+                    ELSE CME.NOMBRE
+                END AS METODO_ENTREGA
+                , V.ENTREGA_MONTO
+                , V.COMPROBACION_LIMITE AS FECHA_LIMITE
+                , V.COMPROBACION_MONTO
+            FROM
+                VIATICOS V
+                LEFT JOIN CAT_METODO_ENTREGA CME ON CME.ID = V.ENTREGA_METODO
+            WHERE
+                V.ID = :id
+        SQL;
+
+        $params = [
+            'id' => $datos['id']
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryOne($query, $params);
+            if (!$r) return self::resultado(false, 'No se encontró la solicitud.');
+            return self::resultado(true, 'Solicitud encontrada.', $r);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
         }
@@ -77,8 +126,8 @@ class Viaticos extends Model
     public static function registraSolicitud_G($datos, $comprobantes = null)
     {
         $queryV = <<<SQL
-            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, DESDE, HASTA, MONTO)
-            VALUES (:tipo, :usuario, :proyecto, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto)
+            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, ESTATUS, DESDE, HASTA, MONTO)
+            VALUES (:tipo, :usuario, :proyecto, :estatus, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto)
             RETURNING ID INTO :id
         SQL;
 
@@ -88,8 +137,10 @@ class Viaticos extends Model
             'fechaI' => $datos['fechaI'],
             'fechaF' => $datos['fechaF'],
             'monto' => $datos['monto'],
-            'usuario' => $datos['usuario']
+            'usuario' => $datos['usuario'],
+            'estatus' => $datos['tipo'] === 1 ? 1 : 4
         ];
+
 
         $returningV = [
             'id' => [
@@ -140,6 +191,31 @@ class Viaticos extends Model
         } catch (\Exception $e) {
             $db->rollback();
             return self::resultado(false, 'Error al registrar la solicitud de gastos.', null, $e->getMessage());
+        }
+    }
+
+    public static function eliminaSolicitud_VG($datos)
+    {
+        $query = <<<SQL
+            UPDATE
+                VIATICOS
+            SET
+                ESTATUS = 7
+            WHERE
+                ID = :id
+        SQL;
+
+        $params = [
+            'id' => $datos['idSolicitud']
+        ];
+
+        try {
+            $db = new Database();
+            $result = $db->CRUD($query, $params);
+            if ($result < 1) return self::resultado(false, 'No se encontró la solicitud a eliminar.');
+            return self::resultado(true, 'Solicitud eliminada correctamente.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al eliminar la solicitud.', null, $e->getMessage());
         }
     }
 }

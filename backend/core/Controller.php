@@ -27,17 +27,10 @@ class Controller
     public static function respuestaJSON($informacion)
     {
         header('Content-Type: application/json');
-        if (!isset($informacion['success']) && isset($informacion['error'])) header('HTTP/1.0 500 Error en la consulta');
+        if (!isset($informacion['success']) && isset($informacion['error'])) header('HTTP/1.0 500');
+
         echo json_encode($informacion);
         exit;
-    }
-
-    private function compruebaArchivo($archivo)
-    {
-        if (!file_exists(VISTAS . "/$archivo.php")) {
-            header('Location: /' . VISTA_DEFECTO);
-            exit;
-        }
     }
 
     public function set($variable, $valor)
@@ -47,7 +40,10 @@ class Controller
 
     public function render($archivo, $template = false)
     {
-        self::compruebaArchivo($archivo);
+        if (!file_exists(VISTAS . "/$archivo.php")) {
+            header('Location: /' . VISTA_DEFECTO);
+            exit;
+        }
 
         ob_start();
         extract($this->datos);

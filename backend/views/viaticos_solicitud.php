@@ -1,5 +1,7 @@
 <h4>Mis Solicitudes de Viáticos y Gastos</h4>
 
+<div id="resumenSolicitudes" class="row mb-5 g-2"></div>
+
 <div class="card">
     <div class="row justify-content-between m-4">
         <div class="col-4">
@@ -15,10 +17,11 @@
         </div>
     </div>
 
-    <div class="card-datatable pt-0">
-        <table id="historialSolicitudes" class="table table-bordered datatables-basic">
+    <div class="card-datatable table-responsive">
+        <table id="historialSolicitudes" class="dt-responsive table border-top">
             <thead>
                 <tr>
+                    <th></th>
                     <th>ID</th>
                     <th>Tipo</th>
                     <th>Proyecto</th>
@@ -49,25 +52,27 @@
                 <div class="row">
                     <div class="form-group col-4">
                         <label for="tipoSolicitud" class="form-label">Tipo</label>
-                        <select class="form-select" id="tipoSolicitud">
+                        <select class="form-select" id="tipoSolicitud" name="tipoSolicitud">
                             <option value="1">Viáticos (por comprobar)</option>
                             <option value="2">Gastos (reembolso)</option>
                         </select>
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                     <div class="form-group col-5">
                         <label for="fechasNuevaSolicitud" class="form-label">Rango de fechas</label>
                         <div class="input-group input-group-merge cursor-pointer">
                             <input type="text" id="fechasNuevaSolicitud" name="fechasNuevaSolicitud" class="form-control cursor-pointer" readonly>
                             <span class="input-group-text">
-                                <i class="icon-base fa fa-calendar-days"></i>
+                                <i class="fa fa-calendar-days"></i>
                             </span>
                         </div>
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                     <div class="form-group col-3">
-                        <label id="lblMontoVG" for="montoVG" class="form-label">Monto Solicitado</label>
+                        <label id="lblMontoVG" for="montoVG" class="form-label numeral-input">Monto Solicitado</label>
                         <div class="input-group input-group-merge">
                             <span class="input-group-text">
-                                <i class="icon-base fa fa-dollar-sign"></i>
+                                <i class="fa fa-dollar-sign"></i>
                             </span>
                             <input type="text" id="montoVG" name="montoVG" class="form-control" placeholder="0.00">
                         </div>
@@ -75,14 +80,14 @@
                     </div>
                     <div class="form-group col-12">
                         <label for="proyecto" class="form-label">Proyecto</label>
-                        <input type="text" id="proyecto" name="proyecto" class="form-control" placeholder="Proyecto o actividad a cubrir. Ej.: Capacitación en corporativo el día..." maxlength="100">
+                        <input type="text" id="proyecto" name="proyecto" class="form-control" placeholder="Proyecto o actividad a cubrir. Ej.: Capacitación en corporativo el día..." maxlength="500">
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                 </div>
-                <div class="row">
-                    <div id="comprobantesGastos" class="row mt-5" style="display: none;">
-                        <div class="col-12">
-                            <h5 class="text-center">Comprobantes de Gastos</h5>
+                <div id="comprobantesGastos" class="row" style="display: none;">
+                    <div class="col-12">
+                        <h5 class="text-center">Comprobantes de Gastos</h5>
+                        <div class="table-responsive text-nowrap">
                             <table id="tablaComprobantes" class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
@@ -165,20 +170,21 @@
                         </select>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
-                    <div class="form-group col-2 text-center">
+                    <div class="form-group col-12 text-center">
                         <label for="conceptoComprobante" class="form-label">Descripción</label>
                     </div>
-                    <div class="form-group col-10">
-                        <label id="descripcionComprobante" class="form-label"></label>
+                    <div class="form-group col-12 text-center">
+                        <label id="descripcionComprobante" class="text-info" style="min-height: 1.5rem"></label>
                     </div>
                     <div class="form-group col-12">
                         <label for="observacionesComprobante" class="form-label">Observaciones</label>
-                        <textarea id="observacionesComprobante" class="form-control" placeholder="Observaciones del gasto. Ej.: Se compro material para el evento..." rows="3" maxlength="500"></textarea>
+                        <textarea id="observacionesComprobante" name="observacionesComprobante" class="form-control" placeholder="Observaciones del gasto. Ej.: Se compro material para el evento..." rows="3" maxlength="500"></textarea>
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
+                <button type="button" id="cancelaComprobante" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
                 <button type="button" id="agregarComprobante" class="btn btn-primary">Agregar Comprobante</button>
             </div>
         </div>
@@ -210,3 +216,47 @@
     </div>
 </div>
 <!-- / Modal para tomar foto -->
+
+<!-- Modal para ver solicitud -->
+<div class="modal fade" id="modalVerSolicitud" tabindex="-1" aria-hidden="true" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center w-100">
+                    <h4 class="address-title mb-2">Detalles de la Solicitud</h4>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                </div>
+                <div class="row">
+                    <div class="form-group col-12 text-center">
+                        <label class="form-label">Comprobantes registrados</label>
+                    </div>
+                    <div class="col-12">
+                        <div class="table-responsive text-nowrap">
+                            <table id="tablaComprobantesSolicitud" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha Registro</th>
+                                        <th>Concepto</th>
+                                        <th>Monto</th>
+                                        <th>Archivo</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyComprobantesSolicitud">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- / Modal para ver solicitud -->

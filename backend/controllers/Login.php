@@ -22,7 +22,6 @@ class Login extends Controller
                         type: "POST",
                         data: datos,
                         success: (respuesta) => {
-                            respuesta = JSON.parse(respuesta)
                             if (respuesta.success) window.location.href = respuesta.datos.url
                             else {
                                 showError(respuesta.mensaje)
@@ -135,7 +134,7 @@ class Login extends Controller
             ]);
         }
 
-        echo json_encode($respuesta);
+        self::respuestaJSON($respuesta);
     }
 
     public function cerrarSesion()

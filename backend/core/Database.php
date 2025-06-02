@@ -21,7 +21,7 @@ class Database
         try {
             $this->db = new PDO($cadena, $usuario, $password);
         } catch (\PDOException $e) {
-            self::baseNoDisponible("{$e->getMessage()}\nDatos de conexión: $cadena"); //\nUsuario: $usuario\nPassword: $password");
+            self::baseNoDisponible("{$e->getMessage()}\nDatos de conexión: $cadena");
             $this->db = null;
         }
     }
@@ -85,7 +85,6 @@ class Database
 
         if ($sql != null) $error .= "Query: $sql\n";
         if ($valores != null) $error .= 'Datos: ' . print_r($valores, 1);
-        //echo $error . "\n";
         return $error;
     }
 

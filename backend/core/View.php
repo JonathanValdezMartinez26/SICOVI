@@ -18,16 +18,6 @@ function getMenu()
                     'label' => 'Entrega',
                     'url' => 'app-viaticos-aprobaciones.html',
                     'permisos' => ['1', '2']
-                ],
-                [
-                    'label' => 'Comprobación',
-                    'url' => 'app-viaticos-reportes.html',
-                    'permisos' => ['1', '2']
-                ],
-                [
-                    'label' => 'Administración',
-                    'url' => 'app-viaticos-solicitudes.html',
-                    'permisos' => ['1', '2']
                 ]
             ]
         ],
@@ -311,6 +301,7 @@ function getMenu()
     <script src="/assets/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
     <script src="/assets/vendor/libs/bs-stepper/bs-stepper.js"></script>
     <script src="/assets/vendor/libs/chartjs/chartjs.js"></script>
+    <script src="/assets/vendor/libs/cleave-zen/cleave-zen.js"></script>
     <script src="/assets/vendor/libs/clipboard/clipboard.js"></script>
     <script src="/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
     <script src="/assets/vendor/libs/dropzone/dropzone.js"></script>
