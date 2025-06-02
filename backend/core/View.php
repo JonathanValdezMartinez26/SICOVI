@@ -6,7 +6,7 @@ $usuario = $_SESSION['nombre'] ?? 'Usuario';
 function getMenu()
 {
     $menuItems = [
-        'Viáticos y Gastos' => [
+        'Mis Viáticos y Gastos' => [
             'icono' => 'fa-solid fa-plane-departure',
             'subItems' => [
                 [
@@ -21,7 +21,7 @@ function getMenu()
                 ]
             ]
         ],
-        'Administración' => [
+        'Tesorería' => [
             'icono' => 'fa-solid fa-screwdriver-wrench',
             'subItems' => [
                 [
@@ -38,9 +38,26 @@ function getMenu()
                     'label' => 'Pendientes de Pago',
                     'url' => 'app-viaticos-dashboard.html',
                     'permisos' => ['1', '2']
-                ],
+                ]
+
+
+            ]
+        ],
+        'Configuración' => [
+            'icono' => 'fa-solid fa-cog',
+            'subItems' => [
                 [
                     'label' => 'Usuarios',
+                    'url' => 'app-viaticos-dashboard.html',
+                    'permisos' => ['1', '2']
+                ],
+                [
+                    'label' => 'Empresas',
+                    'url' => 'app-viaticos-dashboard.html',
+                    'permisos' => ['1', '2']
+                ],
+                [
+                    'label' => 'Sucursales',
                     'url' => 'app-viaticos-dashboard.html',
                     'permisos' => ['1', '2']
                 ]
