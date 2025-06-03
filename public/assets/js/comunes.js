@@ -229,8 +229,25 @@ const buscarEnTabla = (selector, columna, texto) => {
  */
 const setInputFechas = (
     selector,
-    { rango = false, inicio = 0, fin = 0, min = -1, max = -1, enModal = false } = {}
+    {
+        iniF = null,
+        finF = null,
+        iniD = null,
+        finD = null,
+        minF = null,
+        maxF = null,
+        minD = null,
+        maxD = null,
+        rango = false,
+        enModal = false
+    } = {}
 ) => {
+    const ini = iniF ? moment(iniF, MOMENT_FRONT) : moment().add(iniD, "days")
+    let fin = finF ? moment(finF, MOMENT_FRONT) : moment().add(finD, "days")
+    const min = minF ? moment(minF, MOMENT_FRONT) : moment().add(minD, "days")
+    const max = maxF ? moment(maxF, MOMENT_FRONT) : moment().add(maxD, "days")
+    if (!rango) fin = null
+
     const config = {
         locale: {
             format: MOMENT_FRONT,
@@ -245,16 +262,16 @@ const setInputFechas = (
         showDropdowns: true,
         singleDatePicker: !rango,
         autoApply: true,
-        minYear: 2025,
-        minDate: moment("01/01/2025", MOMENT_FRONT).format(MOMENT_FRONT),
-        maxYear: moment().add(1, "years").year(),
-        maxDate: moment().add(1, "year").endOf("year").format(MOMENT_FRONT),
-        startDate: moment().add(inicio, "days").format(MOMENT_FRONT),
-        endDate: moment().add(fin, "days").format(MOMENT_FRONT)
+        // minYear: 2025,
+        minDate: moment("01/01/2025", MOMENT_FRONT),
+        // maxYear: moment().add(1, "years").year(),
+        maxDate: moment().add(1, "year").endOf("year"),
+        startDate: ini,
+        endDate: fin
     }
 
-    if (min >= 0) config.minDate = moment().subtract(min, "days").format(MOMENT_FRONT)
-    if (max >= 0) config.maxDate = moment().add(max, "days").format(MOMENT_FRONT)
+    if (minF !== null || minD !== null) config.minDate = min
+    if (maxF !== null || maxD !== null) config.maxDate = max
     if (enModal) config.parentEl = $(selector).closest(".modal-content")[0]
 
     $(selector).daterangepicker(config)
@@ -275,18 +292,33 @@ const getInputFechas = (selector, rango = false, paraBack = true) => {
     return { inicio, fin }
 }
 
-const updateInputFechas = (selector, { inicio = null, fin = null, min = -1, max = -1 } = {}) => {
+const updateInputFechas = (
+    selector,
+    {
+        iniF = null,
+        finF = null,
+        iniD = null,
+        finD = null,
+        minF = null,
+        maxF = null,
+        minD = null,
+        maxD = null
+    } = {}
+) => {
     const fecha = $(selector).data("daterangepicker")
     if (!fecha) return
 
-    inicio = fecha.startDate || inicio
-    fin = fecha.endDate || fin
+    const ini = iniF ? moment(iniF, MOMENT_FRONT) : moment().add(iniD, "days")
+    const fin = finF ? moment(finF, MOMENT_FRONT) : moment().add(finD, "days")
+    const min = minF ? moment(minF, MOMENT_FRONT) : moment().add(minD, "days")
+    const max = maxF ? moment(maxF, MOMENT_FRONT) : moment().add(maxD, "days")
 
-    if (min >= 0) fecha.minDate = moment().subtract(min, "days")
-    if (max >= 0) fecha.maxDate = moment().add(max, "days")
+    if (minF !== null || minD !== null) fecha.minDate = min
+    if (maxF !== null || maxD !== null) fecha.maxDate = max
 
-    fecha.setStartDate(inicio)
-    fecha.setEndDate(fin)
+    fecha.setStartDate(iniF !== null || iniD !== null ? ini : inputFechasRestart[selector].inicio)
+    if (fecha.singleDatePicker) fecha.setEndDate(fecha.startDate)
+    else fecha.setEndDate(finF !== null || finD !== null ? fin : inputFechasRestart[selector].fin)
 
     inputFechasRestart[selector] = {
         inicio: fecha.startDate,
@@ -358,7 +390,6 @@ const setValidacionModal = (
         validador.validate().then((validacion) => {
             if (validacion === "Valid") {
                 if (accionVal) accionVal()
-                limpiarCampos(true)
             } else showError("Debe corregir los errores marcados antes de continuar.")
         })
     })
@@ -366,25 +397,24 @@ const setValidacionModal = (
     const cancelar = btnCancel ? `, ${selector} ${btnCancel}` : ""
     $(`${selector} .btn-close ${cancelar}`).on("click", () => {
         if (accionCancel) accionCancel()
-        limpiarCampos(limpiar)
+        resetValidacion(validador, limpiar)
     })
 
-    const limpiarCampos = (reset) => {
-        validador.resetForm(reset)
-        const campos = validador.getFields()
-        Object.keys(campos).forEach((campo) => {
-            const elemento = $(selector).find(`[name="${campo}"]`)
-            if ($(elemento).hasClass("select2-hidden-accessible")) {
-                $(elemento).val(null).trigger("change")
-            } else if ($(elemento).data("daterangepicker")) {
-                const fechasIniciales = inputFechasRestart["#" + $(elemento).attr("id")]
-                if (fechasIniciales) {
-                    $(elemento).data("daterangepicker").setStartDate(fechasIniciales.inicio)
-                    $(elemento).data("daterangepicker").setEndDate(fechasIniciales.fin)
-                }
-            }
-        })
-    }
-
     return validador
+}
+
+const resetValidacion = (validador, reset) => {
+    validador.resetForm(reset)
+    Object.keys(validador.elements).forEach((element) => {
+        const elemento = validador.elements[element]
+        if ($(elemento).hasClass("select2-hidden-accessible")) {
+            $(elemento).val(null).trigger("change")
+        } else if ($(elemento).data("daterangepicker")) {
+            const fechasIniciales = inputFechasRestart["#" + $(elemento).attr("id")]
+            if (fechasIniciales) {
+                $(elemento).data("daterangepicker").setStartDate(fechasIniciales.inicio)
+                $(elemento).data("daterangepicker").setEndDate(fechasIniciales.fin)
+            }
+        }
+    })
 }
