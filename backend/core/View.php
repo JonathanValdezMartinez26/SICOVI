@@ -53,7 +53,7 @@ function getMenu()
                 ],
                 [
                     'label' => 'Empresas',
-                    'url' => 'app-viaticos-dashboard.html',
+                    'url' => '/empresas/existentes/',
                     'permisos' => ['1', '2']
                 ],
                 [

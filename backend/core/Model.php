@@ -27,4 +27,5 @@ class Model
             return self::resultado(false, 'Error al obtener los conceptos de viáticos.', null, $e->getMessage());
         }
     }
+
 }
