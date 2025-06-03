@@ -102,7 +102,7 @@
                                 <tfoot>
                                     <tr>
                                         <td colspan="4" class="text-center">
-                                            <button type="button" id="btnAgregarComprobante" class="btn btn-success btn-sm">
+                                            <button type="button" id="btnAgregarComprobanteGastos" class="btn btn-success btn-sm">
                                                 <i class="fa fa-plus">&nbsp;</i>Agregar
                                             </button>
                                         </td>
@@ -113,7 +113,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="modal-footer">
                 <button type="button" id="cancelaSolicitud" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
                 <button type="button" id="registraSolicitud" class="btn btn-primary">Guardar</button>
@@ -237,7 +236,7 @@
                                 data-bs-toggle="collapse"
                                 data-bs-target="#acordionVerSolicitud"
                                 aria-expanded="true">
-                                <i class="fa fa-circle-info">&nbsp;</i>
+                                <i class="fa fa-circle-info text-success">&nbsp;</i>
                                 Solicitud
                             </button>
                         </h2>
@@ -284,7 +283,8 @@
                                 data-bs-toggle="collapse"
                                 data-bs-target="#acordionVerAutorizacion"
                                 aria-expanded="false">
-                                <i class="fa fa-circle-check">&nbsp;</i>
+                                <i class="fa fa-hourglass-start text-warning verAutorizacionIcono">&nbsp;</i>
+                                <i class="fa fa-circle-check text-success verAutorizacionIcono">&nbsp;</i>
                                 Autorización
                             </button>
                         </h2>
@@ -292,12 +292,12 @@
                             <div class="accordion-body">
                                 <div class="row">
                                     <div class="form-group col-4">
-                                        <label class="form-label">Fecha</label>
-                                        <input type="text" id="verFechaAutorizacion" class="form-control" readonly>
-                                    </div>
-                                    <div class="form-group col-4">
                                         <label class="form-label">Autorizado por</label>
                                         <input type="text" id="verAutorizadoPor" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Fecha</label>
+                                        <input type="text" id="verFechaAutorizacion" class="form-control" readonly>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Monto autorizado</label>
@@ -315,7 +315,8 @@
                                 data-bs-toggle="collapse"
                                 data-bs-target="#acordionVerEntregado"
                                 aria-expanded="false">
-                                <i class="fa fa-sack-dollar">&nbsp;</i>
+                                <i class="fa fa-hourglass-start text-warning verEntregaIcono">&nbsp;</i>
+                                <i class="fa fa-sack-dollar text-success verEntregaIcono">&nbsp;</i>
                                 Entrega
                             </button>
                         </h2>
@@ -323,12 +324,12 @@
                             <div class="accordion-body">
                                 <div class="row">
                                     <div class="form-group col-4">
-                                        <label class="form-label">Fecha</label>
-                                        <input type="text" id="verFechaEntrega" class="form-control" readonly>
-                                    </div>
-                                    <div class="form-group col-4">
                                         <label class="form-label">Entregado por</label>
                                         <input type="text" id="verEntregadoPor" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Fecha</label>
+                                        <input type="text" id="verFechaEntrega" class="form-control" readonly>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Monto entregado</label>
@@ -346,12 +347,30 @@
                                 data-bs-toggle="collapse"
                                 data-bs-target="#acordionVerComprobantes"
                                 aria-expanded="false">
-                                <i class="fa fa-receipt">&nbsp;</i>
+                                <i class="fa fa-receipt text-info verComprobacionIcono">&nbsp;</i>
                                 Comprobantes
                             </button>
                         </h2>
                         <div id="acordionVerComprobantes" class="accordion-collapse collapse" data-bs-parent="#acordionVer">
                             <div class="accordion-body">
+                                <div class="row">
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Fecha limite para registro</label>
+                                        <input type="text" id="verFechaLimite" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Tiempo restante</label>
+                                        <input type="text" id="verTiempoRestante" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <button type="button" id="btnCapturaComprobanteViaticos" class="btn btn-primary"><i class="fa fa-plus">&nbsp;</i>Registrar Comprobante</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="form-group col-12 text-center">
+                                        <h3>Comprobantes registrados</h3>
+                                    </div>
+                                </div>
                                 <div class="table-responsive text-nowrap">
                                     <table id="tablaComprobantesSolicitud" class="table table-bordered table-striped">
                                         <thead>

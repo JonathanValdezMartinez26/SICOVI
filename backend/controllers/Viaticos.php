@@ -192,14 +192,16 @@ class Viaticos extends Controller
                     const fechaI = fechas.inicio
                     const fechaF = fechas.fin
                     const monto = numeral($("#montoVG").val()).value()
-
+                    const limite = tipo === "1" ? moment(fechaF, MOMENT_BACK).add(3, 'days').format(MOMENT_BACK) : moment().format(MOMENT_BACK)
+                            
                     return {
                         usuario: $_SESSION[usuario_id],
                         tipo,
                         proyecto,
                         fechaI,
                         fechaF,
-                        monto
+                        monto,
+                        limite
                     }
                 }
 
@@ -209,74 +211,43 @@ class Viaticos extends Controller
                             const datos = getParametros()
                             if (!datos) return
                             $("#registraSolicitud").attr("disabled", true)
-        
-                            if (datos.tipo === "1") {
-                                registraViaticos(datos)
-                            } else {
-                                registraGastos(datos)
-                            }
+                            
+                            const formData = new FormData()
+                            formData.append("usuario", datos.usuario)
+                            formData.append("tipo", datos.tipo)
+                            formData.append("proyecto", datos.proyecto)
+                            formData.append("fechaI", datos.fechaI)
+                            formData.append("fechaF", datos.fechaF)
+                            formData.append("monto", datos.monto)
+                            formData.append("limite", datos.limite)
+                            
+                            comprobantesGastos.forEach((comprobante) => {
+                                formData.append("comprobante[]", comprobante.comprobante)
+                                formData.append("conceptoComprobante[]", comprobante.concepto)
+                                formData.append("fechaComprobante[]", comprobante.fecha)
+                                formData.append("montoComprobante[]", comprobante.monto)
+                                formData.append("observacionesComprobante[]", comprobante.observaciones)
+                            })
+
+                            consultaServidor("/viaticos/registraSolicitud_VG", formData, (respuesta) => {
+                                $("#registraSolicitud").attr("disabled", false)
+                                if (!respuesta.success) return showError(respuesta.mensaje)
+
+                                showSuccess("Solicitud registrada correctamente").then(() => {
+                                    const hoy = moment().format(MOMENT_BACK)
+                                    $("#modalNuevaSolicitud").modal("hide")
+                                    resetValidacion(valSolicitud, true)
+                                    resetValidacion(valComprobante, true)
+                                    limpiaComprobantes()
+                                    getSolicitudes()
+                                })
+                            }, {
+                                procesar: false,
+                                tipoContenido: false
+                            })
                         } else {
                             $("#registraSolicitud").attr("disabled", false)
                         }
-                    })
-                }
-
-                const registraViaticos = (datos) => {
-                    consultaServidor("/viaticos/registraSolicitudViaticos", datos, (respuesta) => {
-                        $("#registraSolicitud").attr("disabled", false)
-                        if (!respuesta.success) showError(respuesta.mensaje)
-                        else {
-                            const hoy = moment().format(MOMENT_BACK)
-                            $("#modalNuevaSolicitud").modal("hide")
-                            showSuccess("Solicitud registrada correctamente").then(() => {
-                                $("#tipoSolicitud").val("1").change()
-                                $("#proyecto").val("")
-                                $("#fechaI_Solicitud").val(hoy)
-                                $("#fechaF_Solicitud").val(hoy)
-                                $("#montoVG").val("")
-                                $("#modalNuevaSolicitud").modal("hide")
-                                getSolicitudes()
-                            })
-                        }
-                    })  
-                }
-
-                const registraGastos = (datos) => {
-                    const formData = new FormData()
-                    formData.append("usuario", datos.usuario)
-                    formData.append("tipo", datos.tipo)
-                    formData.append("proyecto", datos.proyecto)
-                    formData.append("fechaI", datos.fechaI)
-                    formData.append("fechaF", datos.fechaF)
-                    formData.append("monto", datos.monto)
-                    
-                    comprobantesGastos.forEach((comprobante) => {
-                        formData.append("comprobante[]", comprobante.comprobante)
-                        formData.append("conceptoComprobante[]", comprobante.concepto)
-                        formData.append("fechaComprobante[]", comprobante.fecha)
-                        formData.append("montoComprobante[]", comprobante.monto)
-                        formData.append("observacionesComprobante[]", comprobante.observaciones)
-                    })
-
-                    consultaServidor("/viaticos/registraSolicitudGastos", formData, (respuesta) => {
-                        $("#registraSolicitud").attr("disabled", false)
-                        if (!respuesta.success) return showError(respuesta.mensaje)
-
-                        const hoy = moment().format(MOMENT_BACK)
-                        $("#modalNuevaSolicitud").modal("hide")
-                        showSuccess("Solicitud registrada correctamente").then(() => {
-                            $("#tipoSolicitud").val("1").change()
-                            $("#proyecto").val("")
-                            $("#fechaI_Solicitud").val(hoy)
-                            $("#fechaF_Solicitud").val(hoy)
-                            $("#montoVG").val("")
-                            $("#modalNuevaSolicitud").modal("hide")
-                            limpiaComprobantes()
-                            getSolicitudes()
-                        })
-                    }, {
-                        procesar: false,
-                        tipoContenido: false
                     })
                 }
 
@@ -286,8 +257,10 @@ class Viaticos extends Controller
                 }
 
                 const configuraModales = () => {
-                    $("#btnAgregarComprobante").click(() => {
+                    $("#btnAgregarComprobanteGastos").click(() => {
                         $("#modalNuevaSolicitud").modal("hide")
+                        const fechas = getInputFechas("#fechasNuevaSolicitud", true, false)
+                        updateInputFechas("#fechaComprobante", { iniF: fechas.inicio, minF: fechas.inicio, maxF: fechas.fin })
                         $("#modalAgregarComprobante").modal("show")
                     })
 
@@ -296,9 +269,6 @@ class Viaticos extends Controller
                     })
 
                     $("#modalAgregarComprobante").on("hidden.bs.modal", () => {
-                        $("#comprobante").val("")
-                        $("#montoComprobante").val("")
-                        $("#observacionesComprobante").val("")
                         $("#modalNuevaSolicitud").modal("show")
                     })
                 }
@@ -311,14 +281,14 @@ class Viaticos extends Controller
                         $("#montoVG").prop("disabled", false)
                         limpiaComprobantes()
                         $("#comprobantesGastos").hide()
-                        updateInputFechas("#fechasNuevaSolicitud", { min: 0, max: 30 })
+                        updateInputFechas("#fechasNuevaSolicitud", { minD: 0, maxD: 30 })
                     } else {
                         $("#lblMontoVG").text("Monto Comprobado")
                         $("#montoVG").val("0.00")
                         $("#montoVG").prop("disabled", true)
                         $("#conceptoComprobante").val(null).trigger('change');
                         $("#comprobantesGastos").show()
-                        updateInputFechas("#fechasNuevaSolicitud", { min: 30, max: 0 })
+                        updateInputFechas("#fechasNuevaSolicitud", { minD: -30, maxD: 0 })
                     }
                 }
 
@@ -347,6 +317,7 @@ class Viaticos extends Controller
                     
                     $("#tablaComprobantes tbody").append(fila)
                     $("#modalAgregarComprobante").modal("hide")
+                    resetValidacion(valComprobante, true)
                 }
 
                 const clickEliminaComprobante = (btn) => {
@@ -418,8 +389,80 @@ class Viaticos extends Controller
                         $("#verFechaF").val(moment(datos.FECHA_F).format(MOMENT_FRONT))
                         $("#verEstatus").val(datos.ESTATUS_NOMBRE)
 
+                        if (datos.AUTORIZACION_USUARIO) {
+                            $(".verAutorizacionIcono.text-warning").addClass("d-none")
+                            $(".verAutorizacionIcono.text-success").removeClass("d-none")
+                            $("#verAutorizadoPor").val(datos.AUTORIZACION_NOMBRE)
+                            $("#verFechaAutorizacion").val(moment(datos.AUTORIZACION_FECHA).format(MOMENT_FRONT_HORA))
+                            $("#verMontoAutorizado").val(numeral(datos.COMPROBACION_MONTO).format(NUMERAL_MONEDA))
+                        } else {
+                            $(".verAutorizacionIcono.text-warning").removeClass("d-none")
+                            $(".verAutorizacionIcono.text-success").addClass("d-none")
+                            $("#verAutorizadoPor").val("Pendiente de autorización")
+                            $("#verFechaAutorizacion").val("")
+                            $("#verMontoAutorizado").val("")
+                        }
+
+                        if (datos.ENTREGA_USUARIO) {
+                            $(".verEntregaIcono.text-warning").addClass("d-none")
+                            $(".verEntregaIcono.text-success").removeClass("d-none")
+                            $("#verEntregadoPor").val(datos.ENTREGA_NOMBRE)
+                            $("#verMetodoEntrega").val(datos.METODO_ENTREGA)
+                            $("#verFechaEntrega").val(moment(datos.ENTREGA_FECHA).format(MOMENT_FRONT_HORA))
+                            $("#verMontoEntrega").val(numeral(datos.ENTREGA_MONTO).format(NUMERAL_MONEDA))
+                        } else {
+                            $(".verEntregaIcono.text-warning").removeClass("d-none")
+                            $(".verEntregaIcono.text-success").addClass("d-none")
+                            $("#verEntregadoPor").val("Pendiente de entrega")
+                            $("#verMetodoEntrega").val("")
+                            $("#verFechaEntrega").val("")
+                            $("#verMontoEntrega").val("")
+                        }
+
+                        $("#verFechaLimite").val(moment(datos.FECHA_LIMITE).format(MOMENT_FRONT))
+                        let tiempoRestante = iniciarContador("#verTiempoRestante", datos.FECHA_LIMITE);
+
+                        if (tiempoRestante === 1) {
+                            // Si el tiempo restante es menor a 1 día, mostrar contador de horas
+                            const horasRestantes = moment(datos.FECHA_LIMITE, MOMENT_FRONT).diff(moment(), 'hours');
+                            $("#verTiempoRestante").val(horasRestantes + " horas")
+                            $("#verTiempoRestante").removeClass("text-success").addClass("text-danger")
+                            $("#btnCapturaComprobanteViaticos").addClass("d-none")
+                        } else {
+                            $("#verTiempoRestante").val("0 días")
+                            $("#verTiempoRestante").removeClass("text-danger").addClass("text-success")
+                            $("#btnCapturaComprobanteViaticos").removeClass("d-none")
+                        }
+
+                        
+
                         $("#modalVerSolicitud").modal("show")
                     })
+                }
+
+                const iniciarContador = (selector, fechaObjetivo) => {
+                    const destino = moment(fechaObjetivo);
+
+                    const actualizarConteo = () => {
+                        const ahora = moment();
+                        const duracion = moment.duration(destino.diff(ahora));
+
+                        if (duracion.asMilliseconds() <= 0) {
+                            $(selector).val("00 días 00:00:00");
+                            clearInterval(intervalo);
+                            return;
+                        }
+
+                        const dias = Math.floor(duracion.asDays());
+                        const horas = String(duracion.hours()).padStart(2, '0');
+                        const minutos = String(duracion.minutes()).padStart(2, '0');
+                        const segundos = String(duracion.seconds()).padStart(2, '0');
+
+                        $(selector).val(dias + " días " + horas + ":" + minutos + ":" + segundos);
+                    }
+
+                    const intervalo = setInterval(actualizarConteo, 1000);
+                    return intervalo
                 }
 
                 const cancelarSolicitud = (idSolicitud) => {
@@ -436,9 +479,9 @@ class Viaticos extends Controller
                 }
 
                 $(document).ready(() => {
-                    setInputFechas("#fechasSolicitudes", { rango:true, inicio: -30 })
-                    setInputFechas("#fechasNuevaSolicitud", { rango:true, min: 0, max: 30, enModal: true })
-                    setInputFechas("#fechaComprobante", { min: 30, max: 0, enModal: true })
+                    setInputFechas("#fechasSolicitudes", { rango: true, iniD: -30 })
+                    setInputFechas("#fechasNuevaSolicitud", { rango: true, minD: 0, maxD: 30, enModal: true })
+                    setInputFechas("#fechaComprobante", { enModal: true })
                     setInputMoneda("#montoVG, #montoComprobante")
                     
                     configuraTabla(tabla)
@@ -489,12 +532,7 @@ class Viaticos extends Controller
         self::respuestaJSON(ViaticosDAO::getSolicitudesUsuario_VG($_POST));
     }
 
-    public function registraSolicitudViaticos()
-    {
-        self::respuestaJSON(ViaticosDAO::registraSolicitud_V($_POST));
-    }
-
-    public function registraSolicitudGastos()
+    public function registraSolicitud_VG()
     {
         $errores = [];
         $guardar = [];
@@ -531,7 +569,7 @@ class Viaticos extends Controller
             ]);
         }
 
-        $resultado = ViaticosDAO::registraSolicitud_G($_POST, $guardar);
+        $resultado = ViaticosDAO::registraSolicitud_VG($_POST, $guardar);
 
         foreach ($guardar as $comprobante) {
             if (is_resource($comprobante['comprobante'])) {

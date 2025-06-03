@@ -1,6 +1,6 @@
 <?php
 
-$titulo = $titulo ?? CONFIGURACION['EMPRESA'] . " | Inicio";
+$titulo = $titulo ?? "Inicio | "  . CONFIGURACION['EMPRESA'];
 $usuario = $_SESSION['nombre'] ?? 'Usuario';
 
 function getMenu()

@@ -67,9 +67,13 @@ class Viaticos extends Model
                 , V.MONTO
                 , V.ESTATUS
                 , CEV.NOMBRE AS ESTATUS_NOMBRE
-                , V.AUTORIZACION_FECHA
                 , V.AUTORIZACION_USUARIO
                 , GET_NOMBRE_USUARIO(V.AUTORIZACION_USUARIO) AS AUTORIZACION_NOMBRE
+                , V.AUTORIZACION_FECHA
+                , V.AUTORIZACION_MONTO
+                , V.ENTREGA_USUARIO
+                , GET_NOMBRE_USUARIO(V.ENTREGA_USUARIO) AS ENTREGA_NOMBRE
+                , V.ENTREGA_METODO
                 , V.ENTREGA_FECHA
                 , CASE
                     WHEN V.ENTREGA_FECHA IS NULL THEN NULL
@@ -100,37 +104,11 @@ class Viaticos extends Model
         }
     }
 
-    public static function registraSolicitud_V($datos)
-    {
-        $query = <<<SQL
-            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, DESDE, HASTA, MONTO)
-            VALUES (:tipo, :usuario, :proyecto, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto)
-        SQL;
-
-        $values = [
-            'tipo' => $datos['tipo'],
-            'proyecto' => $datos['proyecto'],
-            'fechaI' => $datos['fechaI'],
-            'fechaF' => $datos['fechaF'],
-            'monto' => $datos['monto'],
-            'usuario' => $datos['usuario']
-        ];
-
-        try {
-            $db = new Database();
-            $result = $db->CRUD($query, $values);
-            if ($result < 1) return self::resultado(false, 'La solicitud no se guardo.');
-            return self::resultado(true, 'Solicitud guardada correctamente.', $result);
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
-        }
-    }
-
-    public static function registraSolicitud_G($datos, $comprobantes = null)
+    public static function registraSolicitud_VG($datos, $comprobantes = null)
     {
         $queryV = <<<SQL
-            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, ESTATUS, DESDE, HASTA, MONTO)
-            VALUES (:tipo, :usuario, :proyecto, :estatus, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto)
+            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, ESTATUS, DESDE, HASTA, MONTO, COMPROBACION_LIMITE)
+            VALUES (:tipo, :usuario, :proyecto, :estatus, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto, TO_DATE(:limite, 'YYYY-MM-DD'))
             RETURNING ID INTO :id
         SQL;
 
@@ -141,15 +119,15 @@ class Viaticos extends Model
             'fechaF' => $datos['fechaF'],
             'monto' => $datos['monto'],
             'usuario' => $datos['usuario'],
-            'estatus' => $datos['tipo'] === 1 ? 1 : 4
+            'estatus' => $datos['tipo'] == 1 ? 1 : 4,
+            'limite' => $datos['limite']
         ];
-
 
         $returningV = [
             'id' => [
                 'valor' => '',
                 'tipo' => \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT,
-                'largo' => 4000
+                'largo' => 40
             ]
         ];
 
