@@ -25,17 +25,17 @@ function getMenu()
             'icono' => 'fa-solid fa-screwdriver-wrench',
             'subItems' => [
                 [
-                    'label' => 'Resumen Solicitudes',
-                    'url' => 'app-viaticos-dashboard.html',
-                    'permisos' => ['1', '2']
-                ],
-                [
-                    'label' => 'Reembolsos de Excedentes',
+                    'label' => 'Bitácora de Solicitudes',
                     'url' => 'app-viaticos-dashboard.html',
                     'permisos' => ['1', '2']
                 ],
                 [
                     'label' => 'Pendientes de Pago',
+                    'url' => 'app-viaticos-dashboard.html',
+                    'permisos' => ['1', '2']
+                ],
+                [
+                    'label' => 'Resumen Tesorería',
                     'url' => 'app-viaticos-dashboard.html',
                     'permisos' => ['1', '2']
                 ]
@@ -48,7 +48,7 @@ function getMenu()
             'subItems' => [
                 [
                     'label' => 'Usuarios',
-                    'url' => 'app-viaticos-dashboard.html',
+                    'url' => '/usuarios/existentes/',
                     'permisos' => ['1', '2']
                 ],
                 [
@@ -58,7 +58,7 @@ function getMenu()
                 ],
                 [
                     'label' => 'Sucursales',
-                    'url' => 'app-viaticos-dashboard.html',
+                    'url' => '/sucursales/existentes/',
                     'permisos' => ['1', '2']
                 ]
             ]
