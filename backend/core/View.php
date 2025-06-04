@@ -281,7 +281,7 @@ function getMenu()
                     </div>
                     <!-- / Content -->
 
-                    <div class="content-backdrop fade"></div>
+                    <!-- <div class="content-backdrop fade"></div> -->
                 </div>
                 <!-- / Content wrapper -->
             </div>
@@ -352,6 +352,7 @@ function getMenu()
 
     <!-- Page JS -->
     <script src="/assets/js/comunes.js"></script>
+    <script src="/assets/js/componentes.js"></script>
     <?= $script ?? ''; ?>
 </body>
 

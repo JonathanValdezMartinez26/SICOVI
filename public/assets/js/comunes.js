@@ -10,7 +10,8 @@ const MOMENT_FRONT_HORA = "DD/MM/YYYY HH:mm:ss"
 const MOMENT_BACK = "YYYY-MM-DD"
 const MOMENT_BACK_HORA = "YYYY-MM-DD HH:mm:ss"
 
-numeral.zeroFormat("")
+numeral.zeroFormat(0)
+numeral.nullFormat(0)
 const NUMERAL_MONEDA = "$ 0,0.00"
 const NUMERAL_DECIMAL = "0,0.00"
 
@@ -154,40 +155,6 @@ const configuraTabla = (
             details: {
                 type: "inline",
                 target: "tr"
-                // display: DataTable.Responsive.display.modal({
-                //     header: (row) => {
-                //         return `Detalles de la fila ${row.index() + 1}`
-                //     }
-                // }),
-                // type: "column",
-                // renderer: (api, rowIdx, columns) => {
-                //     const data = columns
-                //         .map((col) => {
-                //             return col.title !== ""
-                //                 ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
-                //                 <td>${col.title}:</td>
-                //                 <td>${col.data}</td>
-                //                 </tr>`
-                //                 : ""
-                //         })
-                //         .join("")
-
-                //     if (data) {
-                //         const div = document.createElement("div")
-                //         div.classList.add("table-responsive")
-                //         div.classList.add("z-1")
-                //         const table = document.createElement("table")
-                //         div.appendChild(table)
-                //         table.classList.add("table")
-                //         table.classList.add("datatables-basic")
-                //         const tbody = document.createElement("tbody")
-                //         tbody.innerHTML = data
-                //         table.appendChild(tbody)
-                //         return div
-                //     }
-
-                //     return false
-                // }
             }
         }
     }
@@ -201,8 +168,12 @@ const configuraTabla = (
     $(selector).DataTable(configuracion)
 }
 
-const actualizaDatosTabla = (selector, datos) => {
+const actualizaDatosTabla = (selector, datos, mantenerPagina = false) => {
+    let paginaActual = null
     const tabla = $(selector).DataTable()
+
+    if (mantenerPagina) paginaActual = tabla.page.info().page
+
     tabla.clear()
     if (Array.isArray(datos)) {
         datos.forEach((item) => {
@@ -210,6 +181,8 @@ const actualizaDatosTabla = (selector, datos) => {
             else tabla.row.add(Object.values(item)).draw(false)
         })
     }
+
+    if (paginaActual !== null) tabla.page(paginaActual).draw(false)
     tabla.draw()
 }
 

@@ -11,7 +11,6 @@
             </div>
         </div>
     </div>
-
     <div class="card-datatable table-responsive">
         <table id="historialSolicitudes" class="dt-responsive table border-top">
             <thead>
@@ -20,7 +19,7 @@
                     <th>ID</th>
                     <th>Tipo</th>
                     <th>Proyecto</th>
-                    <th>Fecha de Registro</th>
+                    <th>Fecha de Autorización</th>
                     <th>Monto</th>
                     <th>Acciones</th>
                 </tr>

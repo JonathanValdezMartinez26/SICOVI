@@ -6,7 +6,7 @@ use PDO;
 
 class Database
 {
-    public $db;
+    private $db;
 
     function __construct($servidor_ = null, $puerto_ = null, $esquema_ = null, $usuario_ = null, $password_ = null)
     {
@@ -79,12 +79,13 @@ class Database
         exit();
     }
 
-    private function getError($e, $sql = null, $valores = null)
+    private function getError($e, $sql = null, $valores = null, $retorno = null)
     {
         $error = "Error en DB: {$e->getMessage()}\n";
 
         if ($sql != null) $error .= "Query: $sql\n";
         if ($valores != null) $error .= 'Datos: ' . print_r($valores, 1);
+        if ($retorno != null) $error .= 'Retorno: ' . print_r($retorno, 1);
         return $error;
     }
 
@@ -127,15 +128,15 @@ class Database
         }
     }
 
-    public function runQuery($sql, $valores = [], &$retorno = [])
+    private function runQuery($sql, $valores = null, &$retorno = null)
     {
         if ($this->db == null) return false;
         if (!is_object($this->db)) return false;
-        if (!is_array($valores)) throw new \Exception("Los parámetros deben ser un array.");
+        if (!is_null($valores) && !is_array($valores)) throw new \Exception("Los parámetros deben ser un array.");
 
         try {
             $stmt = $this->db->prepare($sql);
-            if ($stmt === false) throw new \Exception("Error al preparar la consulta SQL: $sql");
+            if ($stmt === false) throw new \Exception("Error al preparar la consulta SQL.");
 
             if (is_array($valores) && count($valores) > 0) {
                 foreach ($valores as $key => $value) {
@@ -152,13 +153,13 @@ class Database
             $stmt->execute();
             return $stmt;
         } catch (\PDOException $e) {
-            throw new \Exception($this->getError($e, $sql, $valores));
+            throw new \Exception($this->getError($e, $sql, $valores, $retorno));
         } catch (\Exception $e) {
-            throw new \Exception($this->getError($e, $sql, $valores));
+            throw new \Exception($this->getError($e, $sql, $valores, $retorno));
         }
     }
 
-    public function queryOne($sql, $valores = [])
+    public function queryOne($sql, $valores = null)
     {
         try {
             $stmt = $this->runQuery($sql, $valores);
@@ -172,7 +173,7 @@ class Database
         }
     }
 
-    public function queryAll($sql, $valores = [])
+    public function queryAll($sql, $valores = null)
     {
         try {
             $stmt = $this->runQuery($sql, $valores);
@@ -186,7 +187,7 @@ class Database
         }
     }
 
-    public function CRUD($sql, $valores = [], &$retorno = [])
+    public function CRUD($sql, $valores = null, &$retorno = null)
     {
         try {
             $stmt = $this->runQuery($sql, $valores, $retorno);
@@ -196,14 +197,16 @@ class Database
         }
     }
 
-    public function CRUD_multiple($sql = [], $valores = [], &$retorno = [])
+    public function CRUD_multiple($sql, $valores, &$retorno = null)
     {
         try {
             $this->beginTransaction();
 
             foreach ($sql as $key => $query) {
-                $stmt = $this->runQuery($query, $valores[$key], $retorno[$key] ?? []);
+                $ret = $retorno[$key] ?? null;
+                $stmt = $this->runQuery($query, $valores[$key], $ret);
                 if (!$stmt) throw new \Exception("Error de conexión a la base de datos.");
+                if ($retorno[$key] !== null) $retorno[$key] = $ret;
             }
 
             $this->commit();

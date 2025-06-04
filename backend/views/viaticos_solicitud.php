@@ -5,30 +5,43 @@
 <div class="card">
     <div class="row justify-content-between m-4">
         <div class="col-4">
-            <label for="fechasSolicitudes" class="form-label">Rango de fechas mostrado</label>
+            <label class="form-label">Rango de fechas mostrado</label>
             <div class="input-group input-group-merge">
                 <input type="text" id="fechasSolicitudes" class="form-control cursor-pointer" readonly>
                 <i class="input-group-text fa fa-calendar-days"></i>
                 <button id="btnBuscarSolicitudes" class="btn btn-outline-primary">Actualizar</button>
             </div>
         </div>
+        <!-- <div class="col-2">
+            <label class="form-label">Tipo de solicitud</label>
+            <select id="tipoFiltro" class="form-select">
+                <option value="">Todas</option>
+                <option value="1">Viáticos</option>
+                <option value="2">Gastos</option>
+            </select>
+        </div> -->
         <div class="col-4 d-flex align-self-end justify-content-end">
             <button id="btnAgregar" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalNuevaSolicitud"><i class="fa fa-plus">&nbsp;</i>Nueva Solicitud</button>
         </div>
     </div>
-
     <div class="card-datatable table-responsive">
-        <table id="historialSolicitudes" class="dt-responsive table border-top">
+        <table id="historialSolicitudes" class="dt-responsive table border-top table-hover">
             <thead>
                 <tr>
-                    <th></th>
-                    <th>ID</th>
-                    <th>Tipo</th>
-                    <th>Proyecto</th>
-                    <th>Fecha de Registro</th>
-                    <th>Monto</th>
-                    <th>Estatus</th>
-                    <th>Acciones</th>
+                    <th rowspan="2"></th>
+                    <th rowspan="2">ID</th>
+                    <th rowspan="2">Tipo</th>
+                    <th rowspan="2">Fecha</th>
+                    <th rowspan="2">Proyecto</th>
+                    <th colspan="2" class="text-center">Monto</th>
+                    <th rowspan="2">Diferencia</th>
+                    <th rowspan="2">Estatus</th>
+                    <th rowspan="2">Acciones</th>
+                </tr>
+                <tr>
+                    <!-- <th colspan="1">Solicitado</th> -->
+                    <th colspan="1">Entregado</th>
+                    <th colspan="1">Comprobado</th>
                 </tr>
             </thead>
             <tbody>
@@ -47,6 +60,9 @@
                     <h4 class="address-title mb-2">Nueva solicitud de viáticos/gastos</h4>
                     <p class="address-subtitle">Capture los datos solicitados</p>
                 </div>
+            </div>
+            <div class="form-group col-12 text-center">
+                <label id="notificacionEntrega" class="fs-5 text-info"></label>
             </div>
             <div class="modal-body">
                 <div class="row">
@@ -80,7 +96,7 @@
                     </div>
                     <div class="form-group col-12">
                         <label for="proyecto" class="form-label">Proyecto</label>
-                        <input type="text" id="proyecto" name="proyecto" class="form-control" placeholder="Proyecto o actividad a cubrir. Ej.: Capacitación en corporativo el día..." maxlength="500">
+                        <input type="text" id="proyecto" name="proyecto" class="form-control" placeholder="Proyecto o actividad a cubrir. Ej.: Capacitación en corporativo..." maxlength="100">
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                 </div>
@@ -177,7 +193,7 @@
                     </div>
                     <div class="form-group col-12">
                         <label for="observacionesComprobante" class="form-label">Observaciones</label>
-                        <textarea id="observacionesComprobante" name="observacionesComprobante" class="form-control" placeholder="Observaciones del gasto. Ej.: Se compro material para el evento..." rows="3" maxlength="500"></textarea>
+                        <textarea id="observacionesComprobante" name="observacionesComprobante" class="form-control" placeholder="Observaciones del gasto. Ej.: Se compro material para el evento..." rows="2" maxlength="500"></textarea>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                 </div>
@@ -221,14 +237,14 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btnCerrarVer" data-bs-dismiss="modal" aria-label="Close"></button>
                 <div class="text-center w-100">
                     <h4 class="address-title mb-2">Detalles de la Solicitud</h4>
                 </div>
             </div>
             <div class="modal-body">
                 <div class="accordion accordion-custom-button" id="acordionVer">
-                    <div class="accordion-item active">
+                    <div class="accordion-item active" id="verSolicitud">
                         <h2 class="accordion-header">
                             <button
                                 type="button"
@@ -236,7 +252,7 @@
                                 data-bs-toggle="collapse"
                                 data-bs-target="#acordionVerSolicitud"
                                 aria-expanded="true">
-                                <i class="fa fa-circle-info text-success">&nbsp;</i>
+                                <i class="fa fa-circle-info text-info">&nbsp;</i>
                                 Solicitud
                             </button>
                         </h2>
@@ -246,6 +262,7 @@
                                     <div class="form-group col-4">
                                         <label class="form-label">Tipo de Solicitud</label>
                                         <input type="text" id="verTipoSol" class="form-control" readonly>
+                                        <input type="hidden" id="verSolicitudId">
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Fecha de registro</label>
@@ -275,7 +292,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="accordion-item">
+                    <div class="accordion-item" id="verAutorizacion">
                         <h2 class="accordion-header">
                             <button
                                 type="button"
@@ -283,15 +300,14 @@
                                 data-bs-toggle="collapse"
                                 data-bs-target="#acordionVerAutorizacion"
                                 aria-expanded="false">
-                                <i class="fa fa-hourglass-start text-warning verAutorizacionIcono">&nbsp;</i>
-                                <i class="fa fa-circle-check text-success verAutorizacionIcono">&nbsp;</i>
+                                <i id="verAutorizacionIcono" class="fa">&nbsp;</i>
                                 Autorización
                             </button>
                         </h2>
                         <div id="acordionVerAutorizacion" class="accordion-collapse collapse" data-bs-parent="#acordionVer">
                             <div class="accordion-body">
                                 <div class="row">
-                                    <div class="form-group col-4">
+                                    <div class="form-group col-8">
                                         <label class="form-label">Autorizado por</label>
                                         <input type="text" id="verAutorizadoPor" class="form-control" readonly>
                                     </div>
@@ -307,7 +323,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="accordion-item">
+                    <div class="accordion-item" id="verEntregado">
                         <h2 class="accordion-header">
                             <button
                                 type="button"
@@ -315,15 +331,14 @@
                                 data-bs-toggle="collapse"
                                 data-bs-target="#acordionVerEntregado"
                                 aria-expanded="false">
-                                <i class="fa fa-hourglass-start text-warning verEntregaIcono">&nbsp;</i>
-                                <i class="fa fa-sack-dollar text-success verEntregaIcono">&nbsp;</i>
+                                <i id="verEntregadoIcono" class="fa">&nbsp;</i>
                                 Entrega
                             </button>
                         </h2>
                         <div id="acordionVerEntregado" class="accordion-collapse collapse" data-bs-parent="#acordionVer">
                             <div class="accordion-body">
                                 <div class="row">
-                                    <div class="form-group col-4">
+                                    <div class="form-group col-8">
                                         <label class="form-label">Entregado por</label>
                                         <input type="text" id="verEntregadoPor" class="form-control" readonly>
                                     </div>
@@ -335,11 +350,15 @@
                                         <label class="form-label">Monto entregado</label>
                                         <input type="text" id="verMontoEntregado" class="form-control" readonly>
                                     </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Método de entrega</label>
+                                        <input type="text" id="verMetodoEntrega" class="form-control" readonly>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="accordion-item">
+                    <div class="accordion-item" id="verComprobantes">
                         <h2 class="accordion-header">
                             <button
                                 type="button"
@@ -347,8 +366,8 @@
                                 data-bs-toggle="collapse"
                                 data-bs-target="#acordionVerComprobantes"
                                 aria-expanded="false">
-                                <i class="fa fa-receipt text-info verComprobacionIcono">&nbsp;</i>
-                                Comprobantes
+                                <i class="fa fa-receipt text-primary verComprobacionIcono">&nbsp;</i>
+                                Comprobación
                             </button>
                         </h2>
                         <div id="acordionVerComprobantes" class="accordion-collapse collapse" data-bs-parent="#acordionVer">
@@ -363,26 +382,38 @@
                                         <input type="text" id="verTiempoRestante" class="form-control" readonly>
                                     </div>
                                     <div class="form-group col-4">
-                                        <button type="button" id="btnCapturaComprobanteViaticos" class="btn btn-primary"><i class="fa fa-plus">&nbsp;</i>Registrar Comprobante</button>
+                                        <label class="form-label">Monto comprobado</label>
+                                        <input type="text" id="verMontoComprobado" class="form-control" readonly>
                                     </div>
                                 </div>
-                                <div class="row">
-                                    <div class="form-group col-12 text-center">
-                                        <h3>Comprobantes registrados</h3>
-                                    </div>
-                                </div>
+                                <div style="height: 1rem;"></div>
                                 <div class="table-responsive text-nowrap">
                                     <table id="tablaComprobantesSolicitud" class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
+                                                <th class="d-none">id</th>
                                                 <th>Fecha Registro</th>
                                                 <th>Concepto</th>
                                                 <th>Monto</th>
                                                 <th>Acciones</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="tbodyComprobantesSolicitud">
+                                        <tbody id="tbodyVerComprobantesSolicitud">
                                         </tbody>
+                                        <tfoot id="tfootVerComprobantesSolicitud">
+                                            <tr>
+                                                <td colspan="4">
+                                                    <div class="d-flex text-center justify-content-between">
+                                                        <button type="button" id="btnFinalizarComprobacion" class="btn btn-primary btn-sm">
+                                                            <i class="fa-solid fa-flag-checkered">&nbsp;</i>Finalizar Comprobación
+                                                        </button>
+                                                        <button type="button" id="btnCapturaComprobanteViaticos" class="btn btn-success btn-sm">
+                                                            <i class="fa fa-plus">&nbsp;</i>Agregar
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -391,7 +422,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
+                <button type="button" class="btn btn-secondary btnCerrarVer" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
             </div>
         </div>
     </div>
