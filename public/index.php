@@ -58,6 +58,7 @@ if ($extension !== '' && strtolower($extension) !== 'php') {
 
 // Se registra el autoload
 spl_autoload_register(function ($archivo) {
+    $archivo = str_replace('\\', '/', $archivo);
     require_once RAIZ . "/$archivo.php";
 });
 
@@ -121,7 +122,7 @@ function validaNavegador()
     $navegadores = [
         'Chrome' => 120,
         'Edge' => 120,
-        // 'Firefox' => 130,
+        'Firefox' => 130,
         // 'Safari' => 140,
         // 'Opera' => 105
     ];

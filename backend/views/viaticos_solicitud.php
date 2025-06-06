@@ -221,11 +221,17 @@
             <div class="modal-body">
                 <video id="videoComprobante" width="100%" height="auto" autoplay></video>
                 <canvas id="canvasComprobante" style="display: none;"></canvas>
+                <div class="row">
+                    <div class="col-6">
+                        <select id="selectorCamara" class="form-select">
+                        </select>
+                    </div>
+                    <div class="col-6 d-flex justify-content-end">
+                        <button id="btnCapturarFoto" class="btn btn-success"><i class="fa fa-camera">&nbsp;</i>Capturar Foto</button>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
-                <div class="text-center mt-3">
-                    <button id="btnCapturarFoto" class="btn btn-success"><i class="fa fa-camera">&nbsp;</i>Capturar Foto</button>
-                </div>
             </div>
         </div>
     </div>
@@ -428,3 +434,26 @@
     </div>
 </div>
 <!-- / Modal para ver solicitud -->
+
+<div class="modal fade" id="modalVerComprobante" tabindex="-1" aria-hidden="true" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close btnCerrarVer" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center w-100">
+                    <h4 class="address-title mb-2">Comprobante</h4>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <embed id="verArchivoComprobante" src="" style="width: 100%; min-height: 30vh;"></embed>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btnCerrarVer" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>

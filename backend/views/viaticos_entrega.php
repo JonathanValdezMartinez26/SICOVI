@@ -18,7 +18,7 @@
                     <th></th>
                     <th>ID</th>
                     <th>Tipo</th>
-                    <th>Proyecto</th>
+                    <th>Solicitante</th>
                     <th>Fecha de Autorización</th>
                     <th>Monto</th>
                     <th>Acciones</th>
@@ -30,88 +30,111 @@
     </div>
 </div>
 
-<!-- Modal para agregar solicitud -->
-<div class="modal fade" id="modalNuevaSolicitud" tabindex="-1" aria-hidden="true" role="dialog">
+<!-- Modal para ver solicitud -->
+<div class="modal fade" id="modalVerEntrega" tabindex="-1" aria-hidden="true" role="dialog">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 <div class="text-center w-100">
-                    <h4 class="address-title mb-2">Nueva solicitud de viáticos/gastos</h4>
-                    <p class="address-subtitle">Capture los datos solicitados</p>
+                    <h4 class="address-title mb-2">Entrega de viáticos/Devolución de gastos</h4>
+                    <p class="address-subtitle"></p>
                 </div>
             </div>
             <div class="modal-body">
                 <div class="row">
+                    <div class="col-2">
+                        <img id="verFotoUsuario" src="/assets/img/misc/user.svg" alt="Foto del usuario" class="rounded-circle" style="width: 100px; height: 100px;">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Solicitante</label>
+                        <input type="text" id="verSolicitante" class="form-control" readonly>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">Sucursal</label>
+                        <input type="text" id="verSucursal" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="row">
                     <div class="form-group col-4">
-                        <label for="tipoSolicitud" class="form-label">Tipo</label>
-                        <select class="form-select" id="tipoSolicitud" name="tipoSolicitud">
-                            <option value="1">Viáticos (por comprobar)</option>
-                            <option value="2">Gastos (reembolso)</option>
+                        <label class="form-label">Tipo de Solicitud</label>
+                        <input type="text" id="verTipoSol" class="form-control" readonly>
+                        <input type="hidden" id="verSolicitudId">
+                    </div>
+                    <div class="form-group col-4">
+                        <label class="form-label">Fecha de inicio del proyecto</label>
+                        <input type="text" id="verFechaI" class="form-control" readonly>
+                    </div>
+                    <div class="form-group col-4">
+                        <label class="form-label">Fecha de termino del proyecto</label>
+                        <input type="text" id="verFechaF" class="form-control" readonly>
+                    </div>
+                    <div class="form-group col-12">
+                        <label class="form-label">Proyecto</label>
+                        <input type="text" id="verProyecto" class="form-control" readonly>
+                    </div>
+                    <div class="form-group col-4">
+                        <label class="form-label">Autorizado por</label>
+                        <input type="text" id="verAutorizado" class="form-control" readonly>
+                    </div>
+                    <div class="form-group col-4">
+                        <label class="form-label">Fecha de autorización</label>
+                        <input type="text" id="verFechaAutorizado" class="form-control" readonly>
+                    </div>
+                    <div class="form-group col-4">
+                        <label class="form-label">Monto Autorizado</label>
+                        <input type="text" id="verMontoAutorizado" class="form-control" readonly>
+                    </div>
+                    <div class="form-group col-4">
+                        <label class="form-label">Monto Entregado</label>
+                        <div class="input-group input-group-merge">
+                            <i class="input-group-text fa fa-dollar-sign"></i>
+                            <input type="text" id="montoEntrega" name="montoEntrega" class="form-control" placeholder="0.00">
+                        </div>
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                    </div>
+                    <div class="form-group col-4">
+                        <label class="form-label">Método de entrega</label>
+                        <select id="metodoEntrega" name="metodoEntrega" class="form-select" disabled>
+                            <?= $metodosEntrega ?>
                         </select>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
-                    <div class="form-group col-5">
-                        <label for="fechasNuevaSolicitud" class="form-label">Rango de fechas</label>
-                        <div class="input-group input-group-merge cursor-pointer">
-                            <input type="text" id="fechasNuevaSolicitud" name="fechasNuevaSolicitud" class="form-control cursor-pointer" readonly>
-                            <span class="input-group-text">
-                                <i class="fa fa-calendar-days"></i>
-                            </span>
-                        </div>
-                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                    </div>
-                    <div class="form-group col-3">
-                        <label id="lblMontoVG" for="montoVG" class="form-label numeral-input">Monto Solicitado</label>
-                        <div class="input-group input-group-merge">
-                            <span class="input-group-text">
-                                <i class="fa fa-dollar-sign"></i>
-                            </span>
-                            <input type="text" id="montoVG" name="montoVG" class="form-control" placeholder="0.00">
-                        </div>
-                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                    </div>
                     <div class="form-group col-12">
-                        <label for="proyecto" class="form-label">Proyecto</label>
-                        <input type="text" id="proyecto" name="proyecto" class="form-control" placeholder="Proyecto o actividad a cubrir. Ej.: Capacitación en corporativo el día..." maxlength="500">
+                        <label for="observacionesEntrega" class="form-label">Observaciones</label>
+                        <textarea id="observacionesEntrega" name="observacionesEntrega" class="form-control" placeholder="Observaciones al entregar. Ej.: Se entrego un monto menor debido a..." rows="2" maxlength="500"></textarea>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                    </div>
-                </div>
-                <div id="comprobantesGastos" class="row" style="display: none;">
-                    <div class="col-12">
-                        <h5 class="text-center">Comprobantes de Gastos</h5>
-                        <div class="table-responsive text-nowrap">
-                            <table id="tablaComprobantes" class="table table-bordered table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Concepto</th>
-                                        <th>Fecha</th>
-                                        <th>Monto</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbodyComprobantes">
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="4" class="text-center">
-                                            <button type="button" id="btnAgregarComprobante" class="btn btn-success btn-sm">
-                                                <i class="fa fa-plus">&nbsp;</i>Agregar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
                     </div>
                 </div>
             </div>
-
             <div class="modal-footer">
-                <button type="button" id="cancelaSolicitud" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
-                <button type="button" id="registraSolicitud" class="btn btn-primary">Guardar</button>
+                <button type="button" id="cancelar" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
+                <button type="button" id="entregar" class="btn btn-primary">Entregar</button>
             </div>
         </div>
     </div>
 </div>
-<!-- / Modal para agregar solicitud -->
+<!-- / Modal para ver solicitud -->
+
+<div class="modal fade" id="modalVerComprobante" tabindex="-1" aria-hidden="true" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close btnCerrarVer" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center w-100">
+                    <h4 class="address-title mb-2">Comprobante</h4>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <embed id="verArchivoComprobante" src="" style="width: 100%; min-height: 30vh;"></embed>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btnCerrarVer" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -35,7 +35,7 @@ const showInfo = (mensaje) => tipoMensaje(mensaje, "info")
 const showWarning = (mensaje) => tipoMensaje(mensaje, "warning")
 const showWait = (mensaje = null) => {
     const config = {
-        title: "Procesando su solicitud",
+        title: "Procesando su petición",
         text: mensaje || "Espere un momento...",
         imageUrl: "/assets/img/wait.svg",
         allowOutsideClick: false,
@@ -81,18 +81,23 @@ const consultaServidor = (
         data: datos,
         type: metodo,
         headers: { "Front-Request": "true" },
-        success: (respuesta) => {
-            if (typeof respuesta === "string") {
+        success: (respuesta, textStatus, jqXHR) => {
+            if (typeof respuesta === "string" && respuesta !== "") {
+                let tipoContenido = jqXHR.getResponseHeader("Content-Type")
                 try {
                     switch (tipoEsperado) {
                         case "JSON":
                             respuesta = JSON.parse(respuesta)
                             break
                         case "blob":
-                            respuesta = new Blob([respuesta], { type: "application/pdf" })
+                            respuesta = new Blob([respuesta], { type: tipoContenido })
+                            break
+                        default:
+                            console.warn("Tipo de respuesta no manejado:", tipoEsperado)
                             break
                     }
                 } catch (e) {
+                    console.error("Error al procesar la respuesta del servidor:", e)
                     Swal.close()
                     return {
                         success: false,

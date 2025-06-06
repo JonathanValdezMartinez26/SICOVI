@@ -30,7 +30,7 @@ class Viaticos extends Controller
                         const resumen = {}
                         const datos = respuesta.datos.map((solicitud) => {
                             const ver = {
-                                texto: "Ver",
+                                texto: "Detalles",
                                 icono: "fa-eye",
                                 funcion: "verSolicitud(" + solicitud.ID + ")"
                             }
@@ -418,11 +418,25 @@ class Viaticos extends Controller
                     $("#montoVG").val(numeral($("#montoVG").val()).add(parametros.total).format(NUMERAL_DECIMAL))
 
                     const fila = $("<tr></tr>")
-                    fila.append("<td>" + parametros.concepto + "</td>")
+                    fila.append("<td>" + parametros.conceptoNombre + "</td>")
                     fila.append("<td>" + moment(parametros.fecha).format(MOMENT_FRONT) + "</td>")
                     fila.append("<td>" + numeral(parametros.total).format(NUMERAL_MONEDA) + "</td>")
                     fila.append(
-                        '<td><button type="button" class="btn btn-danger btn-sm" onclick="eliminaComprobanteGastos(this)"><i class="fa fa-trash">&nbsp;</i>Eliminar</button></td>'
+                        "<td>" +
+                        menuAcciones([
+                            {
+                                texto: "Ver Comprobante",
+                                icono: "fa-eye",
+                                funcion: "verComprobanteGastos(" + (comprobantesGastos.length - 1) + ")"
+                            },
+                            {
+                                texto: "Eliminar",
+                                icono: "fa-trash",
+                                funcion: "eliminaComprobanteGastos(this)",
+                                clase: "text-danger"
+                            }
+                        ]) +
+                        "</td>"
                     )
 
                     $("#tablaComprobantes tbody").append(fila)
@@ -455,6 +469,7 @@ class Viaticos extends Controller
                             consultaServidor("/viaticos/registraComporbante_V", formData, (respuesta) => {
                                 if (!respuesta.success) return showError(respuesta.mensaje)
                                 const fila = getFilaComprobante(
+                                    respuesta.datos.comprobanteId,
                                     parametros.fecha,
                                     parametros.conceptoNombre,
                                     parametros.total,
@@ -505,25 +520,28 @@ class Viaticos extends Controller
                     })
                 }
 
-                const iniciarCamara = () => {
-                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        navigator.mediaDevices
-                            .getUserMedia({ video: true })
-                            .then((stream) => {
-                                const video = document.getElementById("videoComprobante")
-                                video.srcObject = stream
-                                video.play()
-                            })
-                            .catch((error) => {
-                                showError("Error al acceder a la cámara: " + error.message)
-                            })
-                    } else {
-                        showError("La cámara no está disponible en este dispositivo.")
+                const iniciarCamara = async () => {
+                    const camara = $("#selectorCamara").val()
+
+                    const configuracion = {
+                        video: {
+                            deviceId: { exact: camara }
+                        },
+                        audio: false
+                    }
+
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia(configuracion)
+                        const video = $("#videoComprobante")[0]
+                        video.srcObject = stream
+                        video.play()
+                    } catch (error) {
+                        showError("La cámara no se ha podido iniciar, verifique que la cámara esté conectada y tenga los permisos necesarios.")
                     }
                 }
 
                 const detenerCamara = () => {
-                    const video = document.getElementById("videoComprobante")
+                    const video = $("#videoComprobante")[0]
                     if (video.srcObject) {
                         const stream = video.srcObject
                         const tracks = stream.getTracks()
@@ -533,13 +551,15 @@ class Viaticos extends Controller
                 }
 
                 const tomarFoto = () => {
-                    const video = document.getElementById("videoComprobante")
-                    const canvas = document.getElementById("canvasComprobante")
+                    const video = $("#videoComprobante")[0]
+                    const canvas = $("#canvasComprobante")[0]
                     const context = canvas.getContext("2d")
+                    canvas.width = video.videoWidth
+                    canvas.height = video.videoHeight
 
                     if (video.srcObject) {
                         context.drawImage(video, 0, 0, canvas.width, canvas.height)
-                        const fotoData = canvas.toBlob((blob) => {
+                        canvas.toBlob((blob) => {
                             const tiempo = moment().format("YYYYMMDD_HHmmss")
                             const archivoFoto = new File([blob], "foto_" + tiempo + ".jpg", {
                                 type: "image/jpeg"
@@ -552,6 +572,30 @@ class Viaticos extends Controller
                         $("#modalTomarFoto").modal("hide")
                     } else {
                         showError("No hay video disponible para tomar una foto.")
+                    }
+                }
+
+                const listarCamaras = async () => {
+                    try {
+                        const permisos = await navigator.mediaDevices.getUserMedia({ video: true })
+                        permisos.getTracks().forEach(track => track.stop())
+                        const dispositivos = await navigator.mediaDevices.enumerateDevices()
+                        const select = $("#selectorCamara")
+
+                        const camaras = dispositivos.filter((d) => d.kind === "videoinput")
+                        if (camaras.length === 0) {
+                            select.append("<option value=''>No se encontraron cámaras disponibles</option>")
+                            return
+                        }
+                        
+                        camaras.forEach((camara, index) => {
+                            const option = $("<option></option>")
+                            option.val(camara.deviceId)
+                            option.text(camara.label || "Cámara " + index + 1)
+                            select.append(option)
+                        })
+                    } catch (error) {
+                        console.error("Error al listar cámaras:", error)
                     }
                 }
 
@@ -641,7 +685,7 @@ class Viaticos extends Controller
                                     {
                                         texto: "Comprobante",
                                         icono: "fa-eye",
-                                        funcion: "verComprobante('" + id + "')"
+                                        funcion: "verComprobanteViaticos('" + id + "')"
                                     },
                                     eliminar ? "divisor" : null,
                                     eliminar ? {
@@ -714,6 +758,51 @@ class Viaticos extends Controller
                     })
                 }
 
+                const verComprobanteGastos = (index) => {
+                    const comprobante = comprobantesGastos[index].comprobante
+                    const url = URL.createObjectURL(comprobante)
+                    const modal = $("#modalVerComprobante")
+                    if (comprobante.type.startsWith("image/") || comprobante.type === "application/pdf") {
+                        modal.find("#verArchivoComprobante").attr("src", url)
+                    } else {
+                        showError("El tipo de archivo no es compatible para vista previa.")
+                        return
+                    }
+                    
+                    modal.modal("show")
+                    modal.on("hidden.bs.modal", () => {
+                        URL.revokeObjectURL(url)
+                    })
+                }
+
+                const verComprobanteViaticos = (comprobanteId) => {
+                    showWait("Cargando comprobante...")
+                    const parametro = new FormData()
+                    parametro.append("comprobanteId", comprobanteId)
+                    fetch("/viaticos/getComprobante_V", {
+                            method: "POST",
+                            body: parametro
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error("Error al obtener el comprobante")
+                            return response.blob()
+                        })
+                        .then(blob => {
+                            const url = URL.createObjectURL(blob)
+                            const modal = $("#modalVerComprobante")
+                            modal.find("#verArchivoComprobante").attr("src", url)
+                            modal.modal("show")
+                            modal.on("hidden.bs.modal", () => {
+                                URL.revokeObjectURL(url)
+                            })
+                            Swal.close()
+                        })
+                        .catch(error => {
+                            Swal.close()
+                            showError(error.message)
+                        })
+                }
+
                 $(document).ready(() => {
                     setInputFechas("#fechasSolicitudes", { rango: true, iniD: -30 })
                     setInputFechas("#fechasNuevaSolicitud", { rango: true, minD: 0, maxD: 30, enModal: true })
@@ -748,10 +837,13 @@ class Viaticos extends Controller
                         $('#acordionVer .accordion-button').first().removeClass('collapsed')
                     })
                     $("#btnFinalizarComprobacion").on("click", finalizarComprobacion)
-
+                    listarCamaras()
+                    $("#selectorCamara").on("change", () => {
+                        detenerCamara()
+                        iniciarCamara()
+                    })
                     getSolicitudes()
                 })
-
             </script>
         HTML;
 
@@ -778,10 +870,20 @@ class Viaticos extends Controller
     {
         $informacion = ViaticosDAO::getResumenSolicitud_VG($_POST);
         $comprobantes = ViaticosDAO::getComprobantesSolicitud_VG($_POST);
-        $resultado = self::respuesta(true, 'Datos de la solicitud', [
+        $success = $informacion['success'] && $comprobantes['success'];
+        $mensaje = 'Resumen de la solicitud obtenido correctamente.';
+        if (!$success) {
+            $mensaje = $informacion['mensaje'] ?? $comprobantes['mensaje'] ?? 'Error al obtener la información de la solicitud.';
+            $errores = [
+                'informacion' => $informacion['error'] ?? 'No se pudo obtener la información de la solicitud.',
+                'comprobantes' => $comprobantes['error'] ?? 'No se pudieron obtener los comprobantes de la solicitud.'
+            ];
+        }
+
+        $resultado = self::respuesta($success, $mensaje, [
             'informacion' => $informacion['datos'],
             'comprobantes' => $comprobantes['datos']
-        ]);
+        ], $errores);
 
         self::respuestaJSON($resultado);
     }
@@ -892,6 +994,29 @@ class Viaticos extends Controller
         self::respuestaJSON(ViaticosDAO::eliminaComprobante_V($_POST));
     }
 
+    public function getComprobante_V()
+    {
+        $comprobante = ViaticosDAO::getComprobante_V($_POST);
+        if (!$comprobante['success']) {
+            return self::respuestaJSON($comprobante);
+        }
+
+        $archivo = $comprobante['datos']['ARCHIVO'];
+        $archivo = is_resource($archivo) ? stream_get_contents($archivo) : $archivo;
+        if ($archivo === false) {
+            return self::respuestaJSON(self::respuesta(false, 'Error al leer el archivo del comprobante.'));
+        }
+
+        header('Content-Transfer-Encoding: binary');
+        header("Content-Type: {$comprobante['datos']['TIPO']}");
+        header("Content-Disposition: inline; filename={$comprobante['datos']['NOMBRE']}");
+        header("Content-Length: {$comprobante['datos']['TAMANO']}");
+        echo $archivo;
+        if (is_resource($archivo)) {
+            fclose($archivo);
+        }
+    }
+
     public function finalizarComprobacion()
     {
         self::respuestaJSON(ViaticosDAO::finalizaComprobacion_V($_POST));
@@ -902,12 +1027,44 @@ class Viaticos extends Controller
         $script = <<<HTML
             <script>
                 const tabla = "#historialSolicitudes"
+                let validacionEntrega = null
+
+                const setValidacionEntrega = () => {
+                    const campos = {
+                        montoEntrega: {
+                            notEmpty: {
+                                message: "Debe ingresar un monto"
+                            },
+                            greaterThan: {
+                                min: 1,
+                                message: "Debe ser mayor a 0"
+                            }
+                        },
+                        observacionesEntrega: {
+                            callback: {
+                                message: "Debe indicar porque esta entregando un monto diferente al autorizado.",
+                                callback: () => {
+                                    if (numeral($("#verMontoAutorizado").val()).difference(numeral($("#montoEntrega").val()).value()) === 0) return true
+                                    return $("#observacionesEntrega").val().trim() !== ""
+                                }
+                            }
+                        }
+                    }
+    
+                    validacionEntrega = setValidacionModal(
+                        "#modalVerEntrega",
+                        campos,
+                        "#entregar",
+                        entrega_VG,
+                        "#cancelar"
+                    )
+                }
 
                 const getSolicitudes = () => {
                     const fechas = getInputFechas("#fechasSolicitudes", true)
 
                     const parametros = {
-                        usuario: $_SESSION[usuario_id],
+                        sucursal: $_SESSION[sucursal_id],
                         fechaI: fechas.inicio,
                         fechaF: fechas.fin
                     }
@@ -915,43 +1072,354 @@ class Viaticos extends Controller
                     consultaServidor("/viaticos/getSolicitudesEntrega", parametros, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         const datos = respuesta.datos.map(solicitud => {
-                            const acciones = "<button type='button' class='btn dropdown-toggle hide-arrow' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-vertical'></i></button>" +
-                                            "<div class='dropdown-menu'>" +
-                                            "<a class='dropdown-item' href='javascript:;' onclick='verSolicitud(" + solicitud.ID + ")'><i class='fa fa-eye'>&nbsp;</i>Detalles</a>" +
-                                            "</div>"
+                            const acciones = menuAcciones([
+                                {
+                                    texto: "Detalles",
+                                    icono: "fa-eye",
+                                    funcion: "verSolicitud(" + solicitud.ID + ")"
+                                }
+                            ])
                             
                             return [
                                 null,
                                 solicitud.ID,
                                 solicitud.TIPO_NOMBRE,
-                                solicitud.PROYECTO,
+                                solicitud.USUARIO_NOMBRE,
                                 moment(solicitud.AUTORIZACION_FECHA).format(MOMENT_FRONT),
                                 numeral(solicitud.AUTORIZACION_MONTO).format(NUMERAL_MONEDA),
                                 acciones
                             ]
-                        });
+                        })
 
                         actualizaDatosTabla(tabla, datos)
                     })
                 }
 
-                
+                const verSolicitud = (solicitudId) => {
+                    consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId }, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const informacion = respuesta.datos.informacion
+                        $("#verSolicitante").val(informacion.USUARIO_NOMBRE)
+                        $("#verSucursal").val(informacion.SUCURSAL_NOMBRE)
+                        $("#verFechaReg").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
+                        $("#verSolicitudId").val(informacion.ID)
+                        $("#verTipoSol").val(informacion.TIPO_NOMBRE)
+                        $("#verFechaI").val(moment(informacion.FECHA_I).format(MOMENT_FRONT))
+                        $("#verFechaF").val(moment(informacion.FECHA_F).format(MOMENT_FRONT))
+                        $("#verProyecto").val(informacion.PROYECTO)
+                        $("#verAutorizado").val(informacion.AUTORIZACION_NOMBRE)
+                        $("#verFechaAutorizado").val(moment(informacion.AUTORIZACION_FECHA).format(MOMENT_FRONT_HORA))
+                        $("#verMontoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_MONEDA))
+                        $("#montoEntrega").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_DECIMAL))
+                        $("#modalVerEntrega").modal("show")
+                    })
+                }
+
+                const entrega_VG = () => {
+                    const parametros = {
+                        solicitud: $("#verSolicitudId").val(),
+                        usuario: $_SESSION[usuario_id],
+                        metodo: $("#metodoEntrega").val(),
+                        monto: $("#montoEntrega").val(),
+                        observaciones: $("#observacionesEntrega").val()
+                    }
+
+                    consultaServidor("/viaticos/entrega_VG", parametros, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        showSuccess("Entrega registrada correctamente.").then(() => {
+                            const parametro = new FormData()
+                            parametro.append("solicitudId", parametros.solicitud)
+                            fetch("/viaticos/getComprobanteEntrega", {
+                                    method: "POST",
+                                    body: parametro
+                                })
+                                .then(response => {
+                                    if (!response.ok) throw new Error("Error al obtener el comprobante")
+                                    return response.blob()
+                                })
+                                .then(blob => {
+                                    const url = URL.createObjectURL(blob)
+                                    const modal = $("#modalVerComprobante")
+                                    modal.find("#verArchivoComprobante").attr("src", url)
+                                    modal.modal("show")
+                                    modal.on("hidden.bs.modal", () => {
+                                        URL.revokeObjectURL(url)
+                                    })
+                                    Swal.close()
+                                })
+                                .catch(error => {
+                                    Swal.close()
+                                    showError(error.message)
+                                })
+                            $("#modalVerEntrega").modal("hide")
+                            getSolicitudes()
+                        })
+                    })
+                }
 
                 $(document).ready(() => {
                     setInputFechas("#fechasSolicitudes", { rango:true, iniD: -30 })
+                    setInputMoneda("#montoEntrega")
+                    $("#btnBuscarSolicitudes").on("click", getSolicitudes)
+                    setValidacionEntrega()
                     configuraTabla(tabla)
                     getSolicitudes()
                 });
             </script>
         HTML;
 
+        $metodosDisponibles = ViaticosDAO::getCatalogoMetodosEntrega();
+        $metodosEntrega = '';
+        if ($metodosDisponibles['success']) {
+            foreach ($metodosDisponibles['datos'] as $metodo) {
+                $metodosEntrega .= "<option value='{$metodo['ID']}'>{$metodo['NOMBRE']}</option>";
+            }
+        }
+
         self::set("titulo", "Entrega y devolución");
         self::set("script", $script);
+        self::set("metodosEntrega", $metodosEntrega);
         self::render("viaticos_entrega");
     }
 
     public function getSolicitudesEntrega()
     {
         self::respuestaJSON(ViaticosDAO::getSolicitudesEntrega($_POST));
+    }
+
+    public function entrega_VG()
+    {
+        self::respuestaJSON(self::respuesta(true, 'Entregado'));
+        // self::respuestaJSON(ViaticosDAO::entrega_VG($_POST));
+    }
+
+    public function getComprobanteEntrega()
+    {
+        $datos = ViaticosDAO::getDatosComprobanteEntrega($_POST);
+        if (!$datos['success']) {
+            return self::respuestaJSON($datos);
+        }
+
+        $datos = $datos['datos'];
+        if ($datos['TIPO'] === 1) {
+            $tipo_titulo = 'Entrega de Viáticos';
+        } else {
+            $tipo_titulo = 'Devolución de Gastos';
+        }
+        $tipo = strtolower($tipo_titulo);
+        $plantilla = self::getPlantillaEntrega_VG();
+
+        $mpdf = new \mPDF([
+            'mode' => 'utf-8',
+            'format' => 'Letter',
+            'default_font_size' => 11,
+            'default_font' => 'Arial',
+            'margin_left' => 10,
+            'margin_right' => 10,
+            'margin_top' => 10,
+            'margin_bottom' => 10,
+        ]);
+        $mpdf->WriteHTML($plantilla['estilo'], 1);
+        $mpdf->WriteHTML($plantilla['cuerpo'], 2);
+        $mpdf->Output('comprobante_entrega.pdf', 'I');
+        exit;
+    }
+
+    public function getPlantillaEntrega_VG()
+    {
+        $estilo = <<<HTML
+            <style>
+                body {
+                    width: 100%;
+                    height: 100%;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .header {
+                    text-align: center;
+                    margin-bottom: 10px;
+                    border-bottom: 2px solid #333;
+                }
+                
+                .header h1 {
+                    font-size: 18pt;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                }
+                
+                .document-info {
+                    width: 100%;
+                }
+                
+                .document-info .left {
+                    width: 60%;
+                    vertical-align: top;
+                }
+                
+                .document-info .right {
+                    width: 40%;
+                    vertical-align: top;
+                    text-align: right;
+                }
+                
+                .field-row {
+                    margin-bottom: 8px;
+                }
+                
+                .field-label {
+                    font-weight: bold;
+                    display: inline-block;
+                    width: 100px;
+                }
+                
+                .field-value {
+                    display: inline-block;
+                    border-bottom: 1px solid #333;
+                    min-width: 200px;
+                    padding-bottom: 1px;
+                }
+                
+                .content-section {
+                    margin: 20px 0;
+                    text-align: justify;
+                    line-height: 1.6;
+                }
+                
+                .amount-section {
+                    margin: 20px 0;
+                    text-align: center;
+                }
+                
+                .amount-box {
+                    display: inline-block;
+                    border: 2px solid #333;
+                    padding: 15px 30px;
+                    background-color: #f9f9f9;
+                }
+                
+                .amount-label {
+                    font-weight: bold;
+                    font-size: 11pt;
+                    margin-bottom: 5px;
+                }
+                
+                .amount-value {
+                    font-size: 14pt;
+                    font-weight: bold;
+                    color: #333;
+                }
+                
+                .signatures {
+                    width: 100%;
+                    text-align: center;
+                }
+
+                .signatures-signature {
+                    height: 100px;
+                }
+
+                .signatures-space {
+                    width: 10%;
+                }
+
+                .signatures-data {
+                    width: 35%;
+                    border-top: 1px solid #333;
+                }
+                
+                .signature-title {
+                    font-weight: bold;
+                }
+            </style>
+        HTML;
+
+        $cuerpo = <<<HTML
+            <!-- Encabezado -->
+            <div class="header">
+                <h1>Comprobante de Entrega y Recepción de Viáticos</h1>
+            </div>
+
+            <!-- Información del documento -->
+            <table class="document-info">
+                <tr>
+                    <td class="left">
+                        <div class="field-row">
+                            <span class="field-label">Empresa:</span>
+                            <span class="field-value">[NOMBRE DE LA EMPRESA]</span>
+                        </div>
+                    </td>
+                    <td class="right">
+                        <div class="field-row">
+                            <span class="field-label">Folio:</span>
+                            <span class="field-value">[000001]</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="left">
+                        <div class="field-row">
+                            <span class="field-label">Sucursal:</span>
+                            <span class="field-value">[SUCURSAL]</span>
+                        </div>
+                    </td>
+                    <td class="right">
+                        <div class="field-row">
+                            <span class="field-label">Fecha:</span>
+                            <span class="field-value">[DD/MM/AAAA]</span>
+                        </div>
+                    </td>
+                </tr>
+                
+            </table>
+
+            <!-- Contenido principal -->
+            <div class="content-section">
+                <p>Por medio del presente documento se hace constar la <strong>ENTREGA DE VIÁTICOS</strong> por parte de <strong>[NOMBRE_ENTREGADOR]</strong> en representación de <strong>[NOMBRE_EMPRESA]</strong>, al empleado <strong>[NOMBRE_RECEPTOR]</strong>, quien desempeña el cargo de <strong>[PUESTO_EMPLEADO]</strong>.</p>
+                
+                <p>El beneficiario se compromete a utilizar los recursos otorgados de manera responsable y conforme a los lineamientos establecidos en las políticas internas de viáticos y gastos de representación de la empresa, así como a presentar la documentación comprobatoria correspondiente en los plazos establecidos.</p>
+                
+                <p>La entrega se realiza bajo los términos y condiciones vigentes en el reglamento interno de la organización, siendo responsabilidad del receptor el correcto manejo y aplicación de los recursos recibidos.</p>
+            </div>
+
+            <!-- Monto -->
+            <div class="amount-section">
+                <div class="amount-box">
+                    <div class="amount-label">MONTO ENTREGADO</div>
+                    <div class="amount-value">$[0,000.00] MXN</div>
+                </div>
+            </div>
+
+            <!-- Firmas -->
+            <table class="signatures">
+                <tr class="signatures-signature">
+                    <td></td>
+                    <td>
+                        <span class="signature-title">ENTREGA</span>
+                    </td>
+                    <td></td>
+                    <td>
+                        <span class="signature-title">RECIBE</span>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="signatures-space"></td>
+                    <td class="signatures-data">
+                        <span>Nombre y Firma</span>
+                    </td>
+                    <td class="signatures-space"></td>
+                    <td class="signatures-data">
+                        <span>Nombre y Firma</span>
+                    </td>
+                    <td class="signatures-space"></td>
+                </tr>
+            </table>
+        HTML;
+
+        return [
+            'estilo' => $estilo,
+            'cuerpo' => $cuerpo
+        ];
     }
 }

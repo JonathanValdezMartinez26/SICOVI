@@ -27,4 +27,16 @@ class Model
             return self::resultado(false, 'Error al obtener los conceptos de viáticos.', null, $e->getMessage());
         }
     }
+
+    public static function getCatalogoMetodosEntrega()
+    {
+        $query = "SELECT * FROM CAT_METODO_ENTREGA_VIATICOS ORDER BY ID";
+        try {
+            $db = new Database();
+            $result = $db->queryAll($query);
+            return self::resultado(true, 'Métodos de entrega obtenidos.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener los métodos de entrega.', null, $e->getMessage());
+        }
+    }
 }
