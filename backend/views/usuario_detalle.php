@@ -3,7 +3,7 @@
     <div class="d-flex flex-column flex-sm-row align-items-center justify-content-sm-between mb-6 text-center text-sm-start gap-2">
         <div class="mb-2 mb-sm-0">
             <h4 class="mb-1">JONATHAN VALDEZ MARTINEZ </h4>
-            <p class="mb-0"><span class="badge bg-label-primary">NÓMINA BASE: FINANCIERA CULTIVA</span></p>
+            <p class="mb-0"><span class="badge bg-label-primary">Fecha de Alta: 03/06/2025 14:20:00</span></p>
         </div>
         <button type="button" class="btn btn-label-danger delete-customer">Dar de Baja al Colaborador</button>
     </div>
@@ -19,7 +19,6 @@
                             <img class="img-fluid rounded mb-4" src="   https://cdn-icons-png.flaticon.com/512/16683/16683419.png " width="120" height="120" alt="" title="" class="img-small">
                             <div class="customer-info text-center mb-6">
                                 <h5 class="mb-0">JONATHAN VALDEZ MARTINEZ</h5>
-                                <span>Fecha de Alta: 03/06/2025 14:20:00 </span>
                             </div>
                         </div>
                     </div>
@@ -74,9 +73,20 @@
                                 <span class="badge bg-label-success">Activo</span>
                             </li>
                             <li class="mb-2">
-                                <span class="h6 me-1">Nómina Base:</span>
-                                <span>FINANCIERA CULTIVA</span>
+                                <span class="h6 me-1">Reporta comprobaciones a:</span>
+                                <span class="badge bg-label-primary">ANGEL MOISES GUERRERO</span>
                             </li>
+
+                            <li class="mb-2">
+                                <span class="h6 me-1">Nómina Base:</span>
+                                <span class="badge bg-label-info">FINANCIERA CULTIVA</span>
+                            </li>
+
+                            <li class="mb-2">
+                                <span class="h6 me-1">Puesto del colaborador:</span>
+                                <span class="">OPERACIONES</span>
+                            </li>
+
 
                             <li class="mb-2">
                                 <span class="h6 me-1"># Nómina:</span>
@@ -164,8 +174,6 @@
                         <table class="table">
                             <thead>
                             <tr>
-                                <th class="text-nowrap">Empresa</th>
-                                <th class="text-nowrap text-center">Permiso</th>
                             </tr>
                             </thead>
                             <tbody>
