@@ -358,15 +358,12 @@ class Viaticos extends Controller
                     const fecha = moment()
                     const dia = fecha.isoWeekday()
                     const hora = fecha.hour()
-                    const minuto = fecha.minute()
+                    let diaPago = 8 
 
-                    if (dia >= 1 && dia <= 3) {
-                        if (hora < 12 || (hora === 12 && minuto < 0)) {
-                            return fecha.clone().isoWeekday(4)
-                        }
-                    }
+                    if (dia >= 1 && dia <= 2) diaPago = 4
+                    if (dia == 3 && hora < 12) diaPago = 4
                     
-                    return fecha.clone().isoWeekday(8)
+                    return fecha.clone().isoWeekday(diaPago)
                 }
 
                 const changeTipoSolicitud = () => {
@@ -1128,31 +1125,16 @@ class Viaticos extends Controller
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         showSuccess("Entrega registrada correctamente.").then(() => {
                             const parametro = new FormData()
-                            parametro.append("solicitudId", parametros.solicitud)
-                            fetch("/viaticos/getComprobanteEntrega", {
-                                    method: "POST",
-                                    body: parametro
-                                })
-                                .then(response => {
-                                    if (!response.ok) throw new Error("Error al obtener el comprobante")
-                                    return response.blob()
-                                })
-                                .then(blob => {
-                                    const url = URL.createObjectURL(blob)
-                                    const modal = $("#modalVerComprobante")
-                                    modal.find("#verArchivoComprobante").attr("src", url)
-                                    modal.modal("show")
-                                    modal.on("hidden.bs.modal", () => {
-                                        URL.revokeObjectURL(url)
-                                    })
-                                    Swal.close()
-                                })
-                                .catch(error => {
-                                    Swal.close()
-                                    showError(error.message)
-                                })
+                            parametro.append("solicitud", parametros.solicitud)
                             $("#modalVerEntrega").modal("hide")
-                            getSolicitudes()
+                            modalVisorArchivos(
+                                "/viaticos/getComprobanteEntrega",
+                                parametro,
+                                {
+                                    titulo:"Comprobante de entrega",
+                                    fncClose: getSolicitudes
+                                }
+                            )
                         })
                     })
                 }
@@ -1227,6 +1209,18 @@ class Viaticos extends Controller
 
     public function getPlantillaEntrega_VG()
     {
+        $monto = 1535.50;
+
+        $entero = floor($monto);
+        $centavos = round(($monto - $entero) * 100);
+        $fmt = new \NumberFormatter("es", \NumberFormatter::SPELLOUT);
+        $texto_entero = $fmt->format($entero);
+        $texto_centavos = str_pad($centavos, 2, '0', STR_PAD_LEFT);
+        $monto_letra = mb_strtoupper("$texto_entero pesos $texto_centavos/100 M.N.", 'UTF-8');
+
+        $fmt = new \NumberFormatter('es_MX', \NumberFormatter::CURRENCY);
+        $monto = $fmt->formatCurrency($monto, 'MXN');
+
         $estilo = <<<HTML
             <style>
                 body {
@@ -1313,10 +1307,11 @@ class Viaticos extends Controller
                 .signatures {
                     width: 100%;
                     text-align: center;
+                    margin-bottom: 100px;
                 }
 
                 .signatures-signature {
-                    height: 100px;
+                    height: 300px;
                 }
 
                 .signatures-space {
@@ -1379,14 +1374,14 @@ class Viaticos extends Controller
                 
                 <p>El beneficiario se compromete a utilizar los recursos otorgados de manera responsable y conforme a los lineamientos establecidos en las políticas internas de viáticos y gastos de representación de la empresa, así como a presentar la documentación comprobatoria correspondiente en los plazos establecidos.</p>
                 
-                <p>La entrega se realiza bajo los términos y condiciones vigentes en el reglamento interno de la organización, siendo responsabilidad del receptor el correcto manejo y aplicación de los recursos recibidos.</p>
             </div>
 
             <!-- Monto -->
             <div class="amount-section">
                 <div class="amount-box">
                     <div class="amount-label">MONTO ENTREGADO</div>
-                    <div class="amount-value">$[0,000.00] MXN</div>
+                    <div class="amount-value">$monto</div>
+                    <div class="amount-text">($monto_letra)</div>
                 </div>
             </div>
 
