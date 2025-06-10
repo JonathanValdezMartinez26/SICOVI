@@ -21,42 +21,51 @@ const menuAcciones = (opciones) => {
         <div class="dropdown-menu">${acciones}</div>`
 }
 
-const modalVisorArchivos = (
-    url,
-    parametros,
-    { metodo = "POST", titulo = null, fncClose = null } = {}
-) => {
+const mostrarArchivo = (url, { titulo = null, fncClose = null } = {}) => {
     const id = new Date().getTime()
     const idModal = `modalVisorArchivos_${id}`
     const idVisor = `archivoVisor_${id}`
     titulo = titulo || "Visor de Archivos"
 
-    const getModal = (modalURL, modalTitulo, modalId, modalVisorId) => {
-        return `<div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true" role="dialog">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <button type="button" class="btn-close btnCerrarVer" data-bs-dismiss="modal" aria-label="Close"></button>
-                            <div class="text-center w-100">
-                                <h4 class="address-title mb-2">${modalTitulo}</h4>
-                            </div>
-                        </div>
-                        <div class="modal-body">
-                            <div class="row">
-                                <div class="col-12 text-center">
-                                    <embed id="${modalVisorId}" src="${modalURL}" style="width: 100%; min-height: 30vh;"></embed>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary btnCerrarVer" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
+    const modal = `<div class="modal fade" id="${idModal}" tabindex="-1" aria-hidden="true" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="btn-close btnCerrarVer" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="text-center w-100">
+                            <h4 class="address-title mb-2">${titulo}</h4>
                         </div>
                     </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <embed id="${idVisor}" src="${url}" style="width: 100%; min-height: 30vh;"></embed>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btnCerrarVer" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
+                    </div>
                 </div>
-            </div>`
-    }
+            </div>
+        </div>`
 
-    showWait("Por favor, espere mientras se carga el archivo.")
+    $("body").append(modal)
+    const modalElement = $(`#${idModal}`)
+    modalElement.modal("show")
+    modalElement.on("hidden.bs.modal", function () {
+        if (typeof fncClose === "function") fncClose()
+        $(this).remove()
+    })
+    return modalElement
+}
+
+const mostrarArchivoDescargado = (
+    url,
+    parametros,
+    { metodo = "POST", titulo = null, fncClose = null } = {}
+) => {
+    showWait("Por favor, espere mientras se descarga el archivo.")
     fetch(url, {
         method: metodo,
         body: parametros
@@ -67,14 +76,12 @@ const modalVisorArchivos = (
         })
         .then((blob) => {
             const urlModal = URL.createObjectURL(blob)
-            $("body").append(getModal(urlModal, titulo, idModal, idVisor))
-            const modalElement = $(`#${idModal}`)
-            modalElement.modal("show")
-            modalElement.on("hidden.bs.modal", function () {
-                if (typeof fncClose === "function") {
-                    fncClose()
+            mostrarArchivo(urlModal, {
+                titulo,
+                fncClose: () => {
+                    URL.revokeObjectURL(urlModal)
+                    if (typeof fncClose === "function") fncClose()
                 }
-                $(this).remove()
             })
             Swal.close()
         })
@@ -82,4 +89,137 @@ const modalVisorArchivos = (
             Swal.close()
             showError(error.message)
         })
+}
+
+const tomarFoto = (titulo, fncOK) => {
+    titulo = titulo || "Tomar foto"
+    let imagenCapturada = null
+
+    const modal = `<div class="modal fade" id="modalTomarFoto" tabindex="-1" aria-hidden="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="text-center w-100">
+                        <h4 class="address-title mb-2">${titulo}</h4>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <video id="videoComprobante" width="100%" height="auto" autoplay></video>
+                    <canvas id="canvasComprobante" style="display: none;"></canvas>
+                </div>
+                <div class="modal-footer">
+                    <div class="row w-100">
+                        <div class="col-6">
+                            <select id="selectorCamara" class="form-select">
+                            </select>
+                        </div>
+                        <div class="col-6 d-flex justify-content-end">
+                            <button id="btnCapturarFoto" class="btn btn-success"><i class="fa fa-camera">&nbsp;</i>Tomar foto</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`
+
+    const listarCamaras = async (selector) => {
+        let camaras = window.camarasDisponibles
+
+        if (!camaras) {
+            try {
+                await navigator.mediaDevices.getUserMedia({ video: true })
+                const dispositivos = await navigator.mediaDevices.enumerateDevices()
+
+                camaras = dispositivos.filter((d) => d.kind === "videoinput")
+                window.camarasDisponibles = camaras
+            } catch (error) {
+                console.error("Error al listar cámaras:", error)
+            }
+        }
+
+        if (camaras.length === 0) {
+            selector.append("<option value=''>No se encontraron cámaras disponibles</option>")
+            return
+        }
+
+        camaras.forEach((camara, index) => {
+            const option = $("<option></option>")
+            option.val(camara.deviceId)
+            option.text(camara.label || "Cámara " + index + 1)
+            selector.append(option)
+        })
+    }
+
+    const iniciarCamara = async (selector, video) => {
+        const configuracion = {
+            video: {
+                deviceId: { exact: selector.val() }
+            },
+            audio: false
+        }
+
+        try {
+            detenerCamara(video)
+            const stream = await navigator.mediaDevices.getUserMedia(configuracion)
+            video.srcObject = stream
+            video.play()
+        } catch (error) {
+            showError(
+                "La cámara no se ha podido iniciar, verifique que la cámara esté conectada y tenga los permisos necesarios."
+            )
+        }
+    }
+
+    const detenerCamara = (video) => {
+        if (video.srcObject) {
+            const stream = video.srcObject
+            const tracks = stream.getTracks()
+            tracks.forEach((track) => track.stop())
+            video.srcObject = null
+        }
+    }
+
+    const capturarFoto = (modal, video, canvas) => {
+        const contexto = canvas.getContext("2d")
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+
+        if (video.srcObject) {
+            contexto.drawImage(video, 0, 0, canvas.width, canvas.height)
+            canvas.toBlob((blob) => {
+                const tiempo = moment().format("YYYYMMDD_HHmmss")
+                const archivoFoto = new File([blob], "foto_" + tiempo + ".jpg", {
+                    type: "image/jpeg"
+                })
+                const dataTransfer = new DataTransfer()
+                dataTransfer.items.add(archivoFoto)
+                imagenCapturada = dataTransfer.files
+                modal.modal("hide")
+            }, "image/jpeg")
+        } else {
+            showError("No hay imagen disponible para la foto.")
+        }
+    }
+
+    $("body").append(modal)
+    const modalElement = $("#modalTomarFoto")
+    const videoElement = modalElement.find("#videoComprobante")[0]
+    const canvasElement = modalElement.find("#canvasComprobante")[0]
+    const selectorElement = modalElement.find("#selectorCamara")
+    listarCamaras(selectorElement).then(() => {
+        iniciarCamara(selectorElement, videoElement)
+    })
+    selectorElement.on("change", () => {
+        iniciarCamara(selectorElement, videoElement)
+    })
+    modalElement.find("#btnCapturarFoto").on("click", () => {
+        capturarFoto(modalElement, videoElement, canvasElement)
+    })
+    modalElement.modal("show")
+    modalElement.on("hidden.bs.modal", function () {
+        detenerCamara(videoElement)
+        if (typeof fncOK === "function") fncOK(imagenCapturada)
+        $(this).remove()
+    })
 }

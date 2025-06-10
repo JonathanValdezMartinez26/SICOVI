@@ -11,12 +11,12 @@ function getMenu()
             'subItems' => [
                 [
                     'label' => 'Mis Solicitudes',
-                    'url' => '/viaticos/solicitud',
+                    'url' => '/Viaticos/Solicitud',
                     'permisos' => ['1', '2']
                 ],
                 [
                     'label' => 'Entrega',
-                    'url' => '/viaticos/entrega',
+                    'url' => '/Viaticos/Entrega',
                     'permisos' => ['1', '2']
                 ]
             ]
@@ -24,6 +24,11 @@ function getMenu()
         'Tesorería' => [
             'icono' => 'fa-solid fa-screwdriver-wrench',
             'subItems' => [
+                [
+                    'label' => 'Validación de comprobantes',
+                    'url' => '/Viaticos/Validacion',
+                    'permisos' => ['1', '2']
+                ],
                 [
                     'label' => 'Bitácora de Solicitudes',
                     'url' => 'app-viaticos-dashboard.html',
@@ -71,7 +76,7 @@ function getMenu()
         $submenu = '';
         foreach ($item['subItems'] as $subItem) {
             if (in_array($_SESSION['perfil_id'], $subItem['permisos'])) {
-                $activo = "{$subItem['url']}" == $_SERVER['REQUEST_URI'] ? 'active' : '';
+                $activo = strtolower($subItem['url']) == strtolower($_SERVER['REQUEST_URI']) ? 'active' : '';
                 $submenu .= <<<HTML
                     <li class="menu-item $activo">
                         <a href="{$subItem['url']}" class="menu-link">

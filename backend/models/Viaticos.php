@@ -28,7 +28,7 @@ class Viaticos extends Model
                 , CEV.CLASE_FRONT AS ESTATUS_COLOR
             FROM
                 VIATICOS V
-                LEFT JOIN CAT_ESTATUS_VIATICOS CEV ON CEV.ID = V.ESTATUS
+                LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
             WHERE
                 USUARIO = :usuario
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
@@ -89,8 +89,8 @@ class Viaticos extends Model
                 , V.COMPROBACION_MONTO
             FROM
                 VIATICOS V
-                LEFT JOIN CAT_ESTATUS_VIATICOS CEV ON CEV.ID = V.ESTATUS
-                LEFT JOIN CAT_METODO_ENTREGA_VIATICOS CMEV ON CMEV.ID = V.ENTREGA_METODO
+                LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
+                LEFT JOIN CAT_VIATICOS_METODO_ENTREGA CMEV ON CMEV.ID = V.ENTREGA_METODO
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
                 LEFT JOIN SUCURSAL S ON S.ID = U.SUCURSAL
             WHERE
@@ -123,7 +123,7 @@ class Viaticos extends Model
             FROM
                 VIATICOS_COMPROBACION VC
                 INNER JOIN ARCHIVO A ON A.ID = VC.ARCHIVO
-                INNER JOIN CAT_CONCEPTO_VIATICOS CCV ON CCV.ID = VC.CONCEPTO
+                INNER JOIN CAT_VIATICOS_CONCEPTO CCV ON CCV.ID = VC.CONCEPTO
             WHERE
                 VC.VIATICOS = :idSolicitud
         SQL;
@@ -472,7 +472,7 @@ class Viaticos extends Model
                 , V.AUTORIZACION_MONTO
             FROM
                 VIATICOS V
-                LEFT JOIN CAT_ESTATUS_VIATICOS CEV ON CEV.ID = V.ESTATUS
+                LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
             WHERE
                 V.ESTATUS IN (2)
@@ -565,7 +565,7 @@ class Viaticos extends Model
                 , CMEV.NOMBRE AS METODO_ENTREGA
             FROM
                 VIATICOS V
-                LEFT JOIN CAT_METODO_ENTREGA_VIATICOS CMEV ON CMEV.ID = V.ENTREGA_METODO
+                LEFT JOIN CAT_VIATICOS_METODO_ENTREGA CMEV ON CMEV.ID = V.ENTREGA_METODO
             WHERE
                 V.ID = :id
         SQL;

@@ -350,6 +350,7 @@ class Viaticos extends Controller
                     })
 
                     $("#modalAgregarComprobante").on("hidden.bs.modal", () => {
+                        if ($('.modal.show').length > 0) return
                         modalOrigen.modal("show")
                     })
                 }
@@ -517,85 +518,6 @@ class Viaticos extends Controller
                     })
                 }
 
-                const iniciarCamara = async () => {
-                    const camara = $("#selectorCamara").val()
-
-                    const configuracion = {
-                        video: {
-                            deviceId: { exact: camara }
-                        },
-                        audio: false
-                    }
-
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia(configuracion)
-                        const video = $("#videoComprobante")[0]
-                        video.srcObject = stream
-                        video.play()
-                    } catch (error) {
-                        showError("La cámara no se ha podido iniciar, verifique que la cámara esté conectada y tenga los permisos necesarios.")
-                    }
-                }
-
-                const detenerCamara = () => {
-                    const video = $("#videoComprobante")[0]
-                    if (video.srcObject) {
-                        const stream = video.srcObject
-                        const tracks = stream.getTracks()
-                        tracks.forEach((track) => track.stop())
-                        video.srcObject = null
-                    }
-                }
-
-                const tomarFoto = () => {
-                    const video = $("#videoComprobante")[0]
-                    const canvas = $("#canvasComprobante")[0]
-                    const context = canvas.getContext("2d")
-                    canvas.width = video.videoWidth
-                    canvas.height = video.videoHeight
-
-                    if (video.srcObject) {
-                        context.drawImage(video, 0, 0, canvas.width, canvas.height)
-                        canvas.toBlob((blob) => {
-                            const tiempo = moment().format("YYYYMMDD_HHmmss")
-                            const archivoFoto = new File([blob], "foto_" + tiempo + ".jpg", {
-                                type: "image/jpeg"
-                            })
-                            const dataTransfer = new DataTransfer()
-                            dataTransfer.items.add(archivoFoto)
-                            $("#comprobante")[0].files = dataTransfer.files
-                            $("#comprobante").trigger("change")
-                        }, "image/jpeg")
-                        $("#modalTomarFoto").modal("hide")
-                    } else {
-                        showError("No hay video disponible para tomar una foto.")
-                    }
-                }
-
-                const listarCamaras = async () => {
-                    try {
-                        const permisos = await navigator.mediaDevices.getUserMedia({ video: true })
-                        permisos.getTracks().forEach(track => track.stop())
-                        const dispositivos = await navigator.mediaDevices.enumerateDevices()
-                        const select = $("#selectorCamara")
-
-                        const camaras = dispositivos.filter((d) => d.kind === "videoinput")
-                        if (camaras.length === 0) {
-                            select.append("<option value=''>No se encontraron cámaras disponibles</option>")
-                            return
-                        }
-                        
-                        camaras.forEach((camara, index) => {
-                            const option = $("<option></option>")
-                            option.val(camara.deviceId)
-                            option.text(camara.label || "Cámara " + index + 1)
-                            select.append(option)
-                        })
-                    } catch (error) {
-                        console.error("Error al listar cámaras:", error)
-                    }
-                }
-
                 const verSolicitud = (solicitudId) => {
                     consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId }, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
@@ -757,47 +679,27 @@ class Viaticos extends Controller
 
                 const verComprobanteGastos = (index) => {
                     const comprobante = comprobantesGastos[index].comprobante
-                    const url = URL.createObjectURL(comprobante)
-                    const modal = $("#modalVerComprobante")
                     if (comprobante.type.startsWith("image/") || comprobante.type === "application/pdf") {
-                        modal.find("#verArchivoComprobante").attr("src", url)
+                        const url = URL.createObjectURL(comprobante)
+                        $("#modalNuevaSolicitud").modal("hide")
+                        mostrarArchivo(url, {
+                            titulo: "Comprobante de Gastos",
+                            fncClose: () => {
+                                $("#modalNuevaSolicitud").modal("show")
+                                URL.revokeObjectURL(url)
+                            }
+                        })
                     } else {
                         showError("El tipo de archivo no es compatible para vista previa.")
                         return
                     }
-                    
-                    modal.modal("show")
-                    modal.on("hidden.bs.modal", () => {
-                        URL.revokeObjectURL(url)
-                    })
                 }
 
                 const verComprobanteViaticos = (comprobanteId) => {
                     showWait("Cargando comprobante...")
                     const parametro = new FormData()
                     parametro.append("comprobanteId", comprobanteId)
-                    fetch("/viaticos/getComprobante_V", {
-                            method: "POST",
-                            body: parametro
-                        })
-                        .then(response => {
-                            if (!response.ok) throw new Error("Error al obtener el comprobante")
-                            return response.blob()
-                        })
-                        .then(blob => {
-                            const url = URL.createObjectURL(blob)
-                            const modal = $("#modalVerComprobante")
-                            modal.find("#verArchivoComprobante").attr("src", url)
-                            modal.modal("show")
-                            modal.on("hidden.bs.modal", () => {
-                                URL.revokeObjectURL(url)
-                            })
-                            Swal.close()
-                        })
-                        .catch(error => {
-                            Swal.close()
-                            showError(error.message)
-                        })
+                    mostrarArchivoDescargado("/viaticos/getComprobante_V", parametro)
                 }
 
                 $(document).ready(() => {
@@ -822,10 +724,15 @@ class Viaticos extends Controller
                         $("#descripcionComprobante").text(concepto.attr("lbl-desc") || "")
                     })
 
-                    $("#modalTomarFoto").on("shown.bs.modal", iniciarCamara)
-                    $("#modalTomarFoto").on("hidden.bs.modal", detenerCamara)
-                    $("#btnTomarFoto").on("click", () =>  $("#modalTomarFoto").modal("show"))
-                    $("#btnCapturarFoto").on("click", tomarFoto)
+                    $("#btnTomarFoto").on("click", () => {
+                        $("#modalAgregarComprobante").modal("hide")
+                        tomarFoto("Captura de Comprobante", (foto) => {
+                            $("#comprobante")[0].files = foto
+                            $("#comprobante").trigger("change")
+                            $("#modalAgregarComprobante").modal("show")
+                        })
+                    })
+                    
                     $(".btnCerrarVer").on("click", () => {
                         $("#verSolicitudId").val("")
                         $('#acordionVer .accordion-collapse').removeClass('show')
@@ -834,11 +741,6 @@ class Viaticos extends Controller
                         $('#acordionVer .accordion-button').first().removeClass('collapsed')
                     })
                     $("#btnFinalizarComprobacion").on("click", finalizarComprobacion)
-                    listarCamaras()
-                    $("#selectorCamara").on("change", () => {
-                        detenerCamara()
-                        iniciarCamara()
-                    })
                     getSolicitudes()
                 })
             </script>
@@ -1113,28 +1015,35 @@ class Viaticos extends Controller
                 }
 
                 const entrega_VG = () => {
-                    const parametros = {
-                        solicitud: $("#verSolicitudId").val(),
-                        usuario: $_SESSION[usuario_id],
-                        metodo: $("#metodoEntrega").val(),
-                        monto: $("#montoEntrega").val(),
-                        observaciones: $("#observacionesEntrega").val()
-                    }
+                    confirmarMovimiento("¿Desea registrar la entrega?").then((continuar) => {
+                        if (!continuar.isConfirmed) return
 
-                    consultaServidor("/viaticos/entrega_VG", parametros, (respuesta) => {
-                        if (!respuesta.success) return showError(respuesta.mensaje)
-                        showSuccess("Entrega registrada correctamente.").then(() => {
-                            const parametro = new FormData()
-                            parametro.append("solicitud", parametros.solicitud)
-                            $("#modalVerEntrega").modal("hide")
-                            modalVisorArchivos(
-                                "/viaticos/getComprobanteEntrega",
-                                parametro,
-                                {
-                                    titulo:"Comprobante de entrega",
-                                    fncClose: getSolicitudes
-                                }
-                            )
+                        const parametros = {
+                            solicitud: $("#verSolicitudId").val(),
+                            usuario: $_SESSION[usuario_id],
+                            metodo: $("#metodoEntrega").val(),
+                            monto: $("#montoEntrega").val(),
+                            observaciones: $("#observacionesEntrega").val()
+                        }
+
+                        consultaServidor("/viaticos/entrega_VG", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+                            const mensaje = "<p>La entrega se ha registrado correctamente.</p>" +
+                                "<p>Debe imprimir el comprobante y ser firmado por quien recibe y por quien entrega.</p>"
+
+                            showSuccess(mensaje).then(() => {
+                                const parametro = new FormData()
+                                parametro.append("solicitud", parametros.solicitud)
+                                $("#modalVerEntrega").modal("hide")
+                                mostrarArchivoDescargado(
+                                    "/viaticos/getComprobanteEntrega",
+                                    parametro,
+                                    {
+                                        titulo: "Comprobante de entrega",
+                                        fncClose: getSolicitudes
+                                    }
+                                )
+                            })
                         })
                     })
                 }
@@ -1416,5 +1325,28 @@ class Viaticos extends Controller
             'estilo' => $estilo,
             'cuerpo' => $cuerpo
         ];
+    }
+
+    public function Validacion()
+    {
+        $css = <<<HTML
+            <link rel="stylesheet" href="/assets/css/viaticos-validacion.css" />
+        HTML;
+
+        $script = <<<HTML
+            <script>
+
+                $(document).ready(() => {
+                    $("#verDemo").on("click", () => {
+                        $("#solicitud-detalles")[0].classList.add("show")
+                    })
+                })
+            </script>
+        HTML;
+
+        self::set("titulo", "Validación de comprobantes");
+        self::set("css", $css);
+        self::set("script", $script);
+        self::render("viaticos_validacion");
     }
 }

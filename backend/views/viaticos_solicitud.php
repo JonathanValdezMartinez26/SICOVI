@@ -12,14 +12,6 @@
                 <button id="btnBuscarSolicitudes" class="btn btn-outline-primary">Actualizar</button>
             </div>
         </div>
-        <!-- <div class="col-2">
-            <label class="form-label">Tipo de solicitud</label>
-            <select id="tipoFiltro" class="form-select">
-                <option value="">Todas</option>
-                <option value="1">Viáticos</option>
-                <option value="2">Gastos</option>
-            </select>
-        </div> -->
         <div class="col-4 d-flex align-self-end justify-content-end">
             <button id="btnAgregar" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalNuevaSolicitud"><i class="fa fa-plus">&nbsp;</i>Nueva Solicitud</button>
         </div>
@@ -205,37 +197,6 @@
     </div>
 </div>
 <!-- / Modal para agregar comprobante -->
-
-<!-- Modal para tomar foto -->
-<div class="modal fade" id="modalTomarFoto" tabindex="-1" aria-hidden="true" role="dialog">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                <div class="text-center w-100">
-                    <h4 class="address-title mb-2">Tomar Foto</h4>
-                    <p class="address-subtitle">Capture una foto del comprobante</p>
-                </div>
-            </div>
-            <div class="modal-body">
-                <video id="videoComprobante" width="100%" height="auto" autoplay></video>
-                <canvas id="canvasComprobante" style="display: none;"></canvas>
-                <div class="row">
-                    <div class="col-6">
-                        <select id="selectorCamara" class="form-select">
-                        </select>
-                    </div>
-                    <div class="col-6 d-flex justify-content-end">
-                        <button id="btnCapturarFoto" class="btn btn-success"><i class="fa fa-camera">&nbsp;</i>Capturar Foto</button>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-            </div>
-        </div>
-    </div>
-</div>
-<!-- / Modal para tomar foto -->
 
 <!-- Modal para ver solicitud -->
 <div class="modal fade" id="modalVerSolicitud" tabindex="-1" aria-hidden="true" role="dialog">

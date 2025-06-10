@@ -1,0 +1,29 @@
+.cursor-not-allowed {
+    cursor: not-allowed !important;
+}
+
+.w-80 {
+    width: 80% !important;
+}
+
+#solicitudes {
+    position: relative;
+    overflow: hidden;
+    block-size: calc(100vh - 12rem);
+}
+
+#solicitud-detalles {
+    position: absolute;
+    z-index: -1;
+    block-size: calc(100vh - 12rem);
+    inline-size: 100%;
+    inset-block-start: 0;
+    inset-inline-end: -100%;
+    -webkit-transition: all 0.5s ease;
+    transition: all 0.5s ease;
+}
+
+#solicitud-detalles.show {
+    z-index: 4;
+    inset-inline-end: -1px;
+}
