@@ -21,50 +21,50 @@ const menuAcciones = (opciones) => {
         <div class="dropdown-menu">${acciones}</div>`
 }
 
-const mostrarArchivo = (url, { titulo = null, fncClose = null } = {}) => {
-    const id = new Date().getTime()
-    const idModal = `modalVisorArchivos_${id}`
-    const idVisor = `archivoVisor_${id}`
-    titulo = titulo || "Visor de Archivos"
-
-    const modal = `<div class="modal fade" id="${idModal}" tabindex="-1" aria-hidden="true" role="dialog">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="btn-close btnCerrarVer" data-bs-dismiss="modal" aria-label="Close"></button>
-                        <div class="text-center w-100">
-                            <h4 class="address-title mb-2">${titulo}</h4>
-                        </div>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-12 text-center">
-                                <embed id="${idVisor}" src="${url}" style="width: 100%; min-height: 30vh;"></embed>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary btnCerrarVer" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
-                    </div>
-                </div>
-            </div>
-        </div>`
-
-    $("body").append(modal)
-    const modalElement = $(`#${idModal}`)
-    modalElement.modal("show")
-    modalElement.on("hidden.bs.modal", function () {
-        if (typeof fncClose === "function") fncClose()
-        $(this).remove()
-    })
-    return modalElement
-}
-
 const mostrarArchivoDescargado = (
     url,
     parametros,
     { metodo = "POST", titulo = null, fncClose = null } = {}
 ) => {
+    const mostrarArchivo = (url, { titulo = null, fncClose = null } = {}) => {
+        const id = new Date().getTime()
+        const idModal = `modalVisorArchivos_${id}`
+        const idVisor = `archivoVisor_${id}`
+        titulo = titulo || "Visor de Archivos"
+
+        const modal = `<div class="modal fade" id="${idModal}" tabindex="-1" aria-hidden="true" role="dialog">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="btn-close btnCerrarVer" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <div class="text-center w-100">
+                                <h4 class="address-title mb-2">${titulo}</h4>
+                            </div>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-12 text-center">
+                                    <embed id="${idVisor}" src="${url}" style="width: 100%; min-height: 30vh;"></embed>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary btnCerrarVer" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`
+
+        $("body").append(modal)
+        const modalElement = $(`#${idModal}`)
+        modalElement.modal("show")
+        modalElement.on("hidden.bs.modal", function () {
+            if (typeof fncClose === "function") fncClose()
+            $(this).remove()
+        })
+        return modalElement
+    }
+
     showWait("Por favor, espere mientras se descarga el archivo.")
     fetch(url, {
         method: metodo,

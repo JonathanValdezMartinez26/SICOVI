@@ -518,8 +518,8 @@ class Viaticos extends Controller
                     })
                 }
 
-                const verSolicitud = (solicitudId) => {
-                    consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId }, (respuesta) => {
+                const verSolicitud = (solicitud) => {
+                    consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitud }, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         const informacion = respuesta.datos.informacion
                         $("#verSolicitudId").val(informacion.ID)
@@ -582,7 +582,7 @@ class Viaticos extends Controller
                         $("#tbodyVerComprobantesSolicitud").empty()
                         comprobantes.forEach((comprobante) => {
                             const mostrarE = informacion.TIPO_ID == 1 && informacion.ESTATUS_ID == 3
-                            const fila = getFilaComprobante(comprobante.ID, comprobante.FECHA_REGISTRO, comprobante.CONCEPTO, comprobante.TOTAL, mostrarE)
+                            const fila = getFilaComprobante(comprobante.ID, comprobante.FECHA_REGISTRO, comprobante.CONCEPTO_NOMBRE, comprobante.TOTAL, mostrarE)
                             $("#tbodyVerComprobantesSolicitud").append(fila)
                         })
 
@@ -699,7 +699,7 @@ class Viaticos extends Controller
                     showWait("Cargando comprobante...")
                     const parametro = new FormData()
                     parametro.append("comprobanteId", comprobanteId)
-                    mostrarArchivoDescargado("/viaticos/getComprobante_V", parametro)
+                    mostrarArchivoDescargado("/viaticos/getComprobante_VG", parametro)
                 }
 
                 $(document).ready(() => {
@@ -893,12 +893,12 @@ class Viaticos extends Controller
         self::respuestaJSON(ViaticosDAO::eliminaComprobante_V($_POST));
     }
 
-    public function getComprobante_V()
+    public function getComprobante_VG()
     {
-        $comprobante = ViaticosDAO::getComprobante_V($_POST);
-        if (!$comprobante['success']) {
-            return self::respuestaJSON($comprobante);
-        }
+        $datos = $_SERVER['REQUEST_METHOD'] !== 'POST' ? $_GET : $_POST;
+
+        $comprobante = ViaticosDAO::getComprobante_VG($datos);
+        if (!$comprobante['success']) return self::respuestaJSON($comprobante);
 
         $archivo = $comprobante['datos']['ARCHIVO'];
         $archivo = is_resource($archivo) ? stream_get_contents($archivo) : $archivo;
@@ -1330,16 +1330,345 @@ class Viaticos extends Controller
     public function Validacion()
     {
         $css = <<<HTML
-            <link rel="stylesheet" href="/assets/css/viaticos-validacion.css" />
+            <link rel="stylesheet" href="/assets/css/viaticos_validacion.css" />
         HTML;
 
         $script = <<<HTML
             <script>
+                const tabla = "#historialComprobaciones"
+                const leyendaNoComprobante = {
+                    t1: "Comprobante", 
+                    actual: 0,
+                    t2: "de",
+                    total: 0
+                }
+                let comprobaciones = null
+                let comprobacion = null
+                let comprobantes = null
+                let comprobante = null
+                let visorPDF = null
+                let pdfActual = null
+                let paginaActual = 1
+                let paginasTotales = 1
+                let zoomActual = 1.0
+                let fullScreen = false
+
+                const getComprobaciones = () => {
+                    const parametros = getParametros()
+                    consultaServidor("/viaticos/getComprobaciones", parametros, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        comprobaciones = respuesta.datos
+                        const datos = comprobaciones.map((comprobacion, index) => {
+                            const acciones = menuAcciones([
+                                {
+                                    texto: "Ver comprobante",
+                                    icono: "fa-eye",
+                                    funcion: "verComprobantes(" + index + ")"
+                                }
+                            ])
+                            return [
+                                null,
+                                comprobacion.ID,
+                                comprobacion.TIPO_NOMBRE,
+                                moment(comprobacion.REGISTRO).format(MOMENT_FRONT),
+                                comprobacion.PROYECTO,
+                                numeral(comprobacion.ENTREGA_MONTO).format(NUMERAL_MONEDA),
+                                comprobacion.REGISTRADOS,
+                                comprobacion.RECHAZADOS,
+                                comprobacion.ACEPTADOS,
+                                acciones
+                            ]
+                        })
+
+                        actualizaDatosTabla(tabla, datos)
+                    })
+                }
+
+                const getParametros = () => {
+                    const fechas = getInputFechas("#fechasComprobaciones", true)
+
+                    return {
+                        fechaI: fechas.inicio,
+                        fechaF: fechas.fin
+                    }
+                }
+
+                const verComprobantes = (indice) => {
+                    comprobacion = comprobaciones[indice]
+                    $("#solicitante").val(comprobacion.SOLICITANTE_NOMBRE)
+                    $("#fechaSolicitud").val(moment(comprobacion.REGISTRO).format(MOMENT_FRONT_HORA))
+                    $("#fechaLimite").val(moment(comprobacion.COMPROBACION_LIMITE).format(MOMENT_FRONT))
+                    $("#proyecto").val(comprobacion.PROYECTO)
+                    $("#tipo").val(comprobacion.TIPO_NOMBRE)
+                    $("#montoSolicitud").val(numeral(comprobacion.ENTREGA_MONTO).format(NUMERAL_MONEDA))
+                    $("#montoComprobado").val(numeral(comprobacion.COMPROBACION_MONTO).format(NUMERAL_MONEDA))
+                    $("#solicitudDetalles").addClass("show")
+                    getComprobantes(comprobacion.ID)
+                }
+
+                const getComprobantes = (solicitud) => {
+                    $(".controlesPDF").addClass("d-none")
+                    $("#cargandoArchivo").removeClass("d-none")
+                    $("#sinArchivo").addClass("d-none")
+                    $("#errorArchivo").addClass("d-none")
+                    $("#visor").children().last().filter("canvas, img").remove()
+                    $("#btnCompAnt").prop("disabled", true)
+                    $("#btnCompSig").prop("disabled", true)
+                    $("#btnRechazarComprobante").prop("disabled", true)
+                    $("#btnAceptarComprobante").prop("disabled", true)
+                    
+                    consultaServidor("/viaticos/getComprobantesSolicitud_VG", { solicitud, comprobacion: true }, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        comprobantes = respuesta.datos
+                        if (comprobantes.length === 0) {
+                            comprobante = null
+                            leyendaNoComprobante.actual = 0
+                            leyendaNoComprobante.total = 0
+                            $("#noComprobante").text(Object.values(leyendaNoComprobante).join(" "))
+                            $("#cargandoArchivo").addClass("d-none")
+                            $("#sinArchivo").removeClass("d-none")
+                            actualizaDatosComprobante(-1)
+                            return
+                        }
+
+                        $("#btnRechazarComprobante").prop("disabled", false)
+                        $("#btnAceptarComprobante").prop("disabled", false)
+                        leyendaNoComprobante.actual = 0
+                        leyendaNoComprobante.total = comprobantes.length
+                        comprobanteSiguiente()
+                    })
+                }
+                
+                const comprobanteSiguiente = () => {
+                    leyendaNoComprobante.actual++
+                    if (leyendaNoComprobante.actual > leyendaNoComprobante.total)
+                        leyendaNoComprobante.actual = leyendaNoComprobante.total
+                    actualizaDatosComprobante(leyendaNoComprobante.actual - 1)
+                }
+
+                const comprobanteAnterior = () => {
+                    leyendaNoComprobante.actual--
+                    if (leyendaNoComprobante.actual < 1) leyendaNoComprobante.actual = 1
+                    actualizaDatosComprobante(leyendaNoComprobante.actual - 1)
+                }
+
+                const actualizaDatosComprobante = (index = 0) => {
+                    comprobante = comprobantes[index]
+                    $("#visor").children().last().filter("canvas, img").remove()
+                    $("#fechaCaptura").val(comprobante && moment(comprobante.FECHA_REGISTRO).format(MOMENT_FRONT_HORA))
+                    $("#concepto").val(comprobante?.CONCEPTO_NOMBRE)
+                    $("#fechaComprobante").val(comprobante && moment(comprobante.FECHA_COMPROBANTE).format(MOMENT_FRONT))
+                    $("#montoComprobante").val(comprobante && numeral(comprobante.TOTAL).format(NUMERAL_MONEDA))
+                    $("#observaciones").val(comprobante?.OBSERVACIONES)
+                    $("#btnRechazarComprobante").prop("disabled", comprobante?.ESTATUS == 0)
+
+                    $("#noComprobante").text(Object.values(leyendaNoComprobante).join(" "))
+                    $("#btnCompAnt").prop("disabled", leyendaNoComprobante.actual === 1)
+                    $("#btnCompSig").prop("disabled", leyendaNoComprobante.actual === leyendaNoComprobante.total)
+
+                    const url = "/viaticos/getComprobante_VG?comprobanteId=" + comprobante.ID
+                    const tipo = comprobante.ARCHIVO_TIPO
+                    $(".controlesPDF").addClass("d-none")
+                    $("#cargandoArchivo").removeClass("d-none")
+
+                    setTimeout(() => {
+                        verArchivo(url, tipo)
+                    }, 1500)
+                }
+
+                const verArchivo = async (url, tipo) => {
+                    try {
+                        if (tipo === "application/pdf") await verPDF(url)
+                        if (tipo.startsWith("image/")) verImagen(url)
+                        if (!tipo) throw new Error("Tipo de archivo no soportado")
+                    } catch (error) {
+                        $("#errorArchivo").removeClass("d-none")
+                    } finally {
+                        $("#cargandoArchivo").addClass("d-none")
+                    }
+                }
+
+                const verImagen = (url) => {
+                    const img = document.createElement("img")
+                    img.className = "file-content no-select mw-100 mh-100"
+                    img.src = url
+                    img.alt = "Archivo de imagen"
+                    img.onload = () => {
+                        const visor = $("#visor")
+                        visor.append(img)
+                    }
+                }
+
+                const verPDF = async (url) => {
+                    const archivo = visorPDF.getDocument(url)
+                    pdfActual = await archivo.promise
+                    paginasTotales = pdfActual.numPages
+                    await verPagina(1)
+                    actualizaInfoVisor()
+                    $(".controlesPDF").removeClass("d-none")
+                }
+
+                const verPagina = async (noPagina) => {
+                    const pagina = await pdfActual.getPage(noPagina)
+                    const canvas = document.createElement("canvas")
+                    const contextoCanvas = canvas.getContext("2d")
+
+                    const viewport = pagina.getViewport({ scale: zoomActual })
+                    canvas.height = viewport.height
+                    canvas.width = viewport.width
+                    canvas.className = "pdf-canvas no-select no-context-menu"
+
+                    const contexto = {
+                        canvasContext: contextoCanvas,
+                        viewport: viewport
+                    }
+
+                    await pagina.render(contexto).promise
+
+                    const visor = $("#visor")
+                    visor.find("canvas").remove()
+                    visor.append(canvas)
+                }
+
+                const actualizaInfoVisor = () => {
+                    $("#paginaActual").text(paginaActual + " / " + paginasTotales)
+                    $("#btnPagAnt").prop("disabled", paginaActual === 1)
+                    $("#btnPagSig").prop("disabled", paginaActual === paginasTotales)
+                }
+
+                const verPaginaAnterior = async () => {
+                    if (paginaActual > 1) {
+                        paginaActual--
+                        await verPagina(paginaActual)
+                        actualizaInfoVisor()
+                    }
+                }
+
+                const verPaginaSiguiente = async () => {
+                    if (paginaActual < paginasTotales) {
+                        paginaActual++
+                        await verPagina(paginaActual)
+                        actualizaInfoVisor()
+                    }
+                }
+
+                const aumentarZoom = async () => {
+                    if (zoomActual < 3.0) {
+                        zoomActual += 0.25
+                        if (pdfActual) {
+                            await verPagina(paginaActual)
+                        }
+                    }
+                }
+
+                const disminuirZoom = async () => {
+                    if (zoomActual > 0.5) {
+                        zoomActual -= 0.25
+                        if (pdfActual) {
+                            await verPagina(paginaActual)
+                        }
+                    }
+                }
+
+                const cambiarFullscreen = () => {
+                    if (fullScreen) {
+                        fullScreen = false
+                        $("#visorArchivos").removeClass("fullscreen")
+                        $("#btnFullscreen i").removeClass("fa-compress").addClass("fa-expand")
+                    } else {
+                        fullScreen = true
+                        $("#visorArchivos").addClass("fullscreen")
+                        $("#btnFullscreen i").removeClass("fa-expand").addClass("fa-compress")
+                    }
+                }
+
+                const rechazarComprobante = () => {
+                    confirmarMovimiento("¿Desea rechazar este comprobante?").then((continuar) => {
+                        if (!continuar.isConfirmed) return
+
+                        const parametros = {
+                            solicitudId: comprobante.SOLICITUD_ID,
+                            comprobanteId: comprobante.ID,
+                            estatus: 0
+                        }
+
+                        consultaServidor("/viaticos/actualizaEstatusComprobante", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+                            showSuccess("Comprobante rechazado correctamente.").then(() => {
+                                comprobante.ESTATUS = 0
+                                $("#btnRechazarComprobante").prop("disabled", true)
+                                getComprobaciones()
+                            })
+                        })
+                    })
+                }
+
+                const aceptarComprobante = () => {
+                    const parametros = {
+                        solicitudId: comprobante.SOLICITUD_ID,
+                        comprobanteId: comprobante.ID,
+                        estatus: 1
+                    }
+
+                    if (comprobantes.length !== 1) aceptar("¿Desea continuar?", parametros)
+                    else {
+                        const msg = comprobacion.TIPO_ID == 1 
+                            ? "se dará por finalizada la solicitud de viáticos y se aplicaran los ajustes de saldo a favor o en contra."
+                            : "se le otorgara al colaborador el monto comprobado."
+                        
+                        const mensaje = $("<div>")
+                            .append("<p>Si acepta el comprobante, " + msg + "</p>")
+                            .append("<p>¿Desea continuar?</p>")
+                        parametros.finalizar = true
+                        aceptar(mensaje, parametros)
+                    }  
+                }
+
+                const aceptar = (mensaje, parametros) => {
+                    confirmarMovimiento(mensaje).then((continuar) => {
+                        if (!continuar.isConfirmed) return
+
+                        consultaServidor("/viaticos/actualizaEstatusComprobante", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+                            showSuccess("Comprobante aceptado correctamente.").then(() => {
+                                getComprobaciones()
+                                comprobantes.splice(leyendaNoComprobante.actual - 1, 1)
+                                if (comprobantes.length === 0) {
+                                    $("#visor").children().last().filter("canvas, img").remove()
+                                    $("#sinArchivo").removeClass("d-none")
+                                    setTimeout(() => {
+                                        $("#solicitudDetalles").removeClass("show")
+                                    }, 1500)
+                                    return
+                                }
+                                if (leyendaNoComprobante.actual > comprobantes.length) leyendaNoComprobante.actual = comprobantes.length
+                                actualizaDatosComprobante(leyendaNoComprobante.actual - 1)
+                            })
+                        })
+                    })
+                }
 
                 $(document).ready(() => {
-                    $("#verDemo").on("click", () => {
-                        $("#solicitud-detalles")[0].classList.add("show")
+                    setInputFechas("#fechasComprobaciones", { rango: true, iniD: -30 })
+                    $("#btnBuscarComprobaciones").on("click", getComprobaciones)
+                    configuraTabla(tabla)
+                    $("#btnCompAnt").on("click", comprobanteAnterior)
+                    $("#btnCompSig").on("click", comprobanteSiguiente)
+                    $("#btnRechazarComprobante").on("click", rechazarComprobante)
+                    $("#btnAceptarComprobante").on("click", aceptarComprobante)
+
+                    $("#btnFullscreen").on("click", cambiarFullscreen)
+                    $(document).on("keydown", (e) => {
+                        if (e.key === "Escape" && fullScreen) cambiarFullscreen()
                     })
+                    $("#btnMasZoom").on("click", aumentarZoom)
+                    $("#btnMenosZoom").on("click", disminuirZoom)
+                    $("#btnPagAnt").on("click", verPaginaAnterior)
+                    $("#btnPagSig").on("click", verPaginaSiguiente)
+
+                    visorPDF = window.pdfjsLib
+                    visorPDF.GlobalWorkerOptions.workerSrc = "/assets/vendor/libs/pdf-viewer/pdf.worker.mjs"
+                    getComprobaciones()
                 })
             </script>
         HTML;
@@ -1348,5 +1677,20 @@ class Viaticos extends Controller
         self::set("css", $css);
         self::set("script", $script);
         self::render("viaticos_validacion");
+    }
+
+    public function getComprobaciones()
+    {
+        self::respuestaJSON(ViaticosDAO::getComprobaciones($_POST));
+    }
+
+    public function getComprobantesSolicitud_VG()
+    {
+        self::respuestaJSON(ViaticosDAO::getComprobantesSolicitud_VG($_POST));
+    }
+
+    public function actualizaEstatusComprobante()
+    {
+        self::respuestaJSON(ViaticosDAO::actualizaEstatusComprobante($_POST));
     }
 }

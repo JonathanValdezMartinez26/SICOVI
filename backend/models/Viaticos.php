@@ -116,21 +116,31 @@ class Viaticos extends Model
         $qry = <<<SQL
             SELECT
                 VC.ID
-                , TO_CHAR(VC.FECHA_REGISTRO, 'YYYY-MM-DD') AS FECHA_REGISTRO
-                , CCV.NOMBRE AS CONCEPTO
+                , VC.VIATICOS AS SOLICITUD_ID
+                , TO_CHAR(VC.FECHA_REGISTRO, 'YYYY-MM-DD HH24:MM:SS') AS FECHA_REGISTRO
+                , CCV.ID AS CONCEPTO_ID
+                , CCV.NOMBRE AS CONCEPTO_NOMBRE
+                , TO_CHAR(VC.FECHA, 'YYYY-MM-DD') AS FECHA_COMPROBANTE
                 , VC.TOTAL
+                , VC.OBSERVACIONES
+                , VC.ESTATUS
                 , A.ID AS ARCHIVO_ID
+                , A.TIPO AS ARCHIVO_TIPO
             FROM
                 VIATICOS_COMPROBACION VC
-                INNER JOIN ARCHIVO A ON A.ID = VC.ARCHIVO
-                INNER JOIN CAT_VIATICOS_CONCEPTO CCV ON CCV.ID = VC.CONCEPTO
+                LEFT JOIN ARCHIVO A ON A.ID = VC.ARCHIVO
+                LEFT JOIN CAT_VIATICOS_CONCEPTO CCV ON CCV.ID = VC.CONCEPTO
             WHERE
-                VC.VIATICOS = :idSolicitud
+                VC.VIATICOS = :solicitud
         SQL;
 
         $val = [
-            'idSolicitud' => $datos['solicitudId']
+            'solicitud' => $datos['solicitud']
         ];
+
+        if (isset($datos['comprobacion'])) {
+            $qry .= ' AND (VC.ESTATUS IS NULL OR VC.ESTATUS = 0)';
+        }
 
         try {
             $db = new Database();
@@ -400,7 +410,7 @@ class Viaticos extends Model
         }
     }
 
-    public static function getComprobante_V($datos)
+    public static function getComprobante_VG($datos)
     {
         $qry = <<<SQL
             SELECT
@@ -581,6 +591,95 @@ class Viaticos extends Model
             return self::resultado(true, 'Datos de la solicitud obtenidos correctamente.', $r);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al obtener los datos de la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function getComprobaciones($datos)
+    {
+        $qry = <<<SQL
+            WITH COMPROBANTES AS (
+                    SELECT
+                        VC.VIATICOS
+                        , COUNT(*) AS TOTAL
+                        , SUM(CASE WHEN VC.ESTATUS IS NULL THEN 1 ELSE 0 END) AS REGISTRADOS
+                        , SUM(CASE WHEN VC.ESTATUS = 0 THEN 1 ELSE 0 END) AS RECHAZADOS
+                        , SUM(CASE WHEN VC.ESTATUS = 1 THEN 1 ELSE 0 END) AS ACEPTADOS
+                    FROM
+                        VIATICOS_COMPROBACION VC
+                    GROUP BY
+                        VC.VIATICOS
+                )
+            SELECT
+                V.ID
+                , V.TIPO AS TIPO_ID
+                , CASE 
+                    WHEN V.TIPO = 1 THEN 'Viáticos'
+                    WHEN V.TIPO = 2 THEN 'Gastos'
+                    ELSE 'Desconocido'
+                END AS TIPO_NOMBRE
+                , V.USUARIO AS SOLICITANTE_ID
+                , GET_NOMBRE_USUARIO(V.USUARIO) AS SOLICITANTE_NOMBRE
+                , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD HH24:MM:SS') AS REGISTRO
+                , V.PROYECTO
+                , V.ENTREGA_MONTO
+                , TO_CHAR(V.COMPROBACION_LIMITE, 'YYYY-MM-DD') AS COMPROBACION_LIMITE
+                , V.COMPROBACION_MONTO
+                , C.TOTAL
+                , C.REGISTRADOS
+                , C.RECHAZADOS
+                , C.ACEPTADOS
+                , C.TOTAL - C.ACEPTADOS AS PENDIENTES
+            FROM
+                VIATICOS V
+                LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
+                LEFT JOIN COMPROBANTES C ON C.VIATICOS = V.ID
+            WHERE
+                V.ESTATUS = 4
+                AND (C.REGISTRADOS > 0 OR C.RECHAZADOS > 0)
+                AND TRUNC(V.ACTUALIZADO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
+            ORDER BY
+                V.ACTUALIZADO DESC
+        SQL;
+
+        $val = [
+            'fechaI' => $datos['fechaI'],
+            'fechaF' => $datos['fechaF']
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryAll($qry, $val);
+            return self::resultado(true, 'Comprobaciones obtenidas.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener las comprobaciones de la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function actualizaEstatusComprobante($datos)
+    {
+        $qry = <<<SQL
+            UPDATE
+                VIATICOS_COMPROBACION
+            SET
+                ESTATUS = :estatus
+            WHERE
+                ID = :comprobanteId
+                AND VIATICOS = :solicitudId
+        SQL;
+
+        $val = [
+            'comprobanteId' => $datos['comprobanteId'],
+            'solicitudId' => $datos['solicitudId'],
+            'estatus' => $datos['estatus']
+        ];
+
+        try {
+            $db = new Database();
+            $result = $db->CRUD($qry, $val);
+            if ($result < 1) return self::resultado(false, 'No se encontró el comprobante a actualizar.');
+            return self::resultado(true, 'Comprobante actualizado correctamente.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al actualizar el comprobante.', null, $e->getMessage());
         }
     }
 }
