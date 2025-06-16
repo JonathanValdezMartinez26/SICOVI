@@ -518,8 +518,8 @@ class Viaticos extends Controller
                     })
                 }
 
-                const verSolicitud = (solicitud) => {
-                    consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitud }, (respuesta) => {
+                const verSolicitud = (solicitudId) => {
+                    consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId }, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         const informacion = respuesta.datos.informacion
                         $("#verSolicitudId").val(informacion.ID)
@@ -921,16 +921,68 @@ class Viaticos extends Controller
         self::respuestaJSON(ViaticosDAO::finalizaComprobacion_V($_POST));
     }
 
-    public function Entrega()
+    public function Autorizacion()
     {
         $script = <<<HTML
             <script>
                 const tabla = "#historialSolicitudes"
-                let validacionEntrega = null
+                let validacionAutorizacion = null
+                let validacionReachazo = null
 
-                const setValidacionEntrega = () => {
+                const getSolicitudes = () => {
+                    const fechas = getInputFechas("#fechasSolicitudes", true)
+
+                    const parametros = {
+                        fechaI: fechas.inicio,
+                        fechaF: fechas.fin
+                    }
+
+                    consultaServidor("/viaticos/getSolicitudesAutorizacion", parametros, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const datos = respuesta.datos.map(solicitud => {
+                            const acciones = menuAcciones([
+                                {
+                                    texto: "Detalles",
+                                    icono: "fa-eye",
+                                    funcion: "verSolicitud(" + solicitud.ID + ")"
+                                }
+                            ])
+                            
+                            return [
+                                null,
+                                solicitud.ID,
+                                solicitud.TIPO_NOMBRE,
+                                solicitud.USUARIO_NOMBRE,
+                                moment(solicitud.FECHA_REGISTRO).format(MOMENT_FRONT),
+                                numeral(solicitud.MONTO).format(NUMERAL_MONEDA),
+                                acciones
+                            ]
+                        })
+
+                        actualizaDatosTabla(tabla, datos)
+                    })
+                }
+
+                const verSolicitud = (solicitudId) => {
+                    consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId }, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const informacion = respuesta.datos.informacion
+                        $("#verSolicitante").val(informacion.USUARIO_NOMBRE)
+                        $("#verSucursal").val(informacion.SUCURSAL_NOMBRE)
+                        $("#verTipoSol").val(informacion.TIPO_NOMBRE)
+                        $("#verSolicitudId").val(informacion.ID)
+                        $("#verFechaSol").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
+                        $("#verMontoSolicitado").val(numeral(informacion.MONTO).format(NUMERAL_MONEDA))
+                        $("#verProyecto").val(informacion.PROYECTO)
+                        $("#verFechaI").val(moment(informacion.FECHA_I).format(MOMENT_FRONT))
+                        $("#verFechaF").val(moment(informacion.FECHA_F).format(MOMENT_FRONT))
+                        $("#modalVerAutorizacion").modal("show")
+                    })
+                }
+
+                const setValidacionAutorizacion = () => {
                     const campos = {
-                        montoEntrega: {
+                        montoAutorizado: {
                             notEmpty: {
                                 message: "Debe ingresar un monto"
                             },
@@ -939,25 +991,114 @@ class Viaticos extends Controller
                                 message: "Debe ser mayor a 0"
                             }
                         },
-                        observacionesEntrega: {
+                        observacionesAutorizacion: {
                             callback: {
-                                message: "Debe indicar porque esta entregando un monto diferente al autorizado.",
+                                message: "Debe indicar porque esta autorizando un monto diferente al solicitado.",
                                 callback: () => {
-                                    if (numeral($("#verMontoAutorizado").val()).difference(numeral($("#montoEntrega").val()).value()) === 0) return true
-                                    return $("#observacionesEntrega").val().trim() !== ""
+                                    if (numeral($("#verMontoSolicitado").val()).difference(numeral($("#montoAutorizado").val()).value()) === 0) return true
+                                    return $("#observacionesAutorizacion").val().trim() !== ""
                                 }
                             }
                         }
                     }
     
-                    validacionEntrega = setValidacionModal(
-                        "#modalVerEntrega",
+                    validacionAutorizacion = setValidacionModal(
+                        "#modalVerAutorizacion",
                         campos,
-                        "#entregar",
-                        entrega_VG,
+                        "#autorizar",
+                        autorizarSolicitud,
                         "#cancelar"
                     )
                 }
+
+                const setValidacionReachazo = () => {
+                    const campos = {
+                        observacionesAutorizacion: {
+                            notEmpty: {
+                                message: "Debe ingresar sus observaciones para el rechazo"
+                            }
+                        }
+                    }
+    
+                    validacionAutorizacion = setValidacionModal(
+                        "#modalVerAutorizacion",
+                        campos,
+                        "#rechazar",
+                        rechazarSolicitud,
+                        "#cancelar"
+                    )
+                }
+
+                const autorizarSolicitud = () => {
+                    const parametros = {
+                        solicitud: $("#verSolicitudId").val(),
+                        usuario: $_SESSION[usuario_id],
+                        autorizado: 2,
+                        monto: $("#montoAutorizado").val(),
+                        observaciones: $("#observacionesAutorizacion").val()
+                    }
+
+                    actualizaSolicitud("¿Desea autorizar esta solicitud?", parametros, "La solicitud ha sido autorizada.")
+                }
+
+                const rechazarSolicitud = () => {
+                    const parametros = {
+                        solicitud: $("#verSolicitudId").val(),
+                        usuario: $_SESSION[usuario_id],
+                        autorizado: 6,
+                        observaciones: $("#observacionesAutorizacion").val()
+                    }
+
+                    actualizaSolicitud("¿Desea rechazar esta solicitud?", parametros, "La solicitud ha sido rechazada.")
+                }
+
+                const actualizaSolicitud = (confirmacion, parametros, exito) => {
+                    confirmarMovimiento(confirmacion).then((continuar) => {
+                        if (!continuar.isConfirmed) return
+                        consultaServidor("/viaticos/autorizaSolicitud_VG", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+                            showSuccess(exito).then(() => {
+                                $("#modalVerAutorizacion").modal("hide")
+                                getSolicitudes()
+                            })
+                        })
+                    })
+                }
+
+                $(document).ready(() => {
+                    setInputFechas("#fechasSolicitudes", { rango: true, iniD: -30 })
+                    $("#btnBuscarSolicitudes").on("click", getSolicitudes)
+                    configuraTabla("#historialSolicitudes")
+
+                    setValidacionAutorizacion()
+                    setValidacionReachazo()
+
+                    getSolicitudes()
+                });
+            </script>
+        HTML;
+
+        self::set("titulo", "Autorización de Viáticos y Gastos");
+        self::set("script", $script);
+        self::render("viaticos_autorizacion");
+    }
+
+    public function getSolicitudesAutorizacion()
+    {
+        self::respuestaJSON(ViaticosDAO::getSolicitudesAutorizacion($_POST));
+    }
+
+    public function autorizaSolicitud_VG()
+    {
+        self::respuestaJSON(ViaticosDAO::autorizaSolicitud_VG($_POST));
+    }
+
+    public function Entrega()
+    {
+        $script = <<<HTML
+            <script>
+                const tabla = "#historialSolicitudes"
+                let validacionEntrega = null
 
                 const getSolicitudes = () => {
                     const fechas = getInputFechas("#fechasSolicitudes", true)
@@ -994,6 +1135,37 @@ class Viaticos extends Controller
                     })
                 }
 
+                const setValidacionEntrega = () => {
+                    const campos = {
+                        montoEntrega: {
+                            notEmpty: {
+                                message: "Debe ingresar un monto"
+                            },
+                            greaterThan: {
+                                min: 1,
+                                message: "Debe ser mayor a 0"
+                            }
+                        },
+                        observacionesEntrega: {
+                            callback: {
+                                message: "Debe indicar porque esta entregando un monto diferente al autorizado.",
+                                callback: () => {
+                                    if (numeral($("#verMontoAutorizado").val()).difference(numeral($("#montoEntrega").val()).value()) === 0) return true
+                                    return $("#observacionesEntrega").val().trim() !== ""
+                                }
+                            }
+                        }
+                    }
+    
+                    validacionEntrega = setValidacionModal(
+                        "#modalVerEntrega",
+                        campos,
+                        "#entregar",
+                        entrega_VG,
+                        "#cancelar"
+                    )
+                }
+
                 const verSolicitud = (solicitudId) => {
                     consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId }, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
@@ -1023,7 +1195,8 @@ class Viaticos extends Controller
                             usuario: $_SESSION[usuario_id],
                             metodo: $("#metodoEntrega").val(),
                             monto: $("#montoEntrega").val(),
-                            observaciones: $("#observacionesEntrega").val()
+                            observaciones: $("#observacionesEntrega").val(),
+                            estatus =$("#verTipoSolId").val() == 2 ? 6 : 3
                         }
 
                         consultaServidor("/viaticos/entrega_VG", parametros, (respuesta) => {
@@ -1607,7 +1780,7 @@ class Viaticos extends Controller
                     const parametros = {
                         solicitudId: comprobante.SOLICITUD_ID,
                         comprobanteId: comprobante.ID,
-                        estatus: 1
+                        estatus: 1,
                     }
 
                     if (comprobantes.length !== 1) aceptar("¿Desea continuar?", parametros)

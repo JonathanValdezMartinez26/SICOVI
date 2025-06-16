@@ -94,11 +94,11 @@ class Viaticos extends Model
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
                 LEFT JOIN SUCURSAL S ON S.ID = U.SUCURSAL
             WHERE
-                V.ID = :id
+                V.ID = :solicitudId
         SQL;
 
         $val = [
-            'id' => $datos['solicitudId']
+            'solicitudId' => $datos['solicitudId']
         ];
 
         try {
@@ -465,6 +465,79 @@ class Viaticos extends Model
         }
     }
 
+    public static function getSolicitudesAutorizacion($datos)
+    {
+        $qry = <<<SQL
+            SELECT
+                V.ID
+                , V.TIPO AS TIPO_ID
+                , CASE 
+                    WHEN V.TIPO = 1 THEN 'Viáticos'
+                    WHEN V.TIPO = 2 THEN 'Gastos'
+                    ELSE 'Desconocido'
+                END AS TIPO_NOMBRE
+                , V.USUARIO AS USUARIO_ID
+                , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
+                , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD') AS FECHA_REGISTRO
+                , V.MONTO
+            FROM
+                VIATICOS V
+                LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
+                LEFT JOIN USUARIO U ON U.ID = V.USUARIO
+            WHERE
+                (V.ESTATUS = 1 OR (V.ESTATUS = 4 AND V.TIPO = 2))
+                AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
+            ORDER BY
+                ID DESC
+        SQL;
+
+        $params = [
+            'fechaI' => $datos['fechaI'],
+            'fechaF' => $datos['fechaF']
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryAll($qry, $params);
+            return self::resultado(true, 'Solicitudes encontradas.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function autorizaSolicitud_VG($datos)
+    {
+        $qry = <<<SQL
+            UPDATE
+                VIATICOS
+            SET
+                ESTATUS = :autorizado
+                , AUTORIZACION_USUARIO = :usuario
+                , AUTORIZACION_FECHA = SYSDATE
+                , AUTORIZACION_MONTO = :monto
+            WHERE
+                ID = :id
+        SQL;
+
+        $val = [
+            'id' => $datos['solicitud'],
+            'usuario' => $datos['usuario'],
+            'autorizado' => $datos['autorizado'],
+            'monto' => $datos['monto']
+        ];
+
+        try {
+            $db = new Database();
+            $result = $db->CRUD($qry, $val);
+            if (isset($datos['observaciones']) && $datos['observaciones'] != '')
+                self::insertaObservaciones($datos);
+            if ($result < 1) return self::resultado(false, 'No se encontró la solicitud a autorizar.');
+            return self::resultado(true, 'Solicitud autorizada correctamente.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al autorizar la solicitud.', null, $e->getMessage());
+        }
+    }
+
     public static function getSolicitudesEntrega($datos)
     {
         $qry = <<<SQL
@@ -485,7 +558,7 @@ class Viaticos extends Model
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
             WHERE
-                V.ESTATUS IN (2)
+                (V.TIPO = 1 AND V.ESTATUS = 2) OR (V.TIPO = 2 AND V.ESTATUS = 5)
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
                 AND U.SUCURSAL = :sucursal
             ORDER BY
@@ -513,43 +586,56 @@ class Viaticos extends Model
             UPDATE
                 VIATICOS
             SET
-                ESTATUS = 3
+                ESTATUS = :estatus
                 , ENTREGA_METODO = :metodo
                 , ENTREGA_FECHA = SYSDATE
                 , ENTREGA_MONTO = :monto
                 , ENTREGA_USUARIO = :usuario
             WHERE
                 ID = :id
-                AND ESTATUS = 2
         SQL;
 
         $val = [
+            'estatus' => $datos['estatus'],
             'id' => $datos['solicitud'],
             'usuario' => $datos['usuario'],
             'metodo' => $datos['metodo'],
             'monto' => $datos['monto']
         ];
 
-        if (isset($datos['observaciones']) && $datos['observaciones'] != '') {
-            $qryO = <<<SQL
-                INSERT INTO VIATICOS_OBSERVACIONES (VIATICOS, COMENTARIO, USUARIO)
-                VALUES (:id, :observaciones, :usuario)
-            SQL;
-            $valO = [
-                'id' => $datos['solicitud'],
-                'observaciones' => $datos['observaciones'],
-                'usuario' => $datos['usuario']
-            ];
-        }
 
         try {
             $db = new Database();
             $result = $db->CRUD($qry, $val);
-            if (isset($qryO)) $db->CRUD($qryO, $valO);
+            if (isset($datos['observaciones']) && $datos['observaciones'] != '')
+                self::insertaObservaciones($datos);
             if ($result < 1) return self::resultado(false, 'No se encontró la solicitud a entregar.');
             return self::resultado(true, 'Solicitud entregada correctamente.', $result);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al entregar la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function insertaObservaciones($datos)
+    {
+        $qry = <<<SQL
+            INSERT INTO VIATICOS_OBSERVACIONES (VIATICOS, COMENTARIO, USUARIO)
+            VALUES (:id, :observaciones, :usuario)
+        SQL;
+
+        $val = [
+            'id' => $datos['solicitud'],
+            'observaciones' => $datos['observaciones'],
+            'usuario' => $datos['usuario']
+        ];
+
+        try {
+            $db = new Database();
+            $result = $db->CRUD($qry, $val);
+            if ($result < 1) return self::resultado(false, 'No se pudo insertar la observación.');
+            return self::resultado(true, 'Observación insertada correctamente.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al insertar la observación.', null, $e->getMessage());
         }
     }
 
@@ -634,8 +720,8 @@ class Viaticos extends Model
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN COMPROBANTES C ON C.VIATICOS = V.ID
             WHERE
-                V.ESTATUS = 4
-                AND (C.REGISTRADOS > 0 OR C.RECHAZADOS > 0)
+                (C.REGISTRADOS > 0 OR C.RECHAZADOS > 0)
+                AND ((V.TIPO = 1 AND V.ESTATUS = 4) OR (V.TIPO = 2 AND V.ESTATUS = 2))
                 AND TRUNC(V.ACTUALIZADO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
             ORDER BY
                 V.ACTUALIZADO DESC
@@ -676,10 +762,40 @@ class Viaticos extends Model
         try {
             $db = new Database();
             $result = $db->CRUD($qry, $val);
+            if (isset($datos['finalizar'])) self::finalizaValidacion_VG($datos);
             if ($result < 1) return self::resultado(false, 'No se encontró el comprobante a actualizar.');
             return self::resultado(true, 'Comprobante actualizado correctamente.', $result);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al actualizar el comprobante.', null, $e->getMessage());
+        }
+    }
+
+    public static function finalizaValidacion_VG($datos)
+    {
+        $qry = <<<SQL
+            UPDATE
+                VIATICOS
+            SET
+                ESTATUS = CASE 
+                    WHEN TIPO = 1 THEN 6
+                    WHEN TIPO = 2 THEN 5
+                    ELSE ESTATUS
+                END
+            WHERE
+                ID = :id
+        SQL;
+
+        $val = [
+            'id' => $datos['solicitudId']
+        ];
+
+        try {
+            $db = new Database();
+            $result = $db->CRUD($qry, $val);
+            if ($result < 1) return self::resultado(false, 'No se encontró la solicitud a finalizar.');
+            return self::resultado(true, 'Solicitud finalizada correctamente.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al finalizar la solicitud.', null, $e->getMessage());
         }
     }
 }

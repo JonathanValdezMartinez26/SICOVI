@@ -25,6 +25,11 @@ function getMenu()
             'icono' => 'fa-solid fa-screwdriver-wrench',
             'subItems' => [
                 [
+                    'label' => 'Autorización de Viáticos y Gastos',
+                    'url' => '/Viaticos/Autorizacion',
+                    'permisos' => ['1', '2']
+                ],
+                [
                     'label' => 'Validación de comprobantes',
                     'url' => '/Viaticos/Validacion',
                     'permisos' => ['1', '2']
