@@ -123,7 +123,13 @@ class Viaticos extends Model
                 , TO_CHAR(VC.FECHA, 'YYYY-MM-DD') AS FECHA_COMPROBANTE
                 , VC.TOTAL
                 , VC.OBSERVACIONES
-                , VC.ESTATUS
+                , VC.ESTATUS AS ESTATUS_ID
+                , CASE
+                    WHEN VC.ESTATUS IS NULL THEN 'Registrado'
+                    WHEN VC.ESTATUS = 0 THEN 'Rechazado'
+                    WHEN VC.ESTATUS = 1 THEN 'Aceptado'
+                    ELSE 'Desconocido'
+                END AS ESTATUS_NOMBRE
                 , A.ID AS ARCHIVO_ID
                 , A.TIPO AS ARCHIVO_TIPO
             FROM
@@ -131,11 +137,11 @@ class Viaticos extends Model
                 LEFT JOIN ARCHIVO A ON A.ID = VC.ARCHIVO
                 LEFT JOIN CAT_VIATICOS_CONCEPTO CCV ON CCV.ID = VC.CONCEPTO
             WHERE
-                VC.VIATICOS = :solicitud
+                VC.VIATICOS = :solicitudId
         SQL;
 
         $val = [
-            'solicitud' => $datos['solicitud']
+            'solicitudId' => $datos['solicitudId']
         ];
 
         if (isset($datos['comprobacion'])) {
@@ -249,11 +255,9 @@ class Viaticos extends Model
             UPDATE
                 VIATICOS
             SET
-                ESTATUS = 7
+                ESTATUS = 8
             WHERE
                 ID = :id
-                AND ((TIPO = 1 AND ESTATUS IN (1, 2)) OR (TIPO = 2 AND ESTATUS IN (4, 2)))
-
         SQL;
 
         $val = [
@@ -343,6 +347,46 @@ class Viaticos extends Model
         } catch (\Exception $e) {
             $db->rollback();
             return self::resultado(false, 'Error al registrar la solicitud de gastos.', null, $e->getMessage());
+        }
+    }
+
+    public static function editarComprobante_V($datos)
+    {
+        $qry = <<<SQL
+            UPDATE
+                ARCHIVO
+            SET
+                ARCHIVO = EMPTY_BLOB()
+                , NOMBRE = :nombre
+                , TIPO = :tipo
+                , TAMANO = :tamano
+                , FECHA = SYSDATE
+            WHERE
+                ID = (SELECT ARCHIVO FROM VIATICOS_COMPROBACION WHERE ID = :comprobanteId)
+            RETURNING ARCHIVO INTO :archivo
+        SQL;
+
+        $val = [
+            'comprobanteId' => $datos['comprobanteId'],
+            'nombre' => $datos['nombre'],
+            'tipo' => $datos['tipo'],
+            'tamano' => $datos['tamano']
+        ];
+
+        $ret = [
+            'archivo' => [
+                'valor' => $datos['nuevoComprobante'],
+                'tipo' => \PDO::PARAM_LOB
+            ]
+        ];
+
+        try {
+            $db = new Database();
+            $result = $db->CRUD($qry, $val, $ret);
+            if ($result < 1) return self::resultado(false, 'No se encontró el comprobante a editar.');
+            return self::resultado(true, 'Comprobante editado correctamente.');
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al editar el comprobante.', null, $e->getMessage());
         }
     }
 
@@ -480,12 +524,15 @@ class Viaticos extends Model
                 , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
                 , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD') AS FECHA_REGISTRO
                 , V.MONTO
+                , V.ESTATUS AS ESTATUS_ID
+                , CEV.NOMBRE AS ESTATUS_NOMBRE
+                , V.AUTORIZACION_MONTO
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
             WHERE
-                (V.ESTATUS = 1 OR (V.ESTATUS = 4 AND V.TIPO = 2))
+                ((V.TIPO = 1 AND V.ESTATUS IN (1, 2, 7)) OR (V.TIPO = 2 AND V.ESTATUS IN (4, 7)))
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
             ORDER BY
                 ID DESC
@@ -528,12 +575,21 @@ class Viaticos extends Model
 
         try {
             $db = new Database();
+            $db->beginTransaction();
             $result = $db->CRUD($qry, $val);
-            if (isset($datos['observaciones']) && $datos['observaciones'] != '')
-                self::insertaObservaciones($datos);
+            if (isset($datos['observaciones']) && $datos['observaciones'] != '') {
+                $resultO = self::insertaObservaciones($datos);
+                if (!$resultO['success']) {
+                    $db->rollback();
+                    return self::resultado(false, 'Error al insertar las observaciones.', null, $resultO['error']);
+                }
+            }
             if ($result < 1) return self::resultado(false, 'No se encontró la solicitud a autorizar.');
-            return self::resultado(true, 'Solicitud autorizada correctamente.', $result);
+
+            $db->commit();
+            return self::resultado(true, 'Solicitud autorizada correctamente.');
         } catch (\Exception $e) {
+            $db->rollback();
             return self::resultado(false, 'Error al autorizar la solicitud.', null, $e->getMessage());
         }
     }
@@ -619,12 +675,12 @@ class Viaticos extends Model
     public static function insertaObservaciones($datos)
     {
         $qry = <<<SQL
-            INSERT INTO VIATICOS_OBSERVACIONES (VIATICOS, COMENTARIO, USUARIO)
-            VALUES (:id, :observaciones, :usuario)
+            INSERT INTO VIATICOS_OBSERVACIONES (VIATICOS, OBSERVACION, USUARIO)
+            VALUES (:viaticos, :observaciones, :usuario)
         SQL;
 
         $val = [
-            'id' => $datos['solicitud'],
+            'viaticos' => $datos['solicitud'],
             'observaciones' => $datos['observaciones'],
             'usuario' => $datos['usuario']
         ];

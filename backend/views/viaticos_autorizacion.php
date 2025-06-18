@@ -21,6 +21,7 @@
                     <th>Solicitante</th>
                     <th>Fecha de solicitud</th>
                     <th>Monto</th>
+                    <th>Estatus</th>
                     <th>Acciones</th>
                 </tr>
             </thead>

@@ -1,6 +1,17 @@
 <h4>Mis Solicitudes de Viáticos y Gastos</h4>
 
-<div id="resumenSolicitudes" class="row mb-5 g-2"></div>
+<div id="resumenSolicitudes" class="row mb-5 g-2">
+    <div class="col-auto">
+        <div class="card">
+            <div class="card-body">
+                <div class="card-info text-center">
+                    <div class="d-flex flex-column align-items-center justify-content-center"><span class="badge rounded-pill text-bg-dark">Sin solicitudes</span></div>
+                    <h4 class="card-title mb-0 me-2">0</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="card">
     <div class="row justify-content-between m-4">
@@ -53,7 +64,8 @@
                 </div>
             </div>
             <div class="form-group col-12 text-center">
-                <label id="notificacionEntrega" class="fs-5 text-info"></label>
+                <label id="notificacionEntrega" class="text-info"></label>
+                <label id="notificacionHoraEntrega" class="text-info"></label>
             </div>
             <div class="modal-body">
                 <div class="row">
@@ -147,7 +159,7 @@
                     </div>
                     <div class="form-group col-12">
                         <div class="d-flex justify-content-between align-items-center">
-                            <input type="file" id="comprobante" name="comprobante" class="form-control w-75" accept=".docx, .xlsx, .pdf, .jpeg, .png">
+                            <input type="file" id="comprobante" name="comprobante" class="form-control w-75" accept="image/*,application/pdf">
                             <span class="fs-3">o</span>
                             <button type="button" id="btnTomarFoto" class="btn btn-outline-primary"><i class="fa fa-camera">&nbsp;</i>Tomar foto</button>
                         </div>
@@ -358,6 +370,7 @@
                                         <thead>
                                             <tr>
                                                 <th class="d-none">id</th>
+                                                <th></th>
                                                 <th>Fecha Registro</th>
                                                 <th>Concepto</th>
                                                 <th>Monto</th>
@@ -368,7 +381,7 @@
                                         </tbody>
                                         <tfoot id="tfootVerComprobantesSolicitud">
                                             <tr>
-                                                <td colspan="4">
+                                                <td colspan="5">
                                                     <div class="d-flex text-center justify-content-between">
                                                         <button type="button" id="btnFinalizarComprobacion" class="btn btn-primary btn-sm">
                                                             <i class="fa-solid fa-flag-checkered">&nbsp;</i>Finalizar Comprobación
@@ -381,6 +394,17 @@
                                             </tr>
                                         </tfoot>
                                     </table>
+                                </div>
+                                <div class="d-flex justify-content-evenly align-items-center fw-bold">
+                                    <label>
+                                        <span class="badge badge-dot bg-danger"></span>Rechazado
+                                    </label>
+                                    <label>
+                                        <span class="badge badge-dot bg-warning"></span>Capturado
+                                    </label>
+                                    <label>
+                                        <span class="badge badge-dot bg-success"></span>Aceptado
+                                    </label>
                                 </div>
                             </div>
                         </div>

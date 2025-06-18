@@ -79,7 +79,6 @@ class Viaticos extends Controller
                                 solicitud.TIPO_NOMBRE,
                                 moment(solicitud.REGISTRO).format(MOMENT_FRONT),
                                 solicitud.PROYECTO,
-                                // numeral(solicitud.MONTO).format(NUMERAL_MONEDA),
                                 numeral(entregado).format(NUMERAL_MONEDA),
                                 numeral(comprobado).format(NUMERAL_MONEDA),
                                 diferencia,
@@ -118,7 +117,6 @@ class Viaticos extends Controller
                         "<div class='card-body'>" +
                         "<div class='card-info text-center'>" +
                         "<div class='d-flex flex-column align-items-center justify-content-center'>" +
-                        //"<span>Estatus</span>" +
                         "<span class='badge rounded-pill " +
                         color +
                         "'>" +
@@ -256,10 +254,10 @@ class Viaticos extends Controller
 
                 const registraSolicitud = () => {
                     const mensaje = $("<div class='text-center'></div>")
-                        .append("<p><b>Importante:</b> El registro de esta solicitud no garantiza su aprobación ni obliga a la empresa a realizar pagos o reembolsos.</p>")
+                        .append("<p>El registro de esta solicitud no garantiza su aprobación ni obliga a la empresa a realizar pagos o reembolsos.</p>")
                         .append("<p>¿Desea continuar?</p>")
 
-                    confirmarMovimiento(mensaje).then((continuar) => {
+                    confirmarMovimiento(mensaje, "Importante").then((continuar) => {
                         if (continuar.isConfirmed) {
                             const datos = getParametros()
                             if (!datos) return
@@ -320,7 +318,9 @@ class Viaticos extends Controller
 
                     $("#modalNuevaSolicitud").on("show.bs.modal", () => {
                         const fechaEntrega = calcularFechaPago()
-                        $("#notificacionEntrega").text("De ser autorizada, esta solicitud sera pagada el " + fechaEntrega.format("D [de] MMMM."))
+                        $("#notificacionEntrega").text("El monto autorizado se podrá cobrar a partir del " + fechaEntrega.format("D [de] MMMM."))
+                        if (moment().isoWeekday() === 3 && moment().hour() < 12)
+                            $("#notificacionHoraEntrega").text("Esta fecha es valida hasta las 12 hrs, según la hora de registro en el sistema no la de su equipo.")
                     })
 
                     $("#btnAgregarComprobanteGastos").click(() => {
@@ -467,11 +467,17 @@ class Viaticos extends Controller
                             consultaServidor("/viaticos/registraComporbante_V", formData, (respuesta) => {
                                 if (!respuesta.success) return showError(respuesta.mensaje)
                                 const fila = getFilaComprobante(
-                                    respuesta.datos.comprobanteId,
-                                    parametros.fecha,
-                                    parametros.conceptoNombre,
-                                    parametros.total,
-                                    true
+                                    {
+                                        TIPO_ID: 1,
+                                        ESTATUS_ID: 3
+                                    },
+                                    {
+                                        ID: respuesta.datos.comprobanteId,
+                                        ESTATUS_ID: null,
+                                        FECHA_REGISTRO: moment().format(MOMENT_BACK),
+                                        CONCEPTO_NOMBRE: parametros.conceptoNombre,
+                                        TOTAL: parametros.total,
+                                    }
                                 )
 
                                 $("#tbodyVerComprobantesSolicitud").append(fila)
@@ -488,6 +494,46 @@ class Viaticos extends Controller
                             })
                         } else {
                             $("#modalAgregarComprobante").modal("hide")
+                        }
+                    })
+                }
+                
+                const editarComprobanteViaticos = (comprobanteId) => {
+                    Swal.fire({
+                        title: "Editar Comprobante",
+                        html: "<div class='text-center'>Seleccione el nuevo archivo para esta comprobación.</div>" +
+                            "<input type='file' id='nuevoComprobante' class='form-control' accept='image/*,application/pdf'>" +
+                            "<p>O</p>" +
+                            "<button type='button' id='btnNuevoComprobante' class='btn btn-outline-primary'><i class='fa fa-camera'>&nbsp;</i>Tomar foto</button>",
+                        showCancelButton: true,
+                        confirmButtonText: "Guardar",
+                        cancelButtonText: "Cancelar",
+                        reverseButtons: true,
+                        preConfirm: () => {
+                            const nuevoComprobante = $("#nuevoComprobante")[0].files[0]
+                            if (!nuevoComprobante) {
+                                Swal.showValidationMessage("Debe seleccionar un nuevo archivo.")
+                                return false
+                            }
+                            return nuevoComprobante
+                        }
+                    }).then((resultado) => {
+                        if (resultado.isConfirmed) {
+                            const nuevoComprobante = resultado.value
+                            const parametros = new FormData()
+                            parametros.append("comprobanteId", comprobanteId)
+                            parametros.append("nuevoComprobante", nuevoComprobante)
+
+                            consultaServidor("/viaticos/editarComprobante_V", parametros, (respuesta) => {
+                                if (!respuesta.success) return showError(respuesta.mensaje)
+                                showSuccess("Comprobante editado correctamente").then(() => {
+                                    $("#modalVerSolicitud").modal("hide")
+                                    getSolicitudes(true)
+                                })
+                            }, {
+                                procesar: false,
+                                tipoContenido: false
+                            })
                         }
                     })
                 }
@@ -531,7 +577,7 @@ class Viaticos extends Controller
                         $("#verFechaF").val(moment(informacion.FECHA_F).format(MOMENT_FRONT))
                         $("#verEstatus").val(informacion.ESTATUS_NOMBRE)
 
-                        const cancelada_rechazada = [6, 7].includes(numeral(informacion.ESTATUS_ID).value())
+                        const cancelada_rechazada = [7, 8].includes(numeral(informacion.ESTATUS_ID).value())
 
                         if (cancelada_rechazada) {
                             if (!informacion.AUTORIZACION_USUARIO) $("#acordionVer #verAutorizacion").addClass("d-none")
@@ -581,8 +627,7 @@ class Viaticos extends Controller
                         const comprobantes = respuesta.datos.comprobantes || []
                         $("#tbodyVerComprobantesSolicitud").empty()
                         comprobantes.forEach((comprobante) => {
-                            const mostrarE = informacion.TIPO_ID == 1 && informacion.ESTATUS_ID == 3
-                            const fila = getFilaComprobante(comprobante.ID, comprobante.FECHA_REGISTRO, comprobante.CONCEPTO_NOMBRE, comprobante.TOTAL, mostrarE)
+                            const fila = getFilaComprobante(informacion, comprobante)
                             $("#tbodyVerComprobantesSolicitud").append(fila)
                         })
 
@@ -594,23 +639,34 @@ class Viaticos extends Controller
                     })
                 }
 
-                const getFilaComprobante = (id, fecha, concepto, total, eliminar = false) => {
+                const getFilaComprobante = (informacion, comprobante) => {
+                    const editar = (informacion.TIPO_ID == 1 && informacion.ESTATUS_ID == 3) || (informacion.TIPO_ID == 1 && informacion.ESTATUS_ID == 4 && comprobante.ESTATUS_ID != 1)
+                    const eliminar = editar
+                    const colores = [
+                        "danger", "success"
+                    ]
                     return "<tr>" +
-                        "<td class='d-none'>" + id + "</td>" +
-                        "<td>" + moment(fecha).format(MOMENT_FRONT) + "</td>" +
-                        "<td>" + concepto + "</td>" +
-                        "<td>" + numeral(total).format(NUMERAL_MONEDA) + "</td>" +
+                        "<td class='d-none'>" + comprobante.ID + "</td>" +
+                        "<td><span class='badge badge-dot bg-" + (colores[comprobante.ESTATUS_ID] || "warning") + "'></span></td>" +
+                        "<td>" + moment(comprobante.FECHA_REGISTRO).format(MOMENT_FRONT) + "</td>" +
+                        "<td>" + comprobante.CONCEPTO_NOMBRE + "</td>" +
+                        "<td>" + numeral(comprobante.TOTAL).format(NUMERAL_MONEDA) + "</td>" +
                         "<td>" + menuAcciones([
                                     {
                                         texto: "Comprobante",
                                         icono: "fa-eye",
-                                        funcion: "verComprobanteViaticos('" + id + "')"
+                                        funcion: "verComprobanteViaticos('" + comprobante.ID + "')"
                                     },
-                                    eliminar ? "divisor" : null,
+                                    (editar || eliminar) ? "divisor" : null,
+                                    editar ? {
+                                        texto: "Editar",
+                                        icono: "fa-pen-to-square",
+                                        funcion: "editarComprobanteViaticos('" + comprobante.ID + "')"
+                                    } : null,
                                     eliminar ? {
                                         texto: "Eliminar",
                                         icono: "fa-trash",
-                                        funcion: "eliminaComprobanteViaticos('" + id + "')",
+                                        funcion: "eliminaComprobanteViaticos('" + comprobante.ID + "')",
                                         clase: "text-danger"
                                     } : null
                                 ]) + "</td>" +
@@ -730,6 +786,13 @@ class Viaticos extends Controller
                             $("#comprobante")[0].files = foto
                             $("#comprobante").trigger("change")
                             $("#modalAgregarComprobante").modal("show")
+                        })
+                    })
+                    
+                    $(document).on("click", "#btnNuevoComprobante", () => {
+                        tomarFoto("Captura de Comprobante", (foto) => {
+                            $("#nuevoComprobante")[0].files = foto
+                            $("#nuevoComprobante").trigger("change")
                         })
                     })
                     
@@ -888,6 +951,42 @@ class Viaticos extends Controller
         self::respuestaJSON($res);
     }
 
+    public function editarComprobante_V()
+    {
+        $comprobante = [];
+
+        try {
+            if ($_FILES['nuevoComprobante']['error'] !== UPLOAD_ERR_OK) {
+                return self::respuestaJSON([
+                    'success' => false,
+                    'mensaje' => "El archivo {$_FILES['nuevoComprobante']['name']} tiene un error y no se puede guardar."
+                ]);
+            }
+
+            if ($_FILES['nuevoComprobante']['size'] > 5 * 1024 * 1024) {
+                return self::respuestaJSON([
+                    'success' => false,
+                    'mensaje' => "El archivo {$_FILES['nuevoComprobante']['name']} excede el tamaño máximo permitido de 5 MB."
+                ]);
+            }
+
+            $comprobante = [
+                'comprobanteId' => $_POST['comprobanteId'],
+                'nuevoComprobante' => fopen($_FILES['nuevoComprobante']['tmp_name'], 'rb'),
+                'nombre' => $_FILES['nuevoComprobante']['name'],
+                'tipo' => $_FILES['nuevoComprobante']['type'],
+                'tamano' => $_FILES['nuevoComprobante']['size']
+            ];
+
+            $res = ViaticosDAO::editarComprobante_V($comprobante);
+            self::respuestaJSON($res);
+        } catch (\Exception $e) {
+            return self::respuestaJSON(self::respuesta(false, 'Error al editar el comprobante', null, $e->getMessage()));
+        } finally {
+            if (isset($comprobante['nuevoComprobante']) && is_resource($comprobante['nuevoComprobante'])) fclose($comprobante['nuevoComprobante']);
+        }
+    }
+
     public function eliminaComprobante_V()
     {
         self::respuestaJSON(ViaticosDAO::eliminaComprobante_V($_POST));
@@ -940,6 +1039,11 @@ class Viaticos extends Controller
                     consultaServidor("/viaticos/getSolicitudesAutorizacion", parametros, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         const datos = respuesta.datos.map(solicitud => {
+                            let color = "warning"
+                            if (solicitud.ESTATUS_ID == 2) color = "success"
+                            if (solicitud.ESTATUS_ID == 7) color = "danger"
+
+                            const estatus = "<span class='badge rounded-pill bg-label-" + color + "'>" + solicitud.ESTATUS_NOMBRE + "</span>"
                             const acciones = menuAcciones([
                                 {
                                     texto: "Detalles",
@@ -955,6 +1059,7 @@ class Viaticos extends Controller
                                 solicitud.USUARIO_NOMBRE,
                                 moment(solicitud.FECHA_REGISTRO).format(MOMENT_FRONT),
                                 numeral(solicitud.MONTO).format(NUMERAL_MONEDA),
+                                estatus,
                                 acciones
                             ]
                         })
@@ -967,6 +1072,20 @@ class Viaticos extends Controller
                     consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId }, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         const informacion = respuesta.datos.informacion
+
+                        $("#rechazar").attr("disabled", false)
+                        $("#autorizar").attr("disabled", false)
+
+                        if (informacion.ESTATUS_ID == 2) {
+                            color = "success"
+                            $("#autorizar").attr("disabled", true)
+                        }
+                        
+                        if (informacion.ESTATUS_ID == 7) {
+                            color = "danger"
+                            $("#rechazar").attr("disabled", true)
+                        }
+                        
                         $("#verSolicitante").val(informacion.USUARIO_NOMBRE)
                         $("#verSucursal").val(informacion.SUCURSAL_NOMBRE)
                         $("#verTipoSol").val(informacion.TIPO_NOMBRE)
@@ -974,8 +1093,9 @@ class Viaticos extends Controller
                         $("#verFechaSol").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
                         $("#verMontoSolicitado").val(numeral(informacion.MONTO).format(NUMERAL_MONEDA))
                         $("#verProyecto").val(informacion.PROYECTO)
-                        $("#verFechaI").val(moment(informacion.FECHA_I).format(MOMENT_FRONT))
-                        $("#verFechaF").val(moment(informacion.FECHA_F).format(MOMENT_FRONT))
+                        $("#verFechaI").val(moment(informacion.DESDE).format(MOMENT_FRONT))
+                        $("#verFechaF").val(moment(informacion.HASTA).format(MOMENT_FRONT))
+                        $("#montoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_DECIMAL))
                         $("#modalVerAutorizacion").modal("show")
                     })
                 }
@@ -1045,7 +1165,7 @@ class Viaticos extends Controller
                     const parametros = {
                         solicitud: $("#verSolicitudId").val(),
                         usuario: $_SESSION[usuario_id],
-                        autorizado: 6,
+                        autorizado: 7,
                         observaciones: $("#observacionesAutorizacion").val()
                     }
 
@@ -1174,6 +1294,7 @@ class Viaticos extends Controller
                         $("#verSucursal").val(informacion.SUCURSAL_NOMBRE)
                         $("#verFechaReg").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
                         $("#verSolicitudId").val(informacion.ID)
+                        $("#verTipoSolId").val(informacion.TIPO_ID)
                         $("#verTipoSol").val(informacion.TIPO_NOMBRE)
                         $("#verFechaI").val(moment(informacion.FECHA_I).format(MOMENT_FRONT))
                         $("#verFechaF").val(moment(informacion.FECHA_F).format(MOMENT_FRONT))
@@ -1196,13 +1317,14 @@ class Viaticos extends Controller
                             metodo: $("#metodoEntrega").val(),
                             monto: $("#montoEntrega").val(),
                             observaciones: $("#observacionesEntrega").val(),
-                            estatus =$("#verTipoSolId").val() == 2 ? 6 : 3
+                            estatus: $("#verTipoSolId").val() == 2 ? 6 : 3
                         }
 
                         consultaServidor("/viaticos/entrega_VG", parametros, (respuesta) => {
                             if (!respuesta.success) return showError(respuesta.mensaje)
-                            const mensaje = "<p>La entrega se ha registrado correctamente.</p>" +
-                                "<p>Debe imprimir el comprobante y ser firmado por quien recibe y por quien entrega.</p>"
+                            const mensaje = $("<div>")
+                                .append("<p>La entrega se ha registrado correctamente.</p>")
+                                .append("<p>Debe imprimir el comprobante y ser firmado por quien recibe y por quien entrega.</p>")
 
                             showSuccess(mensaje).then(() => {
                                 const parametro = new FormData()
@@ -1253,30 +1375,21 @@ class Viaticos extends Controller
 
     public function entrega_VG()
     {
-        self::respuestaJSON(self::respuesta(true, 'Entregado'));
-        // self::respuestaJSON(ViaticosDAO::entrega_VG($_POST));
+        self::respuestaJSON(ViaticosDAO::entrega_VG($_POST));
     }
 
     public function getComprobanteEntrega()
     {
-        $datos = ViaticosDAO::getDatosComprobanteEntrega($_POST);
-        if (!$datos['success']) {
-            return self::respuestaJSON($datos);
-        }
+        $datos = $_SERVER['REQUEST_METHOD'] !== 'POST' ? $_GET : $_POST;
+        $datos = ViaticosDAO::getDatosComprobanteEntrega($datos);
+        if (!$datos['success']) return self::respuestaJSON($datos);
 
-        $datos = $datos['datos'];
-        if ($datos['TIPO'] === 1) {
-            $tipo_titulo = 'Entrega de Viáticos';
-        } else {
-            $tipo_titulo = 'Devolución de Gastos';
-        }
-        $tipo = strtolower($tipo_titulo);
-        $plantilla = self::getPlantillaEntrega_VG();
+        $plantilla = self::getPlantillaEntrega_VG($datos['datos']);
 
         $mpdf = new \mPDF([
             'mode' => 'utf-8',
             'format' => 'Letter',
-            'default_font_size' => 11,
+            'default_font_size' => 10,
             'default_font' => 'Arial',
             'margin_left' => 10,
             'margin_right' => 10,
@@ -1285,13 +1398,22 @@ class Viaticos extends Controller
         ]);
         $mpdf->WriteHTML($plantilla['estilo'], 1);
         $mpdf->WriteHTML($plantilla['cuerpo'], 2);
+
+
+        $contenidoInvertido = <<<HTML
+            <div style="border-top: 1px dashed #000; margin-top: 10px;">
+                {$plantilla['cuerpo']}
+            </div>
+        HTML;
+        $mpdf->WriteHTML($contenidoInvertido);
+
         $mpdf->Output('comprobante_entrega.pdf', 'I');
         exit;
     }
 
-    public function getPlantillaEntrega_VG()
+    public function getPlantillaEntrega_VG($datos)
     {
-        $monto = 1535.50;
+        $monto = $datos['ENTREGA_MONTO'] ?? 0;
 
         $entero = floor($monto);
         $centavos = round(($monto - $entero) * 100);
@@ -1314,12 +1436,11 @@ class Viaticos extends Controller
 
                 .header {
                     text-align: center;
-                    margin-bottom: 10px;
+                    margin-bottom: 5px;
                     border-bottom: 2px solid #333;
                 }
                 
-                .header h1 {
-                    font-size: 18pt;
+                .header h2 {
                     font-weight: bold;
                     text-transform: uppercase;
                 }
@@ -1340,7 +1461,7 @@ class Viaticos extends Controller
                 }
                 
                 .field-row {
-                    margin-bottom: 8px;
+                    margin-bottom: 5px;
                 }
                 
                 .field-label {
@@ -1357,31 +1478,27 @@ class Viaticos extends Controller
                 }
                 
                 .content-section {
-                    margin: 20px 0;
                     text-align: justify;
                     line-height: 1.6;
                 }
                 
                 .amount-section {
-                    margin: 20px 0;
                     text-align: center;
+                    margin: 0;
                 }
                 
                 .amount-box {
                     display: inline-block;
                     border: 2px solid #333;
-                    padding: 15px 30px;
+                    padding: 15px;
                     background-color: #f9f9f9;
                 }
                 
                 .amount-label {
                     font-weight: bold;
-                    font-size: 11pt;
-                    margin-bottom: 5px;
                 }
                 
                 .amount-value {
-                    font-size: 14pt;
                     font-weight: bold;
                     color: #333;
                 }
@@ -1389,11 +1506,10 @@ class Viaticos extends Controller
                 .signatures {
                     width: 100%;
                     text-align: center;
-                    margin-bottom: 100px;
                 }
 
                 .signatures-signature {
-                    height: 300px;
+                    height: 100px;
                 }
 
                 .signatures-space {
@@ -1414,7 +1530,7 @@ class Viaticos extends Controller
         $cuerpo = <<<HTML
             <!-- Encabezado -->
             <div class="header">
-                <h1>Comprobante de Entrega y Recepción de Viáticos</h1>
+                <h2>Comprobante de Entrega y Recepción de Viáticos</h2>
             </div>
 
             <!-- Información del documento -->
@@ -1469,13 +1585,13 @@ class Viaticos extends Controller
 
             <!-- Firmas -->
             <table class="signatures">
-                <tr class="signatures-signature">
+                <tr>
                     <td></td>
-                    <td>
+                    <td class="signatures-signature">
                         <span class="signature-title">ENTREGA</span>
                     </td>
                     <td></td>
-                    <td>
+                    <td class="signatures-signature">
                         <span class="signature-title">RECIBE</span>
                     </td>
                     <td></td>
@@ -1534,7 +1650,7 @@ class Viaticos extends Controller
                         const datos = comprobaciones.map((comprobacion, index) => {
                             const acciones = menuAcciones([
                                 {
-                                    texto: "Ver comprobante",
+                                    texto: "Comprobantes",
                                     icono: "fa-eye",
                                     funcion: "verComprobantes(" + index + ")"
                                 }
@@ -1579,7 +1695,7 @@ class Viaticos extends Controller
                     getComprobantes(comprobacion.ID)
                 }
 
-                const getComprobantes = (solicitud) => {
+                const getComprobantes = (solicitudId) => {
                     $(".controlesPDF").addClass("d-none")
                     $("#cargandoArchivo").removeClass("d-none")
                     $("#sinArchivo").addClass("d-none")
@@ -1590,7 +1706,7 @@ class Viaticos extends Controller
                     $("#btnRechazarComprobante").prop("disabled", true)
                     $("#btnAceptarComprobante").prop("disabled", true)
                     
-                    consultaServidor("/viaticos/getComprobantesSolicitud_VG", { solicitud, comprobacion: true }, (respuesta) => {
+                    consultaServidor("/viaticos/getComprobantesSolicitud_VG", { solicitudId, comprobacion: true }, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         comprobantes = respuesta.datos
                         if (comprobantes.length === 0) {
@@ -1783,7 +1899,7 @@ class Viaticos extends Controller
                         estatus: 1,
                     }
 
-                    if (comprobantes.length !== 1) aceptar("¿Desea continuar?", parametros)
+                    if (comprobantes.length !== 1) aceptar("¿Desea aceptar este comprobante?", parametros)
                     else {
                         const msg = comprobacion.TIPO_ID == 1 
                             ? "se dará por finalizada la solicitud de viáticos y se aplicaran los ajustes de saldo a favor o en contra."
@@ -1814,7 +1930,8 @@ class Viaticos extends Controller
                                     }, 1500)
                                     return
                                 }
-                                if (leyendaNoComprobante.actual > comprobantes.length) leyendaNoComprobante.actual = comprobantes.length
+                                leyendaNoComprobante.total = comprobantes.length
+                                if (leyendaNoComprobante.actual > leyendaNoComprobante.total) leyendaNoComprobante.actual = leyendaNoComprobante.total
                                 actualizaDatosComprobante(leyendaNoComprobante.actual - 1)
                             })
                         })
