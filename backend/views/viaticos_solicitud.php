@@ -396,15 +396,15 @@
                                     </table>
                                 </div>
                                 <div class="d-flex justify-content-evenly align-items-center fw-bold">
-                                    <label>
-                                        <span class="badge badge-dot bg-danger"></span>Rechazado
-                                    </label>
-                                    <label>
-                                        <span class="badge badge-dot bg-warning"></span>Capturado
-                                    </label>
-                                    <label>
-                                        <span class="badge badge-dot bg-success"></span>Aceptado
-                                    </label>
+                                    <span class="d-flex align-items-center">
+                                        <i class="badge badge-dot bg-danger"></i>&nbsp;Rechazado
+                                    </span>
+                                    <span class="d-flex align-items-center">
+                                        <i class="badge badge-dot bg-warning"></i>&nbsp;Capturado
+                                    </span>
+                                    <span class="d-flex align-items-center">
+                                        <i class="badge badge-dot bg-success"></i>&nbsp;Aceptado
+                                    </span>
                                 </div>
                             </div>
                         </div>

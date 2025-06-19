@@ -18,7 +18,7 @@ class Model
 
     public static function getCatalogoConceptosViaticos()
     {
-        $query = "SELECT * FROM CAT_CONCEPTO_VIATICOS ORDER BY NOMBRE";
+        $query = "SELECT * FROM CAT_VIATICOS_CONCEPTO ORDER BY NOMBRE";
         try {
             $db = new Database();
             $result = $db->queryAll($query);
@@ -30,7 +30,7 @@ class Model
 
     public static function getCatalogoMetodosEntrega()
     {
-        $query = "SELECT * FROM CAT_METODO_ENTREGA_VIATICOS ORDER BY ID";
+        $query = "SELECT * FROM CAT_VIATICOS_METODO_ENTREGA ORDER BY ID";
         try {
             $db = new Database();
             $result = $db->queryAll($query);

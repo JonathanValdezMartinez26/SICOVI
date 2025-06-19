@@ -657,6 +657,11 @@ class Viaticos extends Controller
                                         icono: "fa-eye",
                                         funcion: "verComprobanteViaticos('" + comprobante.ID + "')"
                                     },
+                                    comprobante.MOTIVO_RECHAZO && {
+                                        texto: "Motivo",
+                                        icono: "fa-info-circle",
+                                        funcion: "showInfo('" + comprobante.MOTIVO_RECHAZO + "')"
+                                    },
                                     (editar || eliminar) ? "divisor" : null,
                                     editar ? {
                                         texto: "Editar",
@@ -1151,7 +1156,7 @@ class Viaticos extends Controller
 
                 const autorizarSolicitud = () => {
                     const parametros = {
-                        solicitud: $("#verSolicitudId").val(),
+                        solicitudId: $("#verSolicitudId").val(),
                         usuario: $_SESSION[usuario_id],
                         autorizado: 2,
                         monto: $("#montoAutorizado").val(),
@@ -1163,7 +1168,7 @@ class Viaticos extends Controller
 
                 const rechazarSolicitud = () => {
                     const parametros = {
-                        solicitud: $("#verSolicitudId").val(),
+                        solicitudId: $("#verSolicitudId").val(),
                         usuario: $_SESSION[usuario_id],
                         autorizado: 7,
                         observaciones: $("#observacionesAutorizacion").val()
@@ -1312,10 +1317,10 @@ class Viaticos extends Controller
                         if (!continuar.isConfirmed) return
 
                         const parametros = {
-                            solicitud: $("#verSolicitudId").val(),
+                            solicitudId: $("#verSolicitudId").val(),
                             usuario: $_SESSION[usuario_id],
                             metodo: $("#metodoEntrega").val(),
-                            monto: $("#montoEntrega").val(),
+                            monto: numeral($("#montoEntrega").val()).value(),
                             observaciones: $("#observacionesEntrega").val(),
                             estatus: $("#verTipoSolId").val() == 2 ? 6 : 3
                         }
@@ -1328,7 +1333,7 @@ class Viaticos extends Controller
 
                             showSuccess(mensaje).then(() => {
                                 const parametro = new FormData()
-                                parametro.append("solicitud", parametros.solicitud)
+                                parametro.append("solicitudId", parametros.solicitudId)
                                 $("#modalVerEntrega").modal("hide")
                                 mostrarArchivoDescargado(
                                     "/viaticos/getComprobanteEntrega",
@@ -1768,7 +1773,7 @@ class Viaticos extends Controller
                 const verArchivo = async (url, tipo) => {
                     try {
                         if (tipo === "application/pdf") await verPDF(url)
-                        if (tipo.startsWith("image/")) verImagen(url)
+                        if (tipo.startsWith("image/")) await verImagen(url)
                         if (!tipo) throw new Error("Tipo de archivo no soportado")
                     } catch (error) {
                         $("#errorArchivo").removeClass("d-none")
@@ -1777,15 +1782,18 @@ class Viaticos extends Controller
                     }
                 }
 
-                const verImagen = (url) => {
+                const verImagen = async (url) => {
                     const img = document.createElement("img")
                     img.className = "file-content no-select mw-100 mh-100"
-                    img.src = url
                     img.alt = "Archivo de imagen"
-                    img.onload = () => {
-                        const visor = $("#visor")
-                        visor.append(img)
-                    }
+
+                    await new Promise((resolve, reject) => {
+                        img.onload = () => resolve()
+                        img.onerror = () => reject(new Error("Error al cargar la imagen"))
+                        img.src = url
+                    });
+
+                    $("#visor").append(img)
                 }
 
                 const verPDF = async (url) => {
@@ -1872,12 +1880,39 @@ class Viaticos extends Controller
                 }
 
                 const rechazarComprobante = () => {
-                    confirmarMovimiento("¿Desea rechazar este comprobante?").then((continuar) => {
+                    Swal.fire({
+                        title: "Confirmación",
+                        html: "<div class='text-center'>¿Desea rechazar este comprobante?</div>" +
+                            "<div class='text-center'>Indique el motivo del rechazo</div>" +
+                            "<input type='text' id='motivoRechazo' class='form-control' placeholder='Motivo del rechazo' required>",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "Si, continuar",
+                        cancelButtonText: "No",
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        reverseButtons: true,
+                        keydownListenerCapture: true,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                            cancelButton: "btn btn-danger"
+                        },
+                        preConfirm: () => {
+                            const observaciones = $("#motivoRechazo").val().trim()
+                            if (!observaciones) {
+                                Swal.showValidationMessage("Ingrese el motivo del rechazo.")
+                                return false
+                            }
+                            return observaciones
+                        }
+                    }).then((continuar) => {
                         if (!continuar.isConfirmed) return
 
                         const parametros = {
+                            usuario: $_SESSION[usuario_id],
                             solicitudId: comprobante.SOLICITUD_ID,
                             comprobanteId: comprobante.ID,
+                            observaciones: continuar.value,
                             estatus: 0
                         }
 

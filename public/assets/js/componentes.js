@@ -44,7 +44,7 @@ const mostrarArchivoDescargado = (
                         <div class="modal-body">
                             <div class="row">
                                 <div class="col-12 text-center">
-                                    <embed id="${idVisor}" src="${url}" style="width: 100%; min-height: 30vh;"></embed>
+                                    <embed id="${idVisor}" src="${url}" style="width: 100%; min-height: 50vh;"></embed>
                                 </div>
                             </div>
                         </div>

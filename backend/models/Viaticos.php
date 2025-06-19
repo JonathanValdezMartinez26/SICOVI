@@ -130,6 +130,13 @@ class Viaticos extends Model
                     WHEN VC.ESTATUS = 1 THEN 'Aceptado'
                     ELSE 'Desconocido'
                 END AS ESTATUS_NOMBRE
+                ,(
+                    SELECT VO.OBSERVACION
+                    FROM VIATICOS_OBSERVACIONES VO
+                    WHERE VO.VIATICOS >= VC.VIATICOS AND VC.ESTATUS = 0
+                    ORDER BY ABS(VO.FECHA - VC.VALIDADO) ASC
+                    FETCH FIRST 1 ROWS ONLY
+                ) AS MOTIVO_RECHAZO
                 , A.ID AS ARCHIVO_ID
                 , A.TIPO AS ARCHIVO_TIPO
             FROM
@@ -307,6 +314,8 @@ class Viaticos extends Model
 
             $db->CRUD($qryA, $valA, $retA);
 
+            if (!$retA['id']['valor']) throw new \Exception("Error al insertar el archivo del comprobante.");
+
             $qryC = <<<SQL
                 INSERT INTO VIATICOS_COMPROBACION (VIATICOS, ARCHIVO, FECHA, CONCEPTO, OBSERVACIONES, SUBTOTAL, IVA, TOTAL)
                 VALUES (:id_viaticos, :id_archivo, TO_DATE(:fecha, 'YYYY-MM-DD'), :concepto, :observaciones, :subtotal, :iva, :total)
@@ -323,7 +332,8 @@ class Viaticos extends Model
                 'total' => isset($datos['total']) ? $datos['total'] : $datos['subtotal']
             ];
 
-            $db->CRUD($qryC, $valC);
+            $res = $db->CRUD($qryC, $valC);
+            if ($res < 1) throw new \Exception("Error al insertar el comprobante de viáticos.");
 
             $qryV = <<<SQL
                 UPDATE
@@ -339,7 +349,8 @@ class Viaticos extends Model
                 'monto' => $valC['total']
             ];
 
-            $db->CRUD($qryV, $valV);
+            $res = $db->CRUD($qryV, $valV);
+            if ($res < 1) throw new \Exception("Error al actualizar el monto de comprobación de la solicitud de viáticos.");
 
             $db->commit();
 
@@ -382,10 +393,31 @@ class Viaticos extends Model
 
         try {
             $db = new Database();
+            $db->beginTransaction();
+
             $result = $db->CRUD($qry, $val, $ret);
-            if ($result < 1) return self::resultado(false, 'No se encontró el comprobante a editar.');
+            if ($result < 1) throw new \Exception("No se encontró el comprobante a editar.");
+
+            $qryC = <<<SQL
+                UPDATE
+                    VIATICOS_COMPROBACION
+                SET
+                    ESTATUS = NULL
+                WHERE
+                    ID = :comprobanteId
+            SQL;
+
+            $valC = [
+                'comprobanteId' => $datos['comprobanteId']
+            ];
+
+            $resultC = $db->CRUD($qryC, $valC);
+            if ($resultC < 1) throw new \Exception("Error al actualizar el estado del comprobante.");
+
+            $db->commit();
             return self::resultado(true, 'Comprobante editado correctamente.');
         } catch (\Exception $e) {
+            $db->rollback();
             return self::resultado(false, 'Error al editar el comprobante.', null, $e->getMessage());
         }
     }
@@ -567,7 +599,7 @@ class Viaticos extends Model
         SQL;
 
         $val = [
-            'id' => $datos['solicitud'],
+            'id' => $datos['solicitudId'],
             'usuario' => $datos['usuario'],
             'autorizado' => $datos['autorizado'],
             'monto' => $datos['monto']
@@ -576,15 +608,14 @@ class Viaticos extends Model
         try {
             $db = new Database();
             $db->beginTransaction();
+
             $result = $db->CRUD($qry, $val);
+            if ($result < 1) throw new \Exception("No se encontró la solicitud a autorizar.");
+
             if (isset($datos['observaciones']) && $datos['observaciones'] != '') {
                 $resultO = self::insertaObservaciones($datos);
-                if (!$resultO['success']) {
-                    $db->rollback();
-                    return self::resultado(false, 'Error al insertar las observaciones.', null, $resultO['error']);
-                }
+                if (!$resultO['success']) throw new \Exception($resultO['error'] ?? $resultO['mensaje']);
             }
-            if ($result < 1) return self::resultado(false, 'No se encontró la solicitud a autorizar.');
 
             $db->commit();
             return self::resultado(true, 'Solicitud autorizada correctamente.');
@@ -653,7 +684,7 @@ class Viaticos extends Model
 
         $val = [
             'estatus' => $datos['estatus'],
-            'id' => $datos['solicitud'],
+            'id' => $datos['solicitudId'],
             'usuario' => $datos['usuario'],
             'metodo' => $datos['metodo'],
             'monto' => $datos['monto']
@@ -662,12 +693,20 @@ class Viaticos extends Model
 
         try {
             $db = new Database();
+            $db->beginTransaction();
+
             $result = $db->CRUD($qry, $val);
-            if (isset($datos['observaciones']) && $datos['observaciones'] != '')
-                self::insertaObservaciones($datos);
-            if ($result < 1) return self::resultado(false, 'No se encontró la solicitud a entregar.');
+            if ($result < 1) throw new \Exception("No se encontró la solicitud a entregar.");
+
+            if (isset($datos['observaciones']) && $datos['observaciones'] != '') {
+                $resultO = self::insertaObservaciones($datos);
+                if (!$resultO['success']) throw new \Exception($resultO['error'] ?? $resultO['mensaje']);
+            }
+
+            $db->commit();
             return self::resultado(true, 'Solicitud entregada correctamente.', $result);
         } catch (\Exception $e) {
+            $db->rollback();
             return self::resultado(false, 'Error al entregar la solicitud.', null, $e->getMessage());
         }
     }
@@ -680,7 +719,7 @@ class Viaticos extends Model
         SQL;
 
         $val = [
-            'viaticos' => $datos['solicitud'],
+            'viaticos' => $datos['solicitudId'],
             'observaciones' => $datos['observaciones'],
             'usuario' => $datos['usuario']
         ];
@@ -723,7 +762,7 @@ class Viaticos extends Model
         SQL;
 
         $val = [
-            'id' => $datos['solicitud']
+            'id' => $datos['solicitudId']
         ];
 
         try {
@@ -804,24 +843,40 @@ class Viaticos extends Model
                 VIATICOS_COMPROBACION
             SET
                 ESTATUS = :estatus
+                , VALIDO = :usuario
             WHERE
                 ID = :comprobanteId
                 AND VIATICOS = :solicitudId
         SQL;
 
         $val = [
+            'usuario' => $datos['usuario'],
+            'estatus' => $datos['estatus'],
             'comprobanteId' => $datos['comprobanteId'],
             'solicitudId' => $datos['solicitudId'],
-            'estatus' => $datos['estatus']
         ];
 
         try {
             $db = new Database();
+            $db->beginTransaction();
+
             $result = $db->CRUD($qry, $val);
-            if (isset($datos['finalizar'])) self::finalizaValidacion_VG($datos);
-            if ($result < 1) return self::resultado(false, 'No se encontró el comprobante a actualizar.');
+            if ($result < 1) throw new \Exception("No se encontró el comprobante a actualizar.");
+
+            if (isset($datos['observaciones']) && $datos['observaciones'] != '') {
+                $resultO = self::insertaObservaciones($datos);
+                if (!$resultO['success']) throw new \Exception($resultO['error'] ?? $resultO['mensaje']);
+            }
+
+            if (isset($datos['finalizar'])) {
+                $resultF = self::finalizaValidacion_VG($datos);
+                if (!$resultF['success']) throw new \Exception($resultF['error'] ?? $resultF['mensaje']);
+            }
+
+            $db->commit();
             return self::resultado(true, 'Comprobante actualizado correctamente.', $result);
         } catch (\Exception $e) {
+            $db->rollback();
             return self::resultado(false, 'Error al actualizar el comprobante.', null, $e->getMessage());
         }
     }
