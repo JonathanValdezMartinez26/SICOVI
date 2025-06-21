@@ -7,6 +7,31 @@ use Core\Database;
 
 class Viaticos extends Model
 {
+    public static function getSolicitudesActivas_VG($datos)
+    {
+        $qry = <<<SQL
+            SELECT
+                COUNT(*) AS ACTIVAS
+            FROM
+                VIATICOS
+            WHERE
+                ESTATUS NOT IN (6, 7, 8)
+                AND USUARIO = :usuario
+        SQL;
+
+        $val = [
+            'usuario' => $datos['usuario']
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryOne($qry, $val);
+            return self::resultado(true, 'Solicitudes activas encontradas.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
+        }
+    }
+
     public static function getSolicitudesUsuario_VG($datos)
     {
         $qry = <<<SQL

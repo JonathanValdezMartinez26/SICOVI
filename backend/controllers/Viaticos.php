@@ -13,8 +13,10 @@ class Viaticos extends Controller
             <script>
                 const tabla = "#historialSolicitudes"
                 const comprobantesGastos = []
+                const conceptosViaticos = []
                 let valSolicitud = null,
-                    valComprobante = null
+                    valComprobante = null,
+                    valConcepto = null
 
                 const getSolicitudes = (persistirVista = false) => {
                     const fechas = getInputFechas("#fechasSolicitudes", true)
@@ -27,6 +29,11 @@ class Viaticos extends Controller
 
                     consultaServidor("/viaticos/getSolicitudesUsuario", parametros, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
+                        if (numeral($("#solActivas").val()).value() >= 3) {
+                            $("#btnAgregar").attr("disabled", true)
+                            showWarning("Tiene 3 o más solicitudes en proceso o no finalizadas. No podrá registrar una nueva solicitud hasta que finalice o cancele alguna de ellas.")
+                        } else $("#btnAgregar").attr("disabled", false)
+                        
                         const resumen = {}
                         const datos = respuesta.datos.map((solicitud) => {
                             const ver = {
@@ -151,11 +158,11 @@ class Viaticos extends Controller
                         },
                         montoVG: {
                             notEmpty: {
-                                message: "Debe ingresar un monto"
+                                message: "Debe añadir un concepto"
                             },
                             greaterThan: {
                                 min: 1,
-                                message: "Debe ser mayor a 0"
+                                message: "Debe añadir un concepto"
                             }
                         },
                         proyecto: {
@@ -228,6 +235,42 @@ class Viaticos extends Controller
                     )
                 }
 
+                const validacionConcepto = () => {
+                    const campos = {
+                        montoConcepto: {
+                            notEmpty: {
+                                message: "Debe ingresar un monto"
+                            },
+                            greaterThan: {
+                                min: 1,
+                                message: "El monto debe ser mayor a 0"
+                            },
+                            callback: {
+                                callback: validaMontoConcepto,  
+                                message: "El monto debe ser mayor a 0"
+                            }
+                        },
+                        conceptoHospedaje: {
+                            callback: {
+                                callback: (input) => {
+                                    const concepto = $("#conceptoViaticos").val()
+                                    if (concepto != 4) return true
+                                    return numeral(input.value || 0).value() > 0
+                                },
+                                message: "Debe ingresar el numero de noches a hospedarse"
+                            }
+                        },
+                    }
+
+                    valConcepto = setValidacionModal(
+                        "#modalAgregarConcepto",
+                        campos,
+                        "#agregarConcepto",
+                        agregarConcepto,
+                        "#cancelaConcepto"
+                    )
+                }
+
                 const getParametros = () => {
                     const fechas = getInputFechas("#fechasNuevaSolicitud", true)
 
@@ -273,6 +316,14 @@ class Viaticos extends Controller
                             formData.append("limite", datos.limite)
                             formData.append("comprobado", datos.tipo == 2 ? datos.monto: 0)
 
+                            conceptosViaticos.forEach((concepto) => {
+                                formData.append("concepto[]", concepto.concepto)
+                                formData.append("tipoConcepto[]", concepto.tipo)
+                                formData.append("subTipoConcepto[]", concepto.subTipo)
+                                formData.append("totalConcepto[]", concepto.total)
+                                formData.append("observacionesConcepto[]", concepto.observaciones)
+                            })
+
                             comprobantesGastos.forEach((comprobante) => {
                                 formData.append("comprobante[]", comprobante.comprobante)
                                 formData.append("conceptoComprobante[]", comprobante.concepto)
@@ -290,6 +341,7 @@ class Viaticos extends Controller
                                     if (!respuesta.success) return showError(respuesta.mensaje)
 
                                     showSuccess("Solicitud registrada correctamente").then(() => {
+                                        $("#solActivas").val(numeral($("#solActivas").val()).add(1).value())
                                         $("#modalNuevaSolicitud").modal("hide")
                                         resetValidacion(valSolicitud, true)
                                         resetValidacion(valComprobante, true)
@@ -355,6 +407,22 @@ class Viaticos extends Controller
                     })
                 }
 
+                const configuraModalConcepto = () => {
+                    let modalOrigen = null
+
+                    $("#btnAgregarConcepto").on("click", () => {
+                        modalOrigen = $("#modalNuevaSolicitud")
+                        modalOrigen.modal("hide")
+                        $("#modalAgregarConcepto").modal("show")
+                    })
+
+                    $("#modalAgregarConcepto").on("hidden.bs.modal", () => {
+                        if ($('.modal.show').length > 0) return
+                        $("#conceptoViaticos").val(1).trigger("change")
+                        modalOrigen.modal("show")
+                    })
+                }
+
                 const calcularFechaPago = () => {
                     const fecha = moment()
                     const dia = fecha.isoWeekday()
@@ -363,6 +431,7 @@ class Viaticos extends Controller
 
                     if (dia >= 1 && dia <= 2) diaPago = 4
                     if (dia == 3 && hora < 12) diaPago = 4
+                    if (dia == 5 && hora < 17) diaPago = 10
                     
                     return fecha.clone().isoWeekday(diaPago)
                 }
@@ -371,15 +440,15 @@ class Viaticos extends Controller
                     const tipo = $("#tipoSolicitud").val()
                     if (tipo === "1") {
                         $("#lblMontoVG").text("Monto Solicitado")
-                        $("#montoVG").val("")
-                        $("#montoVG").prop("disabled", false)
+                        $("#montoVG").val("0.00")
+                        $("#conceptosViaticos").show()
                         limpiaComprobantes()
                         $("#comprobantesGastos").hide()
                         updateInputFechas("#fechasNuevaSolicitud", { minD: 0, maxD: 30 })
                     } else {
                         $("#lblMontoVG").text("Monto Comprobado")
                         $("#montoVG").val("0.00")
-                        $("#montoVG").prop("disabled", true)
+                        $("#conceptosViaticos").hide()
                         $("#conceptoComprobante").val(null).trigger("change")
                         $("#comprobantesGastos").show()
                         updateInputFechas("#fechasNuevaSolicitud", { minD: -30, maxD: 0 })
@@ -593,7 +662,7 @@ class Viaticos extends Controller
                         $("#verAutorizacionIcono").removeClass()
                         if (informacion.AUTORIZACION_USUARIO) {
                             $("#verAutorizacionIcono").addClass(cancelada_rechazada ? "fa fa-circle-xmark text-danger" : "fa fa-circle-check text-success")
-                            $("#verAutorizadoPor").val(informacion.AUTORIZACION_NOMBRE)
+                            $("#verAutorizadoPor").val("ANGEL MOISES GUERRERO MEJIA") //informacion.AUTORIZACION_NOMBRE)
                             $("#verFechaAutorizacion").val(moment(informacion.AUTORIZACION_FECHA).format(MOMENT_FRONT_HORA))
                             $("#verMontoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_MONEDA))
                         } else {
@@ -731,6 +800,7 @@ class Viaticos extends Controller
                             consultaServidor("/viaticos/cancelarSolicitud", { idSolicitud }, (respuesta) => {
                                 if (!respuesta.success) return showError(respuesta.mensaje)
                                 showSuccess("Solicitud cancelada correctamente").then(() => {
+                                    $("#solActivas").val(numeral($("#solActivas").val()).subtract(1).value())
                                     getSolicitudes()
                                 })
                             })
@@ -763,16 +833,191 @@ class Viaticos extends Controller
                     mostrarArchivoDescargado("/viaticos/getComprobante_VG", parametro)
                 }
 
+                const changeConceptoViaticos = () => {
+                    const concepto = numeral($("#conceptoViaticos").val()).value()
+                    $("#conceptoTransporte, #conceptoOtro").val(1).trigger("change")
+                    $("#conceptoHospedaje").val("")
+                    if ([1, 2].includes(concepto)) {
+                        $("#tipoTransporte").show()
+                        $("#tipoAlimentacion, #tipoHospedaje, #tipoOtro").hide()
+                    }
+
+                    if (concepto == 3) {
+                        const hospedaje = conceptosViaticos.find(c => c.concepto == 4)
+                        if (hospedaje) {
+                            $("#conceptoAlimentacion option[value='1']").show()
+                            $("#conceptoAlimentacion option[value='3']").show()
+                            $("#conceptoAlimentacion").val(1).trigger("change")
+                        } else {
+                            $("#conceptoAlimentacion option[value='1']").hide()
+                            $("#conceptoAlimentacion option[value='3']").hide()
+                            $("#conceptoAlimentacion").val(2).trigger("change")
+                        }
+
+                        $("#tipoAlimentacion").show()
+                        $("#tipoTransporte, #tipoHospedaje, #tipoOtro").hide()
+                    }
+
+                    if (concepto == 4) {
+                        $("#tipoHospedaje").show()
+                        $("#tipoTransporte, #tipoAlimentacion, #tipoOtro").hide()
+                    }
+
+                    if (concepto == 5) {
+                        $("#tipoOtro").show()
+                        $("#tipoTransporte, #tipoHospedaje, #tipoAlimentacion").hide()
+                    }
+                }
+
+                const changeConceptoTransporte = () => {
+                    const concepto = numeral($("#conceptoTransporte").val()).value()
+                    if (concepto === 3) $("#tipoAuto").show()
+                    else {
+                        $("#conceptoAuto").val(1).trigger("change")
+                        $("#tipoAuto").hide()
+                    }
+                }
+
+                const agregarConcepto = () => {
+                    if (!validaConcepto()) return
+
+                    const parametros = {
+                        concepto: numeral($("#conceptoViaticos").val()).value(),
+                        conceptoNombre: $("#conceptoViaticos option:selected").text(),
+                        tipo: numeral($(".tipo:visible").find("select, input").val()).value(),
+                        total: numeral($("#montoConcepto").val()).value(),
+                        observaciones: $("#conceptoObservaciones").val()
+                    }
+
+                    if ($(".tipo:visible").find("select, input")[0].tagName === "SELECT") {
+                        parametros.tipoNombre = $(".tipo:visible").find("select option:selected").text()
+                    } else {
+                        parametros.tipoNombre = "Días: " + $(".tipo:visible").find("input").val()
+                        parametros.total = numeral($("#montoConcepto").val()).multiply($(".tipo:visible").find("input").val()).value()
+                    }
+
+                    if ($("#tipoAuto:visible").length > 0) {
+                        parametros.subtipo = numeral($("#conceptoAuto").val()).value()
+                        parametros.subtipoNombre = $("#conceptoAuto option:selected").text()
+                    }
+
+                    conceptosViaticos.push(parametros)
+                    $("#montoVG").val(numeral($("#montoVG").val()).add(parametros.total).format(NUMERAL_DECIMAL))
+
+                    const fila = $("<tr></tr>")
+                    fila.append("<td>" + parametros.conceptoNombre + "</td>")
+                    fila.append("<td>" + (parametros.subtipoNombre || parametros.tipoNombre) + "</td>")
+                    fila.append("<td>" + numeral(parametros.total).format(NUMERAL_MONEDA) + "</td>")
+                    fila.append(
+                        "<td>" +
+                        menuAcciones([
+                            {
+                                texto: "Eliminar",
+                                icono: "fa-trash",
+                                funcion: "eliminaComprobanteGastos(this)",
+                                clase: "text-danger"
+                            }
+                        ]) +
+                        "</td>"
+                    )
+
+                    $("#tablaConceptos tbody").append(fila)
+                    $("#conceptoViaticos").val(1).trigger("change")
+                    $("#modalAgregarConcepto").modal("hide")
+                    resetValidacion(valConcepto, true)
+                }
+
+                const eliminaConcepto = (btn) => {
+                    const fila = $(btn).closest("tr")
+                    const indice = fila.index()
+                    const monto = numeral(fila.find("td").eq(2).text().trim()).value()
+                    fila.remove()
+
+                    conceptosViaticos.splice(indice,1)
+                    $("#montoVG").val(numeral($("#montoVG").val()).subtract(monto).format(NUMERAL_DECIMAL))
+                }
+
+                const validaConcepto = () => {
+                    const concepto = numeral($("#conceptoViaticos").val()).value()
+                    const maximos = {
+                        1: 1200,
+                        2: 1200,
+                        3: 2000,
+                        4: 5000,
+                        5: 500
+                    }
+                    const acumulado = conceptosViaticos.reduce((total, c) => {
+                        if (c.concepto == concepto) total += c.total
+                        return total
+                    }, 0)
+
+
+
+                    if (acumulado > maximos[concepto]) {
+                        showError("No se puede añadir este monto debido a que el total superaría el máximo permitido para " + $("#conceptoViaticos option:selected").text() + ", si requiere un monto mayor, por favor, comuníquese con su jefe inmediato.")
+                        return false
+                    }
+                    return true
+                }
+
+                const validaMontoConcepto = () => {
+                    const monto = numeral($("#montoConcepto").val()).value()
+                    const conceptoViaticos = numeral($("#conceptoViaticos").val()).value()
+                    const resultado = {
+                        valid: false,
+                        message: null
+                    }
+
+                    if ([1, 2].includes(conceptoViaticos)) {
+                        const tipo = numeral($("#conceptoTransporte").val()).value()
+                        if (tipo == 1 && monto > 100) {
+                            resultado.message = "El monto máximo permitido para taxis de plataforma es de $100.00"
+                        }
+
+                        if (tipo == 2 && monto > 500) {
+                            resultado.message = "El monto máximo permitido para autobuses es de $500.00"
+                        }
+
+                        if (tipo == 3) {
+                            const subTipo = numeral($("#conceptoAuto").val()).value()
+                            if (subTipo == 1 && monto > 1000) {
+                                resultado.message = "El monto máximo permitido para gasolina es de $1000.00"
+                            }
+
+                            if (subTipo == 2 && monto > 200) {
+                                resultado.message = "El monto máximo permitido por caseta es de $200.00"
+                            }
+                        }
+                    }
+
+                    if (conceptoViaticos == 3 && monto > 150) {
+                        resultado.message = "El monto máximo permitido por alimento es de $150.00"
+                    }
+
+                    if (conceptoViaticos == 4 && monto > 1000) {
+                        resultado.message = "El monto máximo permitido por día de hospedaje es de $1000.00"
+                    }
+
+                    if (conceptoViaticos == 5 && monto > 500) {
+                        resultado.message = "El monto máximo permitido por otro concepto es de $500.00"
+                    }
+
+                    resultado.valid = resultado.message === null
+                    return resultado
+                }
+
                 $(document).ready(() => {
                     setInputFechas("#fechasSolicitudes", { rango: true, iniD: -30 })
                     setInputFechas("#fechasNuevaSolicitud", { rango: true, minD: 0, maxD: 30, enModal: true })
                     setInputFechas("#fechaComprobante", { enModal: true })
-                    setInputMoneda("#montoVG, #montoComprobante")
+                    setInputMoneda("#montoVG, #montoConcepto, #montoComprobante")
 
                     configuraTabla(tabla)
                     configuraModalComprobante()
+                    configuraModalConcepto()
                     validacionSolicitud()
                     validacionComprobante()
+                    validacionConcepto()
 
                     $("#btnBuscarSolicitudes").on("click", getSolicitudes)
                     $("#tipoSolicitud").on("change", changeTipoSolicitud)
@@ -784,7 +1029,6 @@ class Viaticos extends Controller
                         const concepto = $("#conceptoComprobante").find("option:selected")
                         $("#descripcionComprobante").text(concepto.attr("lbl-desc") || "")
                     })
-
                     $("#btnTomarFoto").on("click", () => {
                         $("#modalAgregarComprobante").modal("hide")
                         tomarFoto("Captura de Comprobante", (foto) => {
@@ -793,14 +1037,12 @@ class Viaticos extends Controller
                             $("#modalAgregarComprobante").modal("show")
                         })
                     })
-                    
                     $(document).on("click", "#btnNuevoComprobante", () => {
                         tomarFoto("Captura de Comprobante", (foto) => {
                             $("#nuevoComprobante")[0].files = foto
                             $("#nuevoComprobante").trigger("change")
                         })
                     })
-                    
                     $(".btnCerrarVer").on("click", () => {
                         $("#verSolicitudId").val("")
                         $('#acordionVer .accordion-collapse').removeClass('show')
@@ -809,6 +1051,9 @@ class Viaticos extends Controller
                         $('#acordionVer .accordion-button').first().removeClass('collapsed')
                     })
                     $("#btnFinalizarComprobacion").on("click", finalizarComprobacion)
+                    $("#conceptoViaticos").on("change", changeConceptoViaticos)
+                    $("#conceptoTransporte").on("change", changeConceptoTransporte)
+                    
                     getSolicitudes()
                 })
             </script>
@@ -822,9 +1067,12 @@ class Viaticos extends Controller
             }
         }
 
+        $activas = ViaticosDAO::getSolicitudesActivas_VG(['usuario' => $_SESSION['usuario_id']]);
+
         self::set("titulo", "Solicitud de Viáticos y Gastos");
         self::set("script", $script);
         self::set("conceptos", $conceptos);
+        self::set("activas", $activas['datos']['ACTIVAS'] ?? 0);
         self::render("viaticos_solicitud");
     }
 
@@ -1304,7 +1552,7 @@ class Viaticos extends Controller
                         $("#verFechaI").val(moment(informacion.FECHA_I).format(MOMENT_FRONT))
                         $("#verFechaF").val(moment(informacion.FECHA_F).format(MOMENT_FRONT))
                         $("#verProyecto").val(informacion.PROYECTO)
-                        $("#verAutorizado").val(informacion.AUTORIZACION_NOMBRE)
+                        $("#verAutorizado").val("ANGEL MOISES GUERRERO MEJIA") //informacion.AUTORIZACION_NOMBRE)
                         $("#verFechaAutorizado").val(moment(informacion.AUTORIZACION_FECHA).format(MOMENT_FRONT_HORA))
                         $("#verMontoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_MONEDA))
                         $("#montoEntrega").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_DECIMAL))

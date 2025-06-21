@@ -7,50 +7,48 @@ function getMenu()
 {
     $menuItems = [
         'Mis Viáticos y Gastos' => [
-            'icono' => 'fa-solid fa-plane-departure',
+            'icono' => 'fa-solid fa-usd',
             'subItems' => [
                 [
                     'label' => 'Mis Solicitudes',
                     'url' => '/Viaticos/Solicitud',
                     'permisos' => ['1', '2']
-                ],
-                [
-                    'label' => 'Entrega',
-                    'url' => '/Viaticos/Entrega',
-                    'permisos' => ['1', '2']
                 ]
+            ]
+        ],
+        'Autorizaciones' => [
+            'icono' => 'fa-solid fa-bell',
+            'subItems' => [
+                [
+                    'label' => 'Pendientes',
+                    'url' => '/Viaticos/Autorizacion',
+                    'permisos' => ['1', '2']
+                ],
             ]
         ],
         'Tesorería' => [
             'icono' => 'fa-solid fa-screwdriver-wrench',
             'subItems' => [
                 [
-                    'label' => 'Autorización de Viáticos y Gastos',
-                    'url' => '/Viaticos/Autorizacion',
+                    'label' => '1. Entrega de Viáticos',
+                    'url' => '/Viaticos/Entrega',
                     'permisos' => ['1', '2']
                 ],
                 [
-                    'label' => 'Validación de comprobantes',
+                    'label' => '2. Comprobación',
                     'url' => '/Viaticos/Validacion',
                     'permisos' => ['1', '2']
-                ],
-                [
-                    'label' => 'Bitácora de Solicitudes',
-                    'url' => 'app-viaticos-dashboard.html',
-                    'permisos' => ['1', '2']
-                ],
-                [
-                    'label' => 'Pendientes de Pago',
-                    'url' => 'app-viaticos-dashboard.html',
-                    'permisos' => ['1', '2']
-                ],
+                ]
+            ]
+        ],
+        'Reportería' => [
+            'icono' => 'fa-solid fa-file',
+            'subItems' => [
                 [
                     'label' => 'Resumen Tesorería',
                     'url' => 'app-viaticos-dashboard.html',
                     'permisos' => ['1', '2']
                 ]
-
-
             ]
         ],
         'Configuración' => [

@@ -52,7 +52,7 @@
                         <input type="hidden" id="verSolicitudId">
                     </div>
                     <div class="col-4">
-                        <label class="form-label">Sucursal</label>
+                        <label class="form-label">Sucursal de entrega</label>
                         <input type="text" id="verSucursal" class="form-control" readonly>
                     </div>
                 </div>
@@ -74,9 +74,14 @@
                         <label class="form-label">Proyecto</label>
                         <input type="text" id="verProyecto" class="form-control" readonly>
                     </div>
+                    <div class="form-group col-12">
+                        <label class="form-label">Detalle de los Viáticos</label>
+                        <textarea rows="3" type="text" id="verProyecto" class="form-control" disabled>
+                        </textarea>
+                    </div>
                     <div class="form-group col-4">
                         <label class="form-label">Autorizado por</label>
-                        <input type="text" id="verAutorizado" class="form-control" readonly>
+                        <input type="text" id="verAutorizado" class="form-control" disabled>
                     </div>
                     <div class="form-group col-4">
                         <label class="form-label">Fecha de autorización</label>

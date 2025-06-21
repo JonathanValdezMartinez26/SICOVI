@@ -49,7 +49,7 @@
                         <input type="text" id="verSolicitante" class="form-control" readonly>
                     </div>
                     <div class="col-6">
-                        <label class="form-label">Sucursal</label>
+                        <label class="form-label">Sucursal de Entrega</label>
                         <input type="text" id="verSucursal" class="form-control" readonly>
                     </div>
                     <div class="form-group col-4">
@@ -69,6 +69,11 @@
                         <label class="form-label">Proyecto</label>
                         <input type="text" id="verProyecto" class="form-control" readonly>
                     </div>
+                    <div class="form-group col-12">
+                        <label class="form-label">Detalle de los Viáticos</label>
+                        <textarea rows="3" type="text" id="verProyecto" class="form-control" disabled>
+                        </textarea>
+                    </div>
                     <div class="form-group col-4">
                         <label class="form-label">Fecha de inicio del proyecto</label>
                         <input type="text" id="verFechaI" class="form-control" readonly>
@@ -86,7 +91,7 @@
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                     <div class="form-group col-12">
-                        <label for="observacionesAutorizacion" class="form-label">Observaciones</label>
+                        <label for="observacionesAutorizacion" class="form-label">Observaciones para tesorería y el solicitante</label>
                         <textarea id="observacionesAutorizacion" name="observacionesAutorizacion" class="form-control" placeholder="Observaciones. Ej.: Se autorizo un monto menor debido a..." rows="2" maxlength="500"></textarea>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
