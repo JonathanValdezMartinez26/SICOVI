@@ -24,7 +24,7 @@
             </div>
         </div>
         <div class="col-4 d-flex align-self-end justify-content-end">
-            <button id="btnAgregar" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalNuevaSolicitud"><i class="fa fa-plus">&nbsp;</i>Nueva Solicitud</button>
+            <button id="btnAgregar" class="btn btn-info"><i class="fa fa-plus">&nbsp;</i>Nueva Solicitud</button>
             <input type="hidden" id="solActivas" value="<?= $activas; ?>">
         </div>
     </div>
@@ -32,19 +32,14 @@
         <table id="historialSolicitudes" class="dt-responsive table border-top table-hover">
             <thead>
                 <tr>
-                    <th rowspan="2"></th>
-                    <th rowspan="2">ID</th>
-                    <th rowspan="2">Tipo</th>
-                    <th rowspan="2">Fecha</th>
-                    <th rowspan="2">Proyecto</th>
-                    <th colspan="2" class="text-center">Monto</th>
-                    <th rowspan="2">Diferencia</th>
-                    <th rowspan="2">Estatus</th>
-                    <th rowspan="2">Acciones</th>
-                </tr>
-                <tr>
-                    <th colspan="1">Entregado</th>
-                    <th colspan="1">Comprobado</th>
+                    <th></th>
+                    <th>ID</th>
+                    <th>Tipo</th>
+                    <th>Proyecto</th>
+                    <th>Fechas</th>
+                    <th>Monto</th>
+                    <th>Estatus</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -100,87 +95,25 @@
                     </div>
                     <div class="form-group col-12">
                         <label for="proyecto" class="form-label">Proyecto</label>
-                        <input type="text" id="proyecto" name="proyecto" class="form-control" placeholder="Proyecto o actividad a cubrir. Ej.: Capacitación en corporativo..." maxlength="100">
+                        <input type="text" id="proyecto" name="proyecto" class="form-control mayusculas" placeholder="Proyecto o actividad a cubrir. Ej.: Capacitación en corporativo..." maxlength="100">
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                     <div class="form-group col-12 mb-5">
-                        <label for="autoriza" class="form-label">Autoriza (Nombre jefe inmediato)</label>
-                        <input type="text" id="autoriza" name="autoriza" class="form-control" maxlength="100" disabled value="ANGEL MOISES GUERRERO MEJIA (DIRECCION DE OPERACIONES)">
+                        <label for="autoriza" class="form-label">Autoriza</label>
+                        <input type="text" id="autoriza" name="autoriza" class="form-control" maxlength="100" disabled value="<?= $_SESSION['autorizador_nombre'] ?>">
                     </div>
-                    <div class="form-group col-4">
-                        <label for="autoriza" class="form-label">Empresa</label>
-                        <select id="sucursalEntrega" name="sucursalEntrega" class="form-select" disabled>
-                            <option value="1">MÁS CON MENOS</option>
-                            <option value="2">Sucursal 2</option>
-                            <option value="3">Sucursal 3</option>
-                        </select>
+                    <div class="form-group col-7">
+                        <label for="empresa" class="form-label">Empresa</label>
+                        <input type="text" id="empresa" name="empresa" class="form-control" maxlength="100" disabled value="<?= $_SESSION['empresa_nombre'] ?>">
                     </div>
-                    <div class="form-group col-4">
-                        <label for="autoriza" class="form-label">Sucursal de entrega (recurso)</label>
+                    <div class="form-group col-5">
+                        <label for="sucursalEntrega" class="form-label">Sucursal de entrega</label>
                         <select id="sucursalEntrega" name="sucursalEntrega" class="form-select">
-                            <option value="000">OFICINA CENTRAL</option>
-                            <option value="001">TENANCINGO</option>
-                            <option value="002">XONACATLAN</option>
-                            <option value="006">TENANGO</option>
-                            <option value="030">TEMOAYA</option>
-                            <option value="044">IXTLAHUACA</option>
-                            <option value="049">ATLACOMULCO</option>
-                            <option value="003">CHOLULA</option>
-                            <option value="005">CHOLULA 2</option>
-                            <option value="008">PUEBLA SUR</option>
-                            <option value="011">ATLIXCO</option>
-                            <option value="013">PUEBLA NORTE</option>
-                            <option value="019">SAN MARTIN</option>
-                            <option value="050">IZUCAR DE MATAMOROS</option>
-                            <option value="004">HUAMANTLA</option>
-                            <option value="010">SANTA ANA</option>
-                            <option value="012">APIZACO</option>
-                            <option value="029">TLAXCALA</option>
-                            <option value="055">TLAXCO</option>
-                            <option value="057">LARA GRAJALES</option>
-                            <option value="007">ZINACANTEPEC</option>
-                            <option value="014">TOLUCA</option>
-                            <option value="016">ZINACANTEPEC 2</option>
-                            <option value="020">VILLA VICTORIA</option>
-                            <option value="025">TOLUCA 2</option>
-                            <option value="026">TOLUCA 3</option>
-                            <option value="027">ZITACUARO</option>
-                            <option value="015">IXTAPALUCA</option>
-                            <option value="018">AMECAMECA</option>
-                            <option value="045">IXTAPALUCA 2</option>
-                            <option value="046">CHALCO</option>
-                            <option value="047">VALLE DE CHALCO</option>
-                            <option value="021">REG EDO MEX 1</option>
-                            <option value="022">REG EDO MEX 2</option>
-                            <option value="023">REG PUEBLA</option>
-                            <option value="024">REG TLAXCALA</option>
-                            <option value="051">REG NEVADO</option>
-                            <option value="052">REG VOLCANES</option>
-                            <option value="053">REG ZACATLAN</option>
-                            <option value="054">REG MORELOS</option>
-                            <option value="017">ZACATLAN</option>
-                            <option value="028">TEZIUTLAN</option>
-                            <option value="034">AHUACATLAN</option>
-                            <option value="035">HUEHUETLA</option>
-                            <option value="041">CHIGNAHUAPAN</option>
-                            <option value="043">TETELA</option>
-                            <option value="009">ATIZAPAN</option>
-                            <option value="031">ZUMPANGO</option>
-                            <option value="037">TLALNEPANTLA</option>
-                            <option value="038">CUAUTITLAN</option>
-                            <option value="039">ECATEPEC</option>
-                            <option value="040">TECAMAC</option>
-                            <option value="032">JIUTEPEC</option>
-                            <option value="033">CUERNAVACA</option>
-                            <option value="036">CUAUTLA</option>
-                            <option value="042">JOJUTLA</option>
-                            <option value="048">ZACATEPEC</option>
-                            <option value="056">CUAUTLA 2</option>
-                            <option value="058">CUERNAVACA SUR</option>
+                            <?= $sucursales ?>
                         </select>
                     </div>
                 </div>
-                <div class="row mt-5">
+                <div id="conceptosViaticos" class="row mt-5">
                     <div class="col-12">
                         <h5 class="text-center">Viáticos solicitados</h5>
                         <div class="table-responsive text-nowrap">
@@ -188,12 +121,11 @@
                                 <thead>
                                     <tr>
                                         <th>Concepto</th>
-                                        <th>Desc</th>
                                         <th>Monto</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tbodyComprobantes">
+                                <tbody id="tbodyConceptos">
                                 </tbody>
                                 <tfoot>
                                     <tr>
@@ -208,7 +140,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="comprobantesGastos" style="display: none;">
+                <div id="comprobantesGastos" class="row mt-5" style="display: none;">
                     <div class="col-12">
                         <h5 class="text-center">Comprobantes de Gastos</h5>
                         <div class="table-responsive text-nowrap">
@@ -258,63 +190,18 @@
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-4">
+                    <div class="col-8 form-group">
                         <label for="conceptoViaticos" class="form-label">Concepto</label>
                         <select id="conceptoViaticos" name="conceptoViaticos" class="form-select">
-                            <option value="1">Transporte Ida</option>
-                            <option value="2">Transporte Vuelta</option>
-                            <option value="3">Alimentación</option>
-                            <option value="4">Hospedaje</option>
-                            <option value="5">Otros</option>
+                            <option value="" selected disabled>Seleccione un concepto</option>
+                            <option value="1">Transporte</option>
+                            <option value="2">Alimentación</option>
+                            <option value="3">Hospedaje</option>
+                            <option value="4">Otros</option>
                         </select>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
-                    <div class="col">
-                        <div id="tipoTransporte" class="tipo">
-                            <label for="conceptoTransporte" class="form-label">Tipo</label>
-                            <select id="conceptoTransporte" name="conceptoTransporte" class="form-select">
-                                <option value="1">Taxi de plataforma</option>
-                                <option value="2">Autobús</option>
-                                <option value="3">Auto Propio</option>
-                            </select>
-                            <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                        </div>
-                        <div id="tipoAlimentacion" class="tipo" style="display: none;">
-                            <label for="conceptoAlimentacion" class="form-label">Tipo</label>
-                            <select id="conceptoAlimentacion" name="conceptoAlimentacion" class="form-select">
-                                <option value="1">Desayuno</option>
-                                <option value="2">Comida</option>
-                                <option value="3">Cena</option>
-                            </select>
-                            <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                        </div>
-                        <div id="tipoHospedaje" class="tipo form-group" style="display: none;">
-                            <label for="conceptoHospedaje" class="form-label">Días</label>
-                            <input type="number" id="conceptoHospedaje" name="conceptoHospedaje" class="form-control" placeholder="Número de días" min="1" max="30">
-                            <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                        </div>
-                        <div id="tipoOtro" class="tipo" style="display: none;">
-                            <label for="conceptoOtro" class="form-label">Tipo</label>
-                            <select id="conceptoOtro" name="conceptoOtro" class="form-select">
-                                <option value="1">Papelería</option>
-                                <option value="2">Parquímetro</option>
-                            </select>
-                            <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div id="tipoAuto" style="display: none;">
-                            <label for="conceptoAuto" class="form-label">Tipo</label>
-                            <select id="conceptoAuto" name="conceptoAuto" class="form-select">
-                                <option value="1">Gasolina</option>
-                                <option value="2">Caseta</option>
-                            </select>
-                            <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-5 form-group">
+                    <div class="col-4 form-group">
                         <label for="montoConcepto" class="form-label">Monto</label>
                         <div class="input-group input-group-merge">
                             <span class="input-group-text">
@@ -326,9 +213,9 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col">
+                    <div class="col form-group">
                         <label for="conceptoObservaciones" class="form-label">Observaciones</label>
-                        <textarea id="conceptoObservaciones" name="conceptoObservaciones" class="form-control" placeholder="Observaciones. Ej.: Caseta Mex-Puebla..." rows="2" maxlength="500"></textarea>
+                        <textarea id="conceptoObservaciones" name="conceptoObservaciones" class="form-control mayusculas" placeholder="Observaciones. Ej.: Caseta Mex-Puebla..." rows="2" maxlength="500"></textarea>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                 </div>
@@ -468,6 +355,24 @@
                                         <input type="text" id="verMontoSol" class="form-control" readonly>
                                     </div>
                                 </div>
+                                <div id="verTablaConceptosViaticos" class="row mt-5">
+                                    <div class="col-12">
+                                        <h5 class="text-center">Con ceptos solicitados</h5>
+                                        <div class="table-responsive text-nowrap">
+                                            <table id="tablaVerConceptos" class="table table-bordered table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Concepto</th>
+                                                        <th>Monto</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="tbodyVerConceptos">
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -498,6 +403,10 @@
                                         <label class="form-label">Monto autorizado</label>
                                         <input type="text" id="verMontoAutorizado" class="form-control" readonly>
                                     </div>
+                                    <div class="form-group col-8">
+                                        <label class="form-label">Observaciones</label>
+                                        <input type="text" id="verObsAutorizado" class="form-control" readonly>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -522,16 +431,20 @@
                                         <input type="text" id="verEntregadoPor" class="form-control" readonly>
                                     </div>
                                     <div class="form-group col-4">
+                                        <label class="form-label">Sucursal</label>
+                                        <input type="text" id="verSucursalEntrega" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
                                         <label class="form-label">Fecha</label>
                                         <input type="text" id="verFechaEntrega" class="form-control" readonly>
                                     </div>
                                     <div class="form-group col-4">
-                                        <label class="form-label">Monto entregado</label>
-                                        <input type="text" id="verMontoEntregado" class="form-control" readonly>
-                                    </div>
-                                    <div class="form-group col-4">
                                         <label class="form-label">Método de entrega</label>
                                         <input type="text" id="verMetodoEntrega" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label class="form-label">Monto entregado</label>
+                                        <input type="text" id="verMontoEntregado" class="form-control" readonly>
                                     </div>
                                 </div>
                             </div>

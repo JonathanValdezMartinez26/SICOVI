@@ -387,6 +387,11 @@ const resetValidacion = (validador, reset) => {
         const elemento = validador.elements[element]
         if ($(elemento).hasClass("select2-hidden-accessible")) {
             $(elemento).val(null).trigger("change")
+        } else if (
+            $(elemento).prop("tagName").toLowerCase() === "select" &&
+            $(elemento).find("option:disabled[value='']").length > 0
+        ) {
+            $(elemento).val("").trigger("change")
         } else if ($(elemento).data("daterangepicker")) {
             const fechasIniciales = inputFechasRestart["#" + $(elemento).attr("id")]
             if (fechasIniciales) {
@@ -396,3 +401,11 @@ const resetValidacion = (validador, reset) => {
         }
     })
 }
+
+/*
+ * Funcion para forzar las mayusculas en un input o textarea
+ * Se debe agregar la clase "mayusculas" al input o textarea
+ */
+$(document).on("input", ".mayusculas", function () {
+    $(this).val($(this).val().toUpperCase())
+})

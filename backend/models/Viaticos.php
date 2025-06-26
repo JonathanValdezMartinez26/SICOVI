@@ -13,10 +13,11 @@ class Viaticos extends Model
             SELECT
                 COUNT(*) AS ACTIVAS
             FROM
-                VIATICOS
+                VIATICOS V
+                LEFT JOIN CAT_VIATICOS_ESTATUS CVE ON CVE.ID = V.ESTATUS
             WHERE
-                ESTATUS NOT IN (6, 7, 8)
-                AND USUARIO = :usuario
+                CVE.NOMBRE NOT IN ('FINALIZADA', 'CANCELADA', 'RECHAZADA')
+                AND V.USUARIO = :usuario
         SQL;
 
         $val = [
@@ -43,8 +44,10 @@ class Viaticos extends Model
                     WHEN V.TIPO = 2 THEN 'Gastos'
                     ELSE 'Desconocido'
                 END AS TIPO_NOMBRE
-                , V.PROYECTO
                 , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD') AS REGISTRO
+                , V.PROYECTO
+                , TO_CHAR(V.DESDE, 'YYYY-MM-DD') AS DESDE
+                , TO_CHAR(V.HASTA, 'YYYY-MM-DD') AS HASTA
                 , V.MONTO
                 , V.ENTREGA_MONTO
                 , V.COMPROBACION_MONTO
@@ -136,6 +139,33 @@ class Viaticos extends Model
         }
     }
 
+    public static function getConceptosSolicitud_V($datos)
+    {
+        $qry = <<<SQL
+            SELECT
+                VC.ID
+                , VC.CONCEPTO
+                , VC.OBSERVACIONES
+                , VC.MONTO
+            FROM
+                VIATICOS_CONCEPTOS VC
+            WHERE
+                VC.VIATICOS = :solicitudId
+        SQL;
+
+        $val = [
+            'solicitudId' => $datos['solicitudId']
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryAll($qry, $val);
+            return self::resultado(true, 'Conceptos obtenidos.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener los conceptos de la solicitud.', null, $e->getMessage());
+        }
+    }
+
     public static function getComprobantesSolicitud_VG($datos)
     {
         $qry = <<<SQL
@@ -192,21 +222,22 @@ class Viaticos extends Model
     public static function registraSolicitud_VG($datos, $comprobantes = null)
     {
         $qryV = <<<SQL
-            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, ESTATUS, DESDE, HASTA, MONTO, COMPROBACION_LIMITE, COMPROBACION_MONTO)
-            VALUES (:tipo, :usuario, :proyecto, :estatus, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto, TO_DATE(:limite, 'YYYY-MM-DD'), :comprobacion)
+            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, ESTATUS, DESDE, HASTA, MONTO, COMPROBACION_LIMITE, COMPROBACION_MONTO, SUCURSAL)
+            VALUES (:tipo, :usuario, :proyecto, :estatus, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto, TO_DATE(:limite, 'YYYY-MM-DD'), :comprobacion, :sucursal)
             RETURNING ID INTO :id
         SQL;
 
         $valV = [
+            'usuario' => $_SESSION['usuario_id'],
             'tipo' => $datos['tipo'],
             'proyecto' => $datos['proyecto'],
             'fechaI' => $datos['fechaI'],
             'fechaF' => $datos['fechaF'],
             'monto' => $datos['monto'],
-            'usuario' => $datos['usuario'],
+            'sucursal' => $datos['sucursal'],
             'estatus' => $datos['tipo'] == 1 ? 1 : 4,
-            'limite' => $datos['limite'],
-            'comprobacion' => $datos['comprobado']
+            'limite' => $datos['fechaLimite'],
+            'comprobacion' => $datos['comprobado'],
         ];
 
         $retV = [
@@ -224,14 +255,21 @@ class Viaticos extends Model
 
             $db->CRUD($qryV, $valV, $retV);
 
-            if ($retV['id']['valor'] !== '' && count($comprobantes) > 0) {
-                foreach ($comprobantes as $comprobante) {
-                    $qryA = <<<SQL
-                        INSERT INTO ARCHIVO (ARCHIVO, NOMBRE, TIPO, TAMANO)
-                        VALUES (EMPTY_BLOB(), :nombre, :tipo, :tamano)
-                        RETURNING ARCHIVO, ID INTO :archivo, :id
-                    SQL;
+            if (!$retV['id']['valor']) throw new \Exception("Error al insertar la solicitud.");
 
+            if (is_array($comprobantes) && count($comprobantes) > 0) {
+                $qryA = <<<SQL
+                    INSERT INTO ARCHIVO (ARCHIVO, NOMBRE, TIPO, TAMANO)
+                    VALUES (EMPTY_BLOB(), :nombre, :tipo, :tamano)
+                    RETURNING ARCHIVO, ID INTO :archivo, :id
+                SQL;
+
+                $queryC = <<<SQL
+                    INSERT INTO VIATICOS_COMPROBACION (VIATICOS, ARCHIVO, FECHA, CONCEPTO, OBSERVACIONES, SUBTOTAL, IVA, TOTAL)
+                    VALUES (:id_viaticos, :id_archivo, TO_DATE(:fecha, 'YYYY-MM-DD'), :concepto, :observaciones, :subtotal, :iva, :total)
+                SQL;
+
+                foreach ($comprobantes as $comprobante) {
                     $valA = [
                         'nombre' => $comprobante['nombre'],
                         'tipo' => $comprobante['tipo'],
@@ -252,11 +290,6 @@ class Viaticos extends Model
 
                     $db->CRUD($qryA, $valA, $retA);
 
-                    $queryC = <<<SQL
-                        INSERT INTO VIATICOS_COMPROBACION (VIATICOS, ARCHIVO, FECHA, CONCEPTO, OBSERVACIONES, SUBTOTAL, IVA, TOTAL)
-                        VALUES (:id_viaticos, :id_archivo, TO_DATE(:fecha, 'YYYY-MM-DD'), :concepto, :observaciones, :subtotal, :iva, :total)
-                    SQL;
-
                     $valuesC = [
                         'id_viaticos' => $retV['id']['valor'],
                         'id_archivo' => $retA['id']['valor'],
@@ -268,13 +301,31 @@ class Viaticos extends Model
                         'total' => isset($comprobante['total']) ? $comprobante['total'] : $comprobante['subtotal']
                     ];
 
-                    $db->CRUD($queryC, $valuesC, $returningC);
+                    $db->CRUD($queryC, $valuesC);
+                }
+            }
+
+            if (isset($datos['concepto']) && is_array($datos['concepto']) && count($datos['concepto']) > 0) {
+                $qryC = <<<SQL
+                    INSERT INTO VIATICOS_CONCEPTOS (VIATICOS, CONCEPTO, OBSERVACIONES, MONTO)
+                    VALUES (:id_viaticos, :concepto, :observaciones, :monto)
+                SQL;
+
+                foreach ($datos['concepto'] as $key => $concepto) {
+                    $valC = [
+                        'id_viaticos' => $retV['id']['valor'],
+                        'concepto' => $concepto,
+                        'observaciones' => $datos['observacionesConcepto'][$key],
+                        'monto' => $datos['montoConcepto'][$key],
+                    ];
+
+                    $db->CRUD($qryC, $valC);
                 }
             }
 
             $db->commit();
 
-            return self::resultado(true, 'Solicitud de gastos registrada correctamente.', ['solicitudId' => $retV['id']['valor']]);
+            return self::resultado(true, 'Solicitud registrada correctamente.', ['solicitudId' => $retV['id']['valor']]);
         } catch (\Exception $e) {
             $db->rollback();
             return self::resultado(false, 'Error al registrar la solicitud de gastos.', null, $e->getMessage());
@@ -287,7 +338,7 @@ class Viaticos extends Model
             UPDATE
                 VIATICOS
             SET
-                ESTATUS = 8
+                ESTATUS = (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'CANCELADA')
             WHERE
                 ID = :id
         SQL;
@@ -578,6 +629,9 @@ class Viaticos extends Model
                     ELSE 'Desconocido'
                 END AS TIPO_NOMBRE
                 , V.USUARIO AS USUARIO_ID
+                , V.PROYECTO
+                , TO_CHAR(V.DESDE, 'YYYY-MM-DD') AS DESDE
+                , TO_CHAR(V.HASTA, 'YYYY-MM-DD') AS HASTA
                 , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
                 , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD') AS FECHA_REGISTRO
                 , V.MONTO
@@ -739,12 +793,14 @@ class Viaticos extends Model
     public static function insertaObservaciones($datos)
     {
         $qry = <<<SQL
-            INSERT INTO VIATICOS_OBSERVACIONES (VIATICOS, OBSERVACION, USUARIO)
-            VALUES (:viaticos, :observaciones, :usuario)
+            INSERT INTO VIATICOS_OBSERVACIONES (VIATICOS, ESTATUS, COMPROBANTE, OBSERVACION, USUARIO)
+            VALUES (:viaticos, :estatus, :comprobante, :observaciones, :usuario)
         SQL;
 
         $val = [
             'viaticos' => $datos['solicitudId'],
+            'estatus' => isset($datos['estatus']) ? $datos['estatus'] : null,
+            'comprobante' => isset($datos['comprobanteId']) ? $datos['comprobanteId'] : null,
             'observaciones' => $datos['observaciones'],
             'usuario' => $datos['usuario']
         ];

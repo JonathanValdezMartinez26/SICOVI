@@ -17,9 +17,8 @@
                 <tr>
                     <th></th>
                     <th>ID</th>
-                    <th>Tipo</th>
-                    <th>Solicitante</th>
-                    <th>Fecha de solicitud</th>
+                    <th>General</th>
+                    <th>Fechas</th>
                     <th>Monto</th>
                     <th>Estatus</th>
                     <th>Acciones</th>

@@ -121,13 +121,20 @@ class Login extends Controller
         if ($validacion['success'] && count($validacion['datos']) > 0) {
             $datos = $validacion['datos'];
 
+            $_SESSION['login'] = true;
             $_SESSION['usuario_id'] = $datos['USUARIO_ID'];
             $_SESSION['usuario_nombre'] = $datos['USUARIO_NOMBRE'];
             $_SESSION['perfil_id'] = $datos['PERFIL_ID'];
             $_SESSION['perfil_nombre'] = $datos['PERFIL_NOMBRE'];
             $_SESSION['sucursal_id'] = $datos['SUCURSAL_ID'];
             $_SESSION['sucursal_nombre'] = $datos['SUCURSAL_NOMBRE'];
-            $_SESSION['login'] = true;
+            $_SESSION['region_id'] = $datos['REGION_ID'];
+            $_SESSION['region_nombre'] = $datos['REGION_NOMBRE'];
+            $_SESSION['empresa_id'] = $datos['EMPRESA_ID'];
+            $_SESSION['empresa_nombre'] = $datos['EMPRESA_NOMBRE'];
+            $_SESSION['autorizador_id'] = $datos['AUTORIZADOR_ID'];
+            $_SESSION['autorizador_nombre'] = $datos['AUTORIZADOR_NOMBRE'];
+            $_SESSION['autorizacion_propia'] = $datos['AUTORIZACION_PROPIA'];
 
             $respuesta = self::respuesta(true, 'Bienvenido', [
                 'url' => '/' . VISTA_DEFECTO

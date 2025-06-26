@@ -48,6 +48,11 @@ if (!isset($_SESSION['login'])) {
 // La URL esperada es de la forma: /controlador/metodo/?parametro1=valor1&parametro2=valor2
 $urlSolicitada = isset($_GET['url']) ? explode('/', filter_var(rtrim($_GET['url'], '/'), FILTER_SANITIZE_URL)) : [''];
 
+if ($urlSolicitada[0] === 'plat_desc') {
+    phpinfo(); // Muestra información de PHP si se solicita
+    exit;
+}
+
 // Si la URL solicitada no es un archivo PHP, se verifica su existencia
 $extension = pathinfo(end($urlSolicitada), PATHINFO_EXTENSION);
 if ($extension !== '' && strtolower($extension) !== 'php') {
