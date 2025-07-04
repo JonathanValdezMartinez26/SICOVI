@@ -1,3 +1,19 @@
+/* Catalogos
+ *
+ */
+
+const catEstatus_VG = {
+    solicitada: "SOLICITADA",
+    autorizada: "AUTORIZADA",
+    entregada: "ENTREGADA",
+    comprobada: "COMPROBADA",
+    aceptada: "ACEPTADA",
+    validada: "VALIDADA",
+    finalizada: "FINALIZADA",
+    cancelada: "CANCELADA",
+    rechazada: "RECHAZADA"
+}
+
 /*
  * Configuraciones globales
  * Librerias:
@@ -364,7 +380,7 @@ const setValidacionModal = (
         }
     })
 
-    $(`${selector} ${btnVal}`).on("click", (e) => {
+    $(`${selector} ${btnVal}`).on("click", () => {
         validador.validate().then((validacion) => {
             if (validacion === "Valid") {
                 if (accionVal) accionVal()

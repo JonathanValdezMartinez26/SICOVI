@@ -14,20 +14,10 @@ class Viaticos extends Controller
                 const tabla = "#historialSolicitudes"
                 const comprobantesGastos = []
                 const conceptosViaticos = []
-                const catEstatus = {
-                    solicitada: "SOLICITADA",
-                    autorizada: "AUTORIZADA",
-                    entregada: "ENTREGADA",
-                    comprobada: "COMPROBADA",
-                    aceptada: "ACEPTADA",
-                    validada: "VALIDADA",
-                    finalizada: "FINALIZADA",
-                    cancelada: "CANCELADA",
-                    rechazada: "RECHAZADA"
-                }
                 let valSolicitud = null,
                     valComprobante = null,
-                    valConcepto = null
+                    valConcepto = null,
+                    modalConceptos = null
 
                 const getSolicitudes = (persistirVista = false) => {
                     const fechas = getInputFechas("#fechasSolicitudes", true)
@@ -63,14 +53,13 @@ class Viaticos extends Controller
                             let cancelar = null
 
                             if (solicitud.TIPO_ID == 1) {
-                                cancelar = solicitud.ESTATUS_NOMBRE == catEstatus.solicitada || solicitud.ESTATUS_NOMBRE == catEstatus.autorizada ? c : null
+                                cancelar = solicitud.ESTATUS_NOMBRE == catEstatus_VG.solicitada || solicitud.ESTATUS_NOMBRE == catEstatus_VG.autorizada ? c : null
                             }
 
                             if (solicitud.TIPO_ID == '') {
-                                cancelar = solicitud.ESTATUS_NOMBRE == catEstatus.comprobada || solicitud.ESTATUS_NOMBRE == catEstatus.autorizada ? c : null
+                                cancelar = solicitud.ESTATUS_NOMBRE == catEstatus_VG.comprobada || solicitud.ESTATUS_NOMBRE == catEstatus_VG.autorizada ? c : null
                             }
 
-                            const estatusBadge = "<span class='badge rounded-pill " + solicitud.ESTATUS_COLOR + "'>" + solicitud.ESTATUS_NOMBRE + "</span>"
                             if (!resumen[solicitud.ESTATUS_ID]) {
                                 resumen[solicitud.ESTATUS_ID] = {}
                                 resumen[solicitud.ESTATUS_ID].total = 1
@@ -81,6 +70,7 @@ class Viaticos extends Controller
                             const solicitado = numeral(solicitud.MONTO || 0).value()
                             const entregado = numeral(solicitud.ENTREGA_MONTO || 0).value()
                             const comprobado = numeral(solicitud.COMPROBACION_MONTO || 0).value()
+                            const ajuste = numeral(solicitud.DIFERENCIA_MONTO || 0).value()
                             
                             return [
                                 null,
@@ -88,8 +78,8 @@ class Viaticos extends Controller
                                 solicitud.TIPO_NOMBRE,
                                 solicitud.PROYECTO,
                                 getFechas(solicitud.REGISTRO, solicitud.DESDE, solicitud.HASTA),
-                                getMontos(solicitado, entregado, comprobado),
-                                estatusBadge,
+                                getMontos(solicitado, entregado, comprobado, ajuste),
+                                getEstatus(solicitud.ESTATUS_NOMBRE, solicitud.ESTATUS_COLOR),
                                 menuAcciones([ver, (cancelar && "divisor"), cancelar])
                             ]
                         })
@@ -117,15 +107,23 @@ class Viaticos extends Controller
                     })
                 }
 
-                const getMontos = (solicitado, entregado, comprobado) => {
+                const getMontos = (solicitado, entregado, comprobado, ajuste) => {
                     const getItem = (icono, color, label, valor, {clasesDiv = ""} = {}) => {
                         return "<div class='d-flex align-items-center justify-content-between " + clasesDiv + "'><span><i class='fa fa-" + icono + " " + color + "'></i> " + label + ": </span>" + numeral(valor).format(NUMERAL_MONEDA) + "</div>"
                     }
+                    
+                    const diferencia = numeral(comprobado).subtract(entregado).subtract(ajuste).value()
+                    if (ajuste) {
+                        let color = ajuste > 0 ? "text-success" : "text-danger"
+                        let tipoAjuste = ajuste > 0 ? "(Cobro)" : "(Pago)"
+                        ajuste = getItem("handshake-simple", color, "Ajuste " + tipoAjuste, numeral(ajuste).format(NUMERAL_MONEDA))
 
-                    const diferencia = numeral(comprobado).subtract(entregado).value()
+                    } else ajuste = ""
+
                     return getItem("hand-holding-dollar", "text-primary", "Solicitado", solicitado, {clasesDiv:"mb-3" }) +
                         getItem("wallet", "text-warning", "Entregado", entregado) +
                         getItem("file-invoice-dollar", "text-info", "Comprobado", comprobado) +
+                        ajuste +
                         getItem("scale-balanced", diferencia < 0 ? "text-danger" : diferencia > 0 ? "text-success" : "", "Diferencia", diferencia, {clasesDiv: "border-top"})
                 }
                 
@@ -136,30 +134,49 @@ class Viaticos extends Controller
                             "<span class='text-nowrap'>" + valor + "</span>" +
                             "</div>"
                     }
-                    return getItem("calendar", "Registro", moment(registro).format(MOMENT_FRONT)) +
+                    return getItem("calendar", "Registro", moment(registro).format(MOMENT_FRONT_HORA)) +
                         getItem("calendar", "Desde", moment(inicio).format(MOMENT_FRONT), true) +
                         getItem("calendar", "Hasta", moment(fin).format(MOMENT_FRONT))
                 }
 
+                const getEstatus = (estatus, color) => {
+                    if (estatus == catEstatus_VG.solicitada) estatus = "SOLICITUD<br>(PENDIENTE DE AUTORIZACIÓN)"
+                    if (estatus == catEstatus_VG.autorizada) estatus = "SOLICITUD AUTORIZADA<br>(PENDIENTE DE ENTREGA<br>POR TESORERÍA)"
+                    if (estatus == catEstatus_VG.entregada) estatus = "ENTREGADA<br>(POR TESORERÍA)<br>(PENDIENTE DE COMPROBACIÓN)"
+                    if (estatus == catEstatus_VG.comprobada) estatus = "COMPROBANTES REGISTRADOS<br>(PENDIENTE DE AUTORIZACIÓN)"
+                    if (estatus == catEstatus_VG.aceptada) estatus = "ACEPTADA<br>(COMPROBANTES AUTORIZADOS<br>POR EL JEFE)<br>(PENDIENTE DE VALIDACIÓN POR TESORERÍA)"
+                    if (estatus == catEstatus_VG.validada) estatus = "COMPROBANTES VALIDADOS<br>(POR TESORERÍA)"
+
+                    return "<div class='d-flex flex-column align-items-center justify-content-center'>" +
+                        "<span class='badge rounded-pill " + color + "'>" + estatus + "</span>" +
+                        "</div>"
+                }
+
                 const getTarjetaSolicitud = (color, titulo, total) => {
+                    let descripcion = "Estatus desconocido"
+                    if (titulo == catEstatus_VG.solicitada) descripcion = "Solicitud de viáticos registrada"
+                    if (titulo == catEstatus_VG.autorizada) descripcion = "Viáticos autorizados por el jefe"
+                    if (titulo == catEstatus_VG.entregada) descripcion = "Viáticos entregados al usuario"
+                    if (titulo == catEstatus_VG.comprobada) descripcion = "Gastos comprobados por el usuario"
+                    if (titulo == catEstatus_VG.aceptada) descripcion = "Comprobantes autorizados por el jefe"
+                    if (titulo == catEstatus_VG.validada) descripcion = "Comprobantes de gastos validados por tesorería"
+                    if (titulo == catEstatus_VG.finalizada) descripcion = "Comprobación gastos finalizada"
+                    if (titulo == catEstatus_VG.cancelada) descripcion = "Solicitud cancelada por el usuario"
+                    if (titulo == catEstatus_VG.rechazada) descripcion = "Rechazada por el jefe"
+
                     return (
                         "<div class='col-auto'>" +
-                        "<div class='card'>" +
-                        "<div class='card-body'>" +
-                        "<div class='card-info text-center'>" +
-                        "<div class='d-flex flex-column align-items-center justify-content-center'>" +
-                        "<span class='badge rounded-pill " +
-                        color +
-                        "'>" +
-                        titulo +
-                        "</span>" +
-                        "</div>" +
-                        "<h4 class='card-title mb-0 me-2'>" +
-                        total +
-                        "</h4>" +
-                        "</div>" +
-                        "</div>" +
-                        "</div>" +
+                            "<div class='card'>" +
+                                "<div class='card-body'>" +
+                                    "<div class='card-info text-center'>" +
+                                        "<div class='d-flex flex-column align-items-center justify-content-center'>" +
+                                            "<span class='badge rounded-pill " + color + "'>" + titulo + "</span>" +
+                                        "</div>" +
+                                        "<h4 class='card-title mb-0 me-2'>" + total + "</h4>" +
+                                        "<span class='text-muted small'>" + descripcion + "</span>" +
+                                    "</div>" +
+                                "</div>" +
+                            "</div>" +
                         "</div>"
                     )
                 }
@@ -301,33 +318,25 @@ class Viaticos extends Controller
 
                 const getParametros = () => {
                     const fechas = getInputFechas("#fechasNuevaSolicitud", true)
-
-                    const tipo = $("#tipoSolicitud").val()
-                    const proyecto = $("#proyecto").val()
-                    const fechaI = fechas.inicio
-                    const fechaF = fechas.fin
-                    const monto = numeral($("#montoVG").val()).value()
-                    const sucursal = $("#sucursalEntrega").val()
-                    const fechaLimite =
-                        tipo === "1"
-                            ? getFechaLimite().format(MOMENT_BACK)
-                            : moment().format(MOMENT_BACK)
-                    const comprobado = tipo == 2 ? monto : 0
-
-                    return {
-                        tipo,
-                        proyecto,
-                        fechaI,
-                        fechaF,
-                        monto,
-                        sucursal,
-                        fechaLimite,
-                        comprobado,
+                    const parametros = {
+                        tipo: $("#tipoSolicitud").val(),
+                        proyecto: $("#proyecto").val(),
+                        desde: fechas.inicio,
+                        hasta: fechas.fin,
+                        monto: numeral($("#montoVG").val()).value(),
+                        sucursal: $("#sucursalEntrega").val(),
                     }
+
+                    parametros.fechaLimite = parametros.tipo == 1
+                        ? getFechaLimite(fechas.fin).format(MOMENT_BACK)
+                        : moment().format(MOMENT_BACK)
+                    parametros.comprobado = parametros.tipo == 2 ? parametros.monto : 0
+                    return parametros
                 }
 
-                const getFechaLimite = () => {
-                    let fecha = moment(), dias = 5
+                const getFechaLimite = (fecha) => {
+                    let dias = 3
+                    fecha = moment(fecha)
 
                     while (dias > 0) {
                         fecha.add(1, 'days')
@@ -350,15 +359,9 @@ class Viaticos extends Controller
                             $("#registraSolicitud").attr("disabled", true)
 
                             const formData = new FormData()
-                            formData.append("usuario", datos.usuario)
-                            formData.append("tipo", datos.tipo)
-                            formData.append("proyecto", datos.proyecto)
-                            formData.append("fechaI", datos.fechaI)
-                            formData.append("fechaF", datos.fechaF)
-                            formData.append("monto", datos.monto)
-                            formData.append("sucursal", datos.sucursal)
-                            formData.append("limite", datos.fechaLimite)
-                            formData.append("comprobado", datos.comprobado)
+                            Object.keys(datos).forEach((key) => {
+                                formData.append(key, datos[key])
+                            })
 
                             if (datos.tipo == 1) {
                                 conceptosViaticos.forEach((concepto) => {
@@ -388,7 +391,9 @@ class Viaticos extends Controller
                                         $("#solActivas").val(numeral($("#solActivas").val()).add(1).value())
                                         $("#modalNuevaSolicitud").modal("hide")
                                         resetValidacion(valSolicitud, true)
+                                        resetValidacion(valConcepto, true)
                                         resetValidacion(valComprobante, true)
+                                        limpiaConceptos()
                                         limpiaComprobantes()
                                         getSolicitudes()
                                     })
@@ -459,17 +464,17 @@ class Viaticos extends Controller
                 }
 
                 const configuraModalConcepto = () => {
-                    let modalOrigen = null
-
-                    $("#btnAgregarConcepto").on("click", () => {
-                        modalOrigen = $("#modalNuevaSolicitud")
-                        modalOrigen.modal("hide")
+                    $(".btnAgregarConcepto").on("click", () => {
+                        modalConceptos = $('.modal.show')
+                        modalConceptos.modal("hide")
+                        $("#agregarConcepto").show()
+                        $("#actualizarConcepto").hide()
                         $("#modalAgregarConcepto").modal("show")
                     })
 
                     $("#modalAgregarConcepto").on("hidden.bs.modal", () => {
                         if ($('.modal.show').length > 0) return
-                        modalOrigen.modal("show")
+                        modalConceptos.modal("show")
                     })
                 }
 
@@ -691,13 +696,27 @@ class Viaticos extends Controller
                         $("#verFechaReg").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
                         $("#verMontoSol").val(numeral(informacion.MONTO).format(NUMERAL_MONEDA))
                         $("#verProyecto").val(informacion.PROYECTO)
-                        $("#verFechaI").val(moment(informacion.FECHA_I).format(MOMENT_FRONT))
-                        $("#verFechaF").val(moment(informacion.FECHA_F).format(MOMENT_FRONT))
+                        $("#verFechaI").val(moment(informacion.DESDE).format(MOMENT_FRONT))
+                        $("#verFechaF").val(moment(informacion.HASTA).format(MOMENT_FRONT))
                         $("#verEstatus").val(informacion.ESTATUS_NOMBRE)
 
-                        const cancelada_rechazada = [catEstatus.cancelada, catEstatus.rechazada].includes(numeral(informacion.ESTATUS_ID).value())
+                        const cancelada_rechazada = [catEstatus_VG.cancelada, catEstatus_VG.rechazada].includes(numeral(informacion.ESTATUS_ID).value())
+                        $("#tbodyVerConceptos").empty()
                         if (informacion.TIPO_ID == 1) {
                             $("#verTablaConceptosViaticos").removeClass("d-none")
+                            const conceptos = respuesta.datos.conceptos || []
+                            conceptos.map((concepto) => {
+                                const fila = getFilaConcepto(informacion, concepto)
+                                $("#conceptoViaticos option").each((_, option) => {
+                                    if ($(option).val() == concepto.CONCEPTO_ID) $(option).hide()
+                                })
+                                $("#tbodyVerConceptos").append(fila)
+                            })
+                            const visibles = $("#conceptoViaticos option").filter(function () {
+                                return $(this).css("display") !== "none"
+                            })
+                            if (visibles.length === 1 || informacion.ESTATUS_NOMBRE !== catEstatus_VG.solicitada) $("#tablaVerConceptos tfoot").hide()
+                            else $("#tablaVerConceptos tfoot").show()
                         } else {
                             $("#verTablaConceptosViaticos").addClass("d-none")
                         }
@@ -719,7 +738,7 @@ class Viaticos extends Controller
                             $("#verAutorizadoPor").val(informacion.AUTORIZACION_NOMBRE)
                             $("#verFechaAutorizacion").val(moment(informacion.AUTORIZACION_FECHA).format(MOMENT_FRONT_HORA))
                             $("#verMontoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_MONEDA))
-                            $("#verObsAutorizado").val(informacion.AUTORIZACION_OBSERVACIONES || "")
+                            $("#verObsAutorizado").val(informacion.AUTORIZACION_OBSERVACION || "")
                         } else {
                             $("#verAutorizacionIcono").addClass("fa fa-hourglass-start text-warning")
                             $("#verAutorizadoPor").val("Pendiente de autorización")
@@ -734,6 +753,7 @@ class Viaticos extends Controller
                             $("#verFechaEntrega").val(moment(informacion.ENTREGA_FECHA).format(MOMENT_FRONT_HORA))
                             $("#verMontoEntregado").val(numeral(informacion.ENTREGA_MONTO).format(NUMERAL_MONEDA))
                             $("#verMetodoEntrega").val(informacion.METODO_ENTREGA)
+                            $("#verSucursalEntrega").val(informacion.ENTREGA_SUCURSAL)
                         } else {
                             $("#verEntregadoIcono").addClass("fa fa-hourglass-start text-warning")
                             $("#verEntregadoPor").val("Pendiente de entrega")
@@ -763,8 +783,35 @@ class Viaticos extends Controller
                     })
                 }
 
+                const getFilaConcepto = (informacion, concepto) => {
+                    let acciones = ""
+                    if (informacion.ESTATUS_NOMBRE == catEstatus_VG.solicitada) {
+                        acciones = menuAcciones([
+                            {
+                                texto: "Editar",
+                                icono: "fa-pen-to-square",
+                                funcion: "editarConceptoSolicitud('" + concepto.ID + "')"
+                            },
+                            {
+                                texto: "Eliminar",
+                                icono: "fa-trash",
+                                funcion: "eliminaConceptoSolicitud('" + concepto.ID + "')",
+                                clase: "text-danger"
+                            }
+                        ])
+                    }
+
+                    return "<tr id='" + concepto.ID + "'>" +
+                        "<td class='d-none'>" + concepto.CONCEPTO_ID + "</td>" +
+                        "<td>" + concepto.CONCEPTO_NOMBRE + "</td>" +
+                        "<td>" + (concepto.OBSERVACIONES ?? "") + "</td>" +
+                        "<td>" + numeral(concepto.MONTO).format(NUMERAL_MONEDA) + "</td>" +
+                        "<td>" + acciones + "</td>" +
+                        "</tr>"
+                }
+
                 const getFilaComprobante = (informacion, comprobante) => {
-                    const editar = (informacion.TIPO_ID == 1 && informacion.ESTATUS_ID == 3) || (informacion.TIPO_ID == 1 && informacion.ESTATUS_ID == 4 && comprobante.ESTATUS_ID != 1)
+                    const editar = (informacion.TIPO_ID == 1 && informacion.ESTATUS_NOMBRE == catEstatus_VG.entregada) || (informacion.TIPO_ID == 1 && informacion.ESTATUS_NOMBRE == catEstatus_VG.aceptada && comprobante.ESTATUS_ID != 1)
                     const eliminar = editar
                     const colores = [
                         "danger", "success"
@@ -896,11 +943,18 @@ class Viaticos extends Controller
                         observaciones: $("#conceptoObservaciones").val()
                     }
 
+                    if (modalConceptos.attr("id") === "modalVerSolicitud") {
+                        return agregaConceptoSolcitud(parametros)
+                    }
+                    
                     conceptosViaticos.push(parametros)
-                    $("#montoVG").val(numeral($("#montoVG").val()).add(parametros.total).format(NUMERAL_DECIMAL))
+                    let monto = $("#montoVG")
+                    let tabla = $("#tablaConceptos tbody")
+                    monto.val(numeral(monto.val()).add(parametros.total).format(NUMERAL_DECIMAL))
 
                     const fila = $("<tr></tr>")
                     fila.append("<td>" + parametros.conceptoNombre + "</td>")
+                    fila.append("<td>" + parametros.observaciones + "</td>")
                     fila.append("<td>" + numeral(parametros.total).format(NUMERAL_MONEDA) + "</td>")
                     fila.append(
                         "<td>" +
@@ -908,12 +962,12 @@ class Viaticos extends Controller
                         "</td>"
                     )
 
-                    $("#tablaConceptos tbody").append(fila)
+                    tabla.append(fila)
                     $("#conceptoViaticos option:selected").hide()
                     const visibles = $("#conceptoViaticos option").filter(function () {
-                        return $(this).css("display") !== "none";
+                        return $(this).css("display") !== "none"
                     })
-                    if (visibles.length === 1) $("#tablaConceptos tfoot").hide()
+                    if (visibles.length === 1) tabla.hide()
 
                     $("#modalAgregarConcepto").modal("hide")
                     resetValidacion(valConcepto, true)
@@ -929,6 +983,121 @@ class Viaticos extends Controller
                     fila.remove()
                     conceptosViaticos.splice(indice,1)
                     $("#montoVG").val(numeral($("#montoVG").val()).subtract(monto).format(NUMERAL_DECIMAL))
+                }
+
+                const agregaConceptoSolcitud = (parametros) => {
+                    confirmarMovimiento("¿Desea agregar este concepto a la solicitud?").then((continuar) => {
+                        if (continuar.isConfirmed) {
+                            parametros.solicitudId = $("#verSolicitudId").val()
+                            consultaServidor("/viaticos/agregaConceptoSolicitud_V", parametros, (respuesta) => {
+                                if (!respuesta.success) return showError(respuesta.mensaje)
+                                const fila = getFilaConcepto({ ESTATUS_NOMBRE: catEstatus_VG.solicitada }, {
+                                    ID: respuesta.datos.CONCEPTO_ID,
+                                    CONCEPTO_ID: parametros.concepto,
+                                    CONCEPTO_NOMBRE: parametros.conceptoNombre,
+                                    OBSERVACIONES: parametros.observaciones,
+                                    MONTO: parametros.total
+                                })
+
+                                $("#tbodyVerConceptos").append(fila)
+                                $("#conceptoViaticos option[value='" + parametros.concepto + "']").hide()
+                                const visibles = $("#conceptoViaticos option").filter(function () {
+                                    return $(this).css("display") !== "none"
+                                })
+                                if (visibles.length === 1) $("#tablaVerConceptos tfoot").hide()
+                                else $("#tablaVerConceptos tfoot").show()
+
+                                $("#verMontoSol").val(
+                                    numeral($("#verMontoSol").val()).add(parametros.total).format(NUMERAL_MONEDA)
+                                )
+                                $("#modalAgregarConcepto").modal("hide")
+                                resetValidacion(valConcepto, true)
+                            })
+                        } else {
+                            $("#modalAgregarConcepto").modal("hide")
+                        }
+                    })
+                }
+
+                const editarConceptoSolicitud = (conceptoId) => {
+                    const fila = $("#tbodyVerConceptos #" + conceptoId)
+                    const concepto = fila.find("td").eq(0).text().trim()
+                    const observaciones = fila.find("td").eq(2).text().trim()
+                    const monto = numeral(fila.find("td").eq(3).text().trim()).value()
+
+                    $("#conceptoViaticos").val(concepto).trigger("change")
+                    $("#montoConcepto").val(numeral(monto).format(NUMERAL_DECIMAL))
+                    $("#conceptoObservaciones").val(observaciones)
+
+                    modalConceptos = $('.modal.show')
+                    modalConceptos.modal("hide")
+                    $("#modalAgregarConcepto").modal("show")
+                    $("#actualizarConcepto").prop("concepto-id", conceptoId)
+                    $("#agregarConcepto").hide()
+                    $("#actualizarConcepto").show()
+                }
+
+                const actualizaConceptoSolicitud = () => {
+                    const conceptoId = $("#actualizarConcepto").prop("concepto-id")
+                    const concepto = numeral($("#conceptoViaticos").val()).value()
+                    const conceptoNombre = $("#conceptoViaticos option:selected").text()
+                    const monto = numeral($("#montoConcepto").val()).value()
+                    const observaciones = $("#conceptoObservaciones").val()
+
+                    consultaServidor("/viaticos/actualizaConceptoSolicitud_V", {
+                        conceptoId,
+                        concepto,
+                        conceptoNombre,
+                        monto,
+                        observaciones
+                    }, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const fila = $("#tbodyVerConceptos #" + conceptoId)
+                        const conceptoAnterior = fila.find("td").eq(0).text().trim()
+                        const montoAnterior = numeral(fila.find("td").eq(3).text().trim()).value()
+
+                        fila.find("td").eq(0).text(concepto)
+                        fila.find("td").eq(1).text(conceptoNombre)
+                        fila.find("td").eq(2).text(observaciones)
+                        fila.find("td").eq(3).text(numeral(monto).format(NUMERAL_MONEDA))
+                        $("#verMontoSol").val(numeral($("#verMontoSol").val()).subtract(montoAnterior).add(monto).format(NUMERAL_MONEDA))
+                        $("#modalAgregarConcepto").modal("hide")
+                        $("#conceptoViaticos option[value='" + concepto + "']").hide()
+                        $("#conceptoViaticos option[value='" + conceptoAnterior + "']").show()
+                        resetValidacion(valConcepto, true)
+                        showSuccess("Concepto actualizado correctamente")
+                    })
+                }
+
+                const eliminaConceptoSolicitud = (conceptoId) => {
+                    if ($("#tbodyVerConceptos").find("tr").length <= 1) {
+                        const div = $("<div></div>")
+                        div.append("<p>La solicitud debe tener al menos un concepto.</p>")
+                        div.append("<p>Si desea cancelar la solicitud, puede hacerlo desde el botón de cancelar o edite el concepto.</p>")
+                        return showError(div)
+                    }
+
+                    confirmarMovimiento("¿Desea eliminar el concepto de la solicitud?").then((continuar) => {
+                        if (continuar.isConfirmed) {
+                            consultaServidor("/viaticos/eliminaConceptoSolicitud_V", { conceptoId }, (respuesta) => {
+                                if (!respuesta.success) return showError(respuesta.mensaje)
+                                const fila = $("#tbodyVerConceptos #" + conceptoId)
+                                const concepto = fila.find("td").eq(0).text().trim()
+                                const monto = numeral(fila.find("td").eq(3).text().trim()).value()
+                                fila.remove()
+                                $("#verMontoSol").val(
+                                    numeral($("#verMontoSol").val()).subtract(monto).format(NUMERAL_MONEDA)
+                                )
+                                $("#conceptoViaticos option[value='" + concepto + "']").show()
+                                const visibles = $("#conceptoViaticos option").filter(function () {
+                                    return $(this).css("display") !== "none"
+                                })
+                                if (visibles.length === 1) $("#tablaVerConceptos tfoot").hide()
+                                else $("#tablaVerConceptos tfoot").show()
+                                showSuccess("Concepto eliminado correctamente")
+                            })
+                        }
+                    })
                 }
 
                 $(document).ready(() => {
@@ -974,12 +1143,17 @@ class Viaticos extends Controller
                     })
                     $(".btnCerrarVer").on("click", () => {
                         $("#verSolicitudId").val("")
+                        $("#conceptoViaticos option").each((_, option) => {
+                            $(option).show()
+                        })
+                        getSolicitudes(true)
                         $('#acordionVer .accordion-collapse').removeClass('show')
                         $('#acordionVer .accordion-collapse').first().addClass('show')
                         $('#acordionVer .accordion-button').addClass('collapsed')
                         $('#acordionVer .accordion-button').first().removeClass('collapsed')
                     })
                     $("#btnFinalizarComprobacion").on("click", finalizarComprobacion)
+                    $("#actualizarConcepto").on("click", actualizaConceptoSolicitud)
                     
                     getSolicitudes()
                 })
@@ -1214,11 +1388,30 @@ class Viaticos extends Controller
         self::respuestaJSON(ViaticosDAO::finalizaComprobacion_V($_POST));
     }
 
+    public function agregaConceptoSolicitud_V()
+    {
+        self::respuestaJSON(ViaticosDAO::agregaConceptoSolicitud_V($_POST));
+    }
+
+    public function actualizaConceptoSolicitud_V()
+    {
+        self::respuestaJSON(ViaticosDAO::actualizaConceptoSolicitud_V($_POST));
+    }
+
+    public function eliminaConceptoSolicitud_V()
+    {
+        self::respuestaJSON(ViaticosDAO::eliminaConceptoSolicitud_V($_POST));
+    }
+
     public function Autorizacion()
     {
         $script = <<<HTML
             <script>
                 const tabla = "#historialSolicitudes"
+                const tipos = {
+                    solicitud: "solicitud",
+                    comprobacion: "comprobacion"
+                }
                 let validacionAutorizacion = null
                 let validacionReachazo = null
 
@@ -1234,10 +1427,15 @@ class Viaticos extends Controller
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         const datos = respuesta.datos.map(solicitud => {
                             let color = "warning"
-                            if (solicitud.ESTATUS_ID == 2) color = "success"
-                            if (solicitud.ESTATUS_ID == 7) color = "danger"
+                            if (solicitud.ESTATUS_NOMBRE == catEstatus_VG.autorizada) color = "success"
+                            if (solicitud.ESTATUS_NOMBRE == catEstatus_VG.rechazada) color = "danger"
 
-                            const estatus = "<span class='badge rounded-pill bg-label-" + color + "'>" + (solicitud.ESTATUS_NOMBRE == "SOLICITADA" ? "PENDIENTE DE AUTORIZACIÓN" : solicitud.ESTATUS_NOMBRE) + "</span>"
+                            let etiqueta = "SOLICITUD<br>(PENDIENTE DE AUTORIZAR)"
+                            if (solicitud.ESTATUS_NOMBRE == catEstatus_VG.comprobada) etiqueta = "COMPROBACIÓN<br>(PENDIENTE DE AUTORIZAR)"
+                            if (solicitud.ESTATUS_NOMBRE == catEstatus_VG.autorizada) etiqueta = "SOLICITUD AUTORIZADA"
+                            if (solicitud.ESTATUS_NOMBRE == catEstatus_VG.rechazada) etiqueta = "SOLICITUD RECHAZADA"
+
+                            const estatus = "<span class='badge rounded-pill bg-label-" + color + "'>" + etiqueta + "</span>"
                             const acciones = menuAcciones([
                                 {
                                     texto: "Detalles",
@@ -1275,7 +1473,7 @@ class Viaticos extends Controller
                 }
 
                 const getFechas = (registro, inicio, fin) => {
-                    return getItemTabla("calendar", "Registro", moment(registro).format(MOMENT_FRONT), false) +
+                    return getItemTabla("calendar", "Registro", moment(registro).format(MOMENT_FRONT_HORA), false) +
                         getItemTabla("calendar", "Desde", moment(inicio).format(MOMENT_FRONT)) +
                         getItemTabla("calendar", "Hasta", moment(fin).format(MOMENT_FRONT), false)
                 }
@@ -1288,18 +1486,46 @@ class Viaticos extends Controller
                         $("#rechazar").attr("disabled", false)
                         $("#autorizar").attr("disabled", false)
 
-                        if (informacion.ESTATUS_ID == 2) {
+                        if (informacion.ESTATUS_NOMBRE == catEstatus_VG.autorizada) {
                             color = "success"
                             $("#autorizar").attr("disabled", true)
                         }
                         
-                        if (informacion.ESTATUS_ID == 7) {
+                        if (informacion.ESTATUS_NOMBRE == catEstatus_VG.rechazada) {
                             color = "danger"
                             $("#rechazar").attr("disabled", true)
                         }
+
+                        if (informacion.ESTATUS_NOMBRE == catEstatus_VG.comprobada) {
+                            $("#verTitulo").text("Autorización de comprobación de gastos")
+                            $("#btnVerListado").attr("data-bs-target", "#modalVerComprobantes")
+                            $("#btnVerListado").html("<i class='far fa-eye'>&nbsp;</i>Comprobantes")
+                            $("#montoAutorizado").attr("disabled", true)
+                            $("#autorizar").attr("tipo", tipos.comprobacion)
+                            $("#rechazar").hide()
+                            $("#tbodyComprobantes").empty()
+                            const comprobantes = respuesta.datos.comprobantes || []
+                            comprobantes.forEach((comprobante) => {
+                                const fila = getFilaComprobante(informacion, comprobante)
+                                $("#tbodyComprobantes").append(fila)
+                            })
+                        } else {
+                            $("#verTitulo").text("Autorización de solicitud de viáticos")
+                            $("#btnVerListado").attr("data-bs-target", "#modalVerConceptos")
+                            $("#btnVerListado").html("<i class='far fa-eye'>&nbsp;</i>Conceptos")
+                            $("#montoAutorizado").attr("disabled", false)
+                            $("#autorizar").attr("tipo", tipos.solicitud)
+                            $("#rechazar").show()
+                            $("#tbodyConceptos").empty()
+                            const conceptos = respuesta.datos.conceptos || []
+                            conceptos.map((concepto) => {
+                                const fila = getFilaConcepto(informacion, concepto)
+                                $("#tbodyConceptos").append(fila)
+                            })
+                        }
                         
                         $("#verSolicitante").val(informacion.USUARIO_NOMBRE)
-                        $("#verSucursal").val(informacion.SUCURSAL_NOMBRE)
+                        $("#verSucursal").val(informacion.ENTREGA_SUCURSAL)
                         $("#verTipoSol").val(informacion.TIPO_NOMBRE)
                         $("#verSolicitudId").val(informacion.ID)
                         $("#verFechaSol").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
@@ -1308,8 +1534,30 @@ class Viaticos extends Controller
                         $("#verFechaI").val(moment(informacion.DESDE).format(MOMENT_FRONT))
                         $("#verFechaF").val(moment(informacion.HASTA).format(MOMENT_FRONT))
                         $("#montoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_DECIMAL))
+                        //$("#observacionesAutorizacion").val(informacion.AUTORIZACION_OBSERVACION)
                         $("#modalVerAutorizacion").modal("show")
                     })
+                }
+
+                const getFilaConcepto = (informacion, concepto) => {
+                    return "<tr id='" + concepto.ID + "'>" +
+                        "<td>" + concepto.CONCEPTO_NOMBRE + "</td>" +
+                        "<td>" + (concepto.OBSERVACIONES ?? "") + "</td>" +
+                        "<td>" + numeral(concepto.MONTO).format(NUMERAL_MONEDA) + "</td>" +
+                        "</tr>"
+                }
+
+                const getFilaComprobante = (informacion, comprobante) => {
+                    const editar = (informacion.TIPO_ID == 1 && informacion.ESTATUS_NOMBRE == catEstatus_VG.entregada) || (informacion.TIPO_ID == 1 && informacion.ESTATUS_NOMBRE == catEstatus_VG.comprobada && comprobante.ESTATUS_ID != 1)
+                    const eliminar = editar
+                    const colores = [
+                        "danger", "success"
+                    ]
+                    return "<tr>" +"<td>" + moment(comprobante.FECHA_REGISTRO).format(MOMENT_FRONT) + "</td>" +
+                        "<td>" + comprobante.CONCEPTO_NOMBRE + "</td>" +
+                        "<td>" + (comprobante.OBSERVACIONES ?? "") + "</td>" +
+                        "<td>" + numeral(comprobante.TOTAL).format(NUMERAL_MONEDA) + "</td>" +
+                        "</tr>"
                 }
 
                 const setValidacionAutorizacion = () => {
@@ -1327,6 +1575,7 @@ class Viaticos extends Controller
                             callback: {
                                 message: "Debe indicar porque esta autorizando un monto diferente al solicitado.",
                                 callback: () => {
+                                    if ($("#montoAutorizado").attr("readonly")) return true
                                     if (numeral($("#verMontoSolicitado").val()).difference(numeral($("#montoAutorizado").val()).value()) === 0) return true
                                     return $("#observacionesAutorizacion").val().trim() !== ""
                                 }
@@ -1338,7 +1587,7 @@ class Viaticos extends Controller
                         "#modalVerAutorizacion",
                         campos,
                         "#autorizar",
-                        autorizarSolicitud,
+                        autorizar,
                         "#cancelar"
                     )
                 }
@@ -1361,11 +1610,17 @@ class Viaticos extends Controller
                     )
                 }
 
+                const autorizar = () => {
+                    const tipo = $("#autorizar").attr("tipo")
+                    if (tipo === tipos.solicitud) autorizarSolicitud()
+                    else autorizarComprobantes()
+                }
+
                 const autorizarSolicitud = () => {
                     const parametros = {
                         solicitudId: $("#verSolicitudId").val(),
                         usuario: $_SESSION[usuario_id],
-                        autorizado: 2,
+                        autorizado: catEstatus_VG.autorizada,
                         monto: $("#montoAutorizado").val(),
                         observaciones: $("#observacionesAutorizacion").val()
                     }
@@ -1377,11 +1632,51 @@ class Viaticos extends Controller
                     const parametros = {
                         solicitudId: $("#verSolicitudId").val(),
                         usuario: $_SESSION[usuario_id],
-                        autorizado: 7,
+                        autorizado: catEstatus_VG.rechazada,
                         observaciones: $("#observacionesAutorizacion").val()
                     }
 
                     actualizaSolicitud("¿Desea rechazar esta solicitud?", parametros, "La solicitud ha sido rechazada.")
+                }
+
+                const autorizarComprobantes = () => {
+                    const parametros = {
+                        solicitudId: $("#verSolicitudId").val(),
+                        usuario: $_SESSION[usuario_id],
+                        autorizado: catEstatus_VG.aceptada,
+                        observaciones: $("#observacionesAutorizacion").val()
+                    }
+
+                    confirmarMovimiento("¿Desea autorizar los comprobantes para esta solicitud?").then((continuar) => {
+                        if (!continuar.isConfirmed) return
+                        consultaServidor("/viaticos/autorizaSolicitud_VG", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+                            showSuccess("Los comprobantes han sido autorizados.").then(() => {
+                                $("#modalVerAutorizacion").modal("hide")
+                                getSolicitudes()
+                            })
+                        })
+                    })
+                }
+
+                const rechazarComprobantes = () => {
+                    const parametros = {
+                        solicitudId: $("#verSolicitudId").val(),
+                        usuario: $_SESSION[usuario_id],
+                        autorizado: catEstatus_VG.rechazada,
+                        observaciones: $("#observacionesAutorizacion").val()
+                    }
+
+                    confirmarMovimiento("¿Desea rechazar los comprobantes para esta solicitud?").then((continuar) => {
+                        if (!continuar.isConfirmed) return
+                        consultaServidor("/viaticos/autorizaSolicitud_VG", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+                            showSuccess("Los comprobantes han sido rechazados.").then(() => {
+                                $("#modalVerAutorizacion").modal("hide")
+                                getSolicitudes()
+                            })
+                        })
+                    })
                 }
 
                 const actualizaSolicitud = (confirmacion, parametros, exito) => {
@@ -1401,6 +1696,9 @@ class Viaticos extends Controller
                     setInputFechas("#fechasSolicitudes", { rango: true, iniD: -30 })
                     $("#btnBuscarSolicitudes").on("click", getSolicitudes)
                     configuraTabla("#historialSolicitudes")
+                    $("#modalVerConceptos, #modalVerComprobantes").on("hide.bs.modal", () => {
+                        $("#modalVerAutorizacion").modal("show")
+                    })
 
                     setValidacionAutorizacion()
                     setValidacionReachazo()
@@ -1476,6 +1774,12 @@ class Viaticos extends Controller
                             greaterThan: {
                                 min: 1,
                                 message: "Debe ser mayor a 0"
+                            },
+                            callback: {
+                                message: "El monto no puede ser mayor al monto autorizado.",
+                                callback: () => {
+                                    return numeral($("#montoEntrega").val()).value() <= numeral($("#verMontoAutorizado").val()).value()
+                                }
                             }
                         },
                         observacionesEntrega: {
@@ -1503,7 +1807,7 @@ class Viaticos extends Controller
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         const informacion = respuesta.datos.informacion
                         $("#verSolicitante").val(informacion.USUARIO_NOMBRE)
-                        $("#verSucursal").val(informacion.SUCURSAL_NOMBRE)
+                        $("#verSucursal").val(informacion.ENTREGA_SUCURSAL)
                         $("#verFechaReg").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
                         $("#verSolicitudId").val(informacion.ID)
                         $("#verTipoSolId").val(informacion.TIPO_ID)
@@ -1511,7 +1815,7 @@ class Viaticos extends Controller
                         $("#verFechaI").val(moment(informacion.FECHA_I).format(MOMENT_FRONT))
                         $("#verFechaF").val(moment(informacion.FECHA_F).format(MOMENT_FRONT))
                         $("#verProyecto").val(informacion.PROYECTO)
-                        $("#verAutorizado").val("ANGEL MOISES GUERRERO MEJIA") //informacion.AUTORIZACION_NOMBRE)
+                        $("#verAutorizado").val(informacion.AUTORIZACION_NOMBRE)
                         $("#verFechaAutorizado").val(moment(informacion.AUTORIZACION_FECHA).format(MOMENT_FRONT_HORA))
                         $("#verMontoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_MONEDA))
                         $("#montoEntrega").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_DECIMAL))
@@ -1611,13 +1915,12 @@ class Viaticos extends Controller
         $mpdf->WriteHTML($plantilla['estilo'], 1);
         $mpdf->WriteHTML($plantilla['cuerpo'], 2);
 
-
-        $contenidoInvertido = <<<HTML
+        $duplicado = <<<HTML
             <div style="border-top: 1px dashed #000; margin-top: 10px;">
                 {$plantilla['cuerpo']}
             </div>
         HTML;
-        $mpdf->WriteHTML($contenidoInvertido);
+        $mpdf->WriteHTML($duplicado);
 
         $mpdf->Output('comprobante_entrega.pdf', 'I');
         exit;
@@ -1874,15 +2177,23 @@ class Viaticos extends Controller
                                 moment(comprobacion.REGISTRO).format(MOMENT_FRONT),
                                 comprobacion.PROYECTO,
                                 numeral(comprobacion.ENTREGA_MONTO).format(NUMERAL_MONEDA),
-                                comprobacion.REGISTRADOS,
-                                comprobacion.RECHAZADOS,
-                                comprobacion.ACEPTADOS,
+                                getInfoComprobantes(comprobacion.REGISTRADOS, comprobacion.RECHAZADOS, comprobacion.ACEPTADOS),
                                 acciones
                             ]
                         })
 
                         actualizaDatosTabla(tabla, datos)
                     })
+                }
+
+                const getInfoComprobantes = (registrados, rechazados, aceptados) => {
+                    const getItem = (icono, color, label, valor, {clasesDiv = ""} = {}) => {
+                        return "<div class='d-flex align-items-center justify-content-between " + clasesDiv + "'><span><i class='fa fa-" + icono + " " + color + "'></i> " + label + ": </span>" + valor + "</div>"
+                    }
+
+                    return getItem("file-arrow-up", "text-info", "Registrados", registrados) +
+                        getItem("ban", "text-danger", "Rechazados", rechazados) +
+                        getItem("check", "text-success", "Aceptados", aceptados)
                 }
 
                 const getParametros = () => {
@@ -2091,7 +2402,7 @@ class Viaticos extends Controller
                         title: "Confirmación",
                         html: "<div class='text-center'>¿Desea rechazar este comprobante?</div>" +
                             "<div class='text-center'>Indique el motivo del rechazo</div>" +
-                            "<input type='text' id='motivoRechazo' class='form-control' placeholder='Motivo del rechazo' required>",
+                            "<input type='text' id='motivoRechazo' class='form-control mayusculas' placeholder='Motivo del rechazo' required>",
                         icon: "warning",
                         showCancelButton: true,
                         confirmButtonText: "Si, continuar",
@@ -2136,6 +2447,7 @@ class Viaticos extends Controller
 
                 const aceptarComprobante = () => {
                     const parametros = {
+                        usuario: $_SESSION[usuario_id],
                         solicitudId: comprobante.SOLICITUD_ID,
                         comprobanteId: comprobante.ID,
                         estatus: 1,
@@ -2144,7 +2456,7 @@ class Viaticos extends Controller
                     if (comprobantes.length !== 1) aceptar("¿Desea aceptar este comprobante?", parametros)
                     else {
                         const msg = comprobacion.TIPO_ID == 1 
-                            ? "se dará por finalizada la solicitud de viáticos y se aplicaran los ajustes de saldo a favor o en contra."
+                            ? "se dará por finalizada la comprobación de viáticos y se aplicaran los ajustes de saldo a favor o en contra."
                             : "se le otorgara al colaborador el monto comprobado."
                         
                         const mensaje = $("<div>")
@@ -2224,5 +2536,383 @@ class Viaticos extends Controller
     public function actualizaEstatusComprobante()
     {
         self::respuestaJSON(ViaticosDAO::actualizaEstatusComprobante($_POST));
+    }
+
+    public function Ajustes()
+    {
+        $script = <<<HTML
+            <script>
+                const tabla = "#historialSolicitudes"
+
+                const getSolicitudes = () => {
+                    const fechas = getInputFechas("#fechasSolicitudes", true)
+                    const parametros = {
+                        fechaI: fechas.inicio,
+                        fechaF: fechas.fin
+                    }
+
+                    consultaServidor("/viaticos/getSolicitudesAjustes", parametros, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const datos = respuesta.datos.map((solicitud) => {
+                            const acciones = menuAcciones([
+                                {
+                                    texto: "Detalles",
+                                    icono: "fa-eye",
+                                    funcion: "verDetalles(" + solicitud.ID + ")"
+                                }
+                            ])
+                            
+                            const diferencia = numeral(solicitud.DIFERENCIA)
+                            const dif = diferencia.value() < 0 ? "down text-danger" : "up text-success"
+
+                            return [
+                                null,
+                                solicitud.ID,
+                                solicitud.USUARIO_NOMBRE,
+                                "<i class='fa-solid fa-arrow-trend-" + dif + "'>&nbsp;</i>" + diferencia.format(NUMERAL_MONEDA),
+                                acciones
+                            ]
+                        })
+
+                        actualizaDatosTabla(tabla, datos)
+                    })
+                }
+
+                const verDetalles = (id) => {
+                    consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId: id }, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const informacion = respuesta.datos.informacion
+
+                        $("#verSolicitudId").val(informacion.ID)
+                        $("#verSolicitante").val(informacion.USUARIO_NOMBRE)
+                        $("#verTipoSol").val(informacion.TIPO_NOMBRE)
+                        $("#verFechaFinalizado").val(moment(informacion.ACTUALIZADO).format(MOMENT_FRONT_HORA))
+                        $("#verMontoEntregado").val(numeral(informacion.ENTREGA_MONTO).format(NUMERAL_MONEDA))
+                        $("#verMontoComprobado").val(numeral(informacion.COMPROBACION_MONTO).format(NUMERAL_MONEDA))
+                        
+                        const diferencia = numeral(informacion.COMPROBACION_MONTO)
+                        .subtract(informacion.ENTREGA_MONTO)
+                        
+                        $("#verMontoDiferencia").val(diferencia.format(NUMERAL_MONEDA))
+                        if (diferencia.value() < 0) {
+                            $("#verTipoDiferencia").val("Cobro de saldo en contra")
+                            $("#verMontoDiferencia").removeClass("text-success").addClass("text-danger")
+                            $("#ajustar").text("Cobrar")
+                        } else {
+                            $("#verTipoDiferencia").val("Pago de saldo a favor")
+                            $("#verMontoDiferencia").removeClass("text-danger").addClass("text-success")
+                            $("#ajustar").text("Pagar")
+                        }
+                        
+                        $("#modalVerAjuste").modal("show")
+                    })
+                }
+
+                const registrarAjuste = () => {
+                    const solicitudId = $("#verSolicitudId").val()
+                    const monto = Math.abs(numeral($("#verMontoDiferencia").val()).value())
+                    const tipo = $("#verTipoDiferencia").val()
+
+                    confirmarMovimiento("¿Desea registrar el " + tipo.toLowerCase() + " por un monto de " + numeral(monto).format(NUMERAL_MONEDA) + "?")
+                    .then((continuar) => {
+                        if (!continuar.isConfirmed) return
+
+                        const parametros = {
+                            usuario: $_SESSION[usuario_id],
+                            solicitudId,
+                            observaciones: $("#observacionesAjuste").val().trim(),
+                            sucursal: $("#verSucursal").val(),
+                        }
+
+                        consultaServidor("/viaticos/registraAjuste_VG", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+
+                            showSuccess("Ajuste registrado correctamente.").then(() => {
+                                $("#modalVerAjuste").modal("hide")
+                                const formData = new FormData()
+                                formData.append("solicitudId", solicitudId)
+                                mostrarArchivoDescargado(
+                                    "/viaticos/getComprobanteAjuste",
+                                    formData,
+                                    {
+                                        titulo: "Comprobante de ajuste",
+                                        fncClose: getSolicitudes
+                                    }
+                                )
+                            })
+                        })
+                    })
+                }
+                
+                $(document).ready(() => {
+                    setInputFechas("#fechasSolicitudes", { rango: true, iniD: -30 })
+                    $("#btnBuscarSolicitudes").on("click", getSolicitudes)
+                    $("#ajustar").on("click", registrarAjuste)
+                    configuraTabla(tabla)
+                    getSolicitudes()
+                })
+            </script>
+        HTML;
+
+        $catSucursales = ViaticosDAO::getCatalogoSucursales();
+        $sucursales = '';
+        if ($catSucursales['success']) {
+            foreach ($catSucursales['datos'] as $sucursal) {
+                $seleccion = $_SESSION['sucursal_id'] == $sucursal['ID'] ? 'selected' : '';
+                $sucursales .= "<option value='{$sucursal['ID']}' $seleccion>{$sucursal['NOMBRE']}</option>";
+            }
+        }
+
+        self::set("titulo", "Ajustes de viáticos");
+        self::set("sucursales", $sucursales);
+        self::set("script", $script);
+        self::render("viaticos_ajustes");
+    }
+
+    public function getSolicitudesAjustes()
+    {
+        self::respuestaJSON(ViaticosDAO::getSolicitudesAjustes_VG($_POST));
+    }
+
+    public function registraAjuste_VG()
+    {
+        self::respuestaJSON(ViaticosDAO::registraAjuste_VG($_POST));
+    }
+
+    public function getComprobanteAjuste()
+    {
+        $datos = $_SERVER['REQUEST_METHOD'] !== 'POST' ? $_GET : $_POST;
+        $datos = ViaticosDAO::getDatosComprobanteAjuste($datos);
+        if (!$datos['success']) return self::respuestaJSON($datos);
+
+        $plantilla = self::getPlantillaAjuste_VG($datos['datos']);
+
+        $mpdf = new \mPDF([
+            'mode' => 'utf-8',
+            'format' => 'Letter',
+            'default_font_size' => 10,
+            'default_font' => 'Arial',
+            'margin_left' => 10,
+            'margin_right' => 10,
+            'margin_top' => 10,
+            'margin_bottom' => 10,
+        ]);
+        $mpdf->WriteHTML($plantilla['estilo'], 1);
+        $mpdf->WriteHTML($plantilla['cuerpo'], 2);
+
+        $duplicado = <<<HTML
+            <div style="border-top: 1px dashed #000; margin-top: 10px;">
+                {$plantilla['cuerpo']}
+            </div>
+        HTML;
+        $mpdf->WriteHTML($duplicado);
+
+        $mpdf->Output('comprobante_entrega.pdf', 'I');
+        exit;
+    }
+
+    private function getPlantillaAjuste_VG($datos)
+    {
+        $diferencia = abs($datos['DIFERENCIA_MONTO'] ?? 0);
+        $tipo = $datos['DIFERENCIA_MONTO'] < 0 ? "COBRO DE SALDO EN CONTRA" : "PAGO DE SALDO A FAVOR";
+        $entero = floor($diferencia);
+        $centavos = round(($diferencia - $entero) * 100);
+        $fmt = new \NumberFormatter("es", \NumberFormatter::SPELLOUT);
+        $texto_entero = $fmt->format($entero);
+        $texto_centavos = str_pad($centavos, 2, '0', STR_PAD_LEFT);
+        $diferencia_letra = mb_strtoupper("$texto_entero pesos $texto_centavos/100 M.N.", 'UTF-8');
+
+        $fmt = new \NumberFormatter('es_MX', \NumberFormatter::CURRENCY);
+        $diferencia = $fmt->formatCurrency($diferencia, 'MXN');
+        $entregado = $fmt->formatCurrency($datos['ENTREGA_MONTO'], 'MXN');
+        $comprobado = $fmt->formatCurrency($datos['COMPROBACION_MONTO'], 'MXN');
+
+        $estilo = <<<HTML
+            <style>
+                body {
+                    width: 100%;
+                    height: 100%;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .header {
+                    text-align: center;
+                    margin-bottom: 5px;
+                    border-bottom: 2px solid #333;
+                }
+                
+                .header h2 {
+                    font-weight: bold;
+                    text-transform: uppercase;
+                }
+                
+                .document-info {
+                    width: 100%;
+                }
+                
+                .document-info .left {
+                    width: 60%;
+                    vertical-align: top;
+                }
+                
+                .document-info .right {
+                    width: 40%;
+                    vertical-align: top;
+                    text-align: right;
+                }
+                
+                .field-row {
+                    margin-bottom: 5px;
+                }
+                
+                .field-label {
+                    font-weight: bold;
+                    display: inline-block;
+                    width: 100px;
+                }
+                
+                .field-value {
+                    display: inline-block;
+                    border-bottom: 1px solid #333;
+                    min-width: 200px;
+                    padding-bottom: 1px;
+                }
+                
+                .content-section {
+                    text-align: justify;
+                    line-height: 1.6;
+                }
+                
+                .amount-section {
+                    text-align: center;
+                    margin: 0;
+                }
+                
+                .amount-box {
+                    display: inline-block;
+                    border: 2px solid #333;
+                    padding: 15px;
+                    background-color: #f9f9f9;
+                }
+                
+                .amount-label {
+                    font-weight: bold;
+                }
+                
+                .amount-value {
+                    font-weight: bold;
+                    color: #333;
+                }
+                
+                .signatures {
+                    width: 100%;
+                    text-align: center;
+                }
+
+                .signatures-signature {
+                    height: 100px;
+                }
+
+                .signatures-space {
+                    width: 10%;
+                }
+
+                .signatures-data {
+                    width: 35%;
+                    border-top: 1px solid #333;
+                }
+                
+                .signature-title {
+                    font-weight: bold;
+                }
+            </style>
+        HTML;
+
+        $cuerpo = <<<HTML
+            <!-- Encabezado -->
+            <div class="header">
+                <h2>Comprobante de Entrega y Recepción de Viáticos</h2>
+            </div>
+
+            <!-- Información del documento -->
+            <table class="document-info">
+                <tr>
+                    <td class="left">
+                        <div class="field-row">
+                            <span class="field-label">Empresa:</span>
+                            <span class="field-value">[NOMBRE DE LA EMPRESA]</span>
+                        </div>
+                    </td>
+                    <td class="right">
+                        <div class="field-row">
+                            <span class="field-label">Folio:</span>
+                            <span class="field-value">[000001]</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="left">
+                        <div class="field-row">
+                            <span class="field-label">Sucursal:</span>
+                            <span class="field-value">[SUCURSAL]</span>
+                        </div>
+                    </td>
+                    <td class="right">
+                        <div class="field-row">
+                            <span class="field-label">Fecha:</span>
+                            <span class="field-value">[DD/MM/AAAA]</span>
+                        </div>
+                    </td>
+                </tr>
+                
+            </table>
+
+            <!-- Contenido principal -->
+            <div class="content-section">
+                <p>Por medio del presente documento se hace constar el <strong>$tipo</strong> al epleado <strong>[EMPLEADO]</strong>
+                por concepto de una diferencia entre el monto de gastos entregados ($entregado) contra lo comprobado ($comprobado), correspondiente al proyecto <strong>[PROYECTO]</strong>.</p>
+            </div>
+
+            <!-- Monto -->
+            <div class="amount-section">
+                <div class="amount-box">
+                    <div class="amount-label">MONTO</div>
+                    <div class="amount-value">$diferencia</div>
+                    <div class="amount-text">($diferencia_letra)</div>
+                </div>
+            </div>
+
+            <!-- Firmas -->
+            <table class="signatures">
+                <tr>
+                    <td></td>
+                    <td class="signatures-signature">
+                        <span class="signature-title">ENTREGA</span>
+                    </td>
+                    <td></td>
+                    <td class="signatures-signature">
+                        <span class="signature-title">RECIBE</span>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="signatures-space"></td>
+                    <td class="signatures-data">
+                        <span>Nombre y Firma</span>
+                    </td>
+                    <td class="signatures-space"></td>
+                    <td class="signatures-data">
+                        <span>Nombre y Firma</span>
+                    </td>
+                    <td class="signatures-space"></td>
+                </tr>
+            </table>
+        HTML;
+
+        return [
+            'estilo' => $estilo,
+            'cuerpo' => $cuerpo
+        ];
     }
 }

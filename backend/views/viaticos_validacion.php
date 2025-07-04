@@ -17,19 +17,14 @@
                 <table id="historialComprobaciones" class="dt-responsive table border-top table-hover">
                     <thead>
                         <tr>
-                            <th rowspan="2" class="d-none"></th>
-                            <th rowspan="2">ID</th>
-                            <th rowspan="2">Tipo</th>
-                            <th rowspan="2">Fecha Registro</th>
-                            <th rowspan="2">Proyecto</th>
-                            <th rowspan="2">Entregado</th>
-                            <th colspan="3" class="text-center">Comprobantes</th>
-                            <th rowspan="2">Acciones</th>
-                        </tr>
-                        <tr>
-                            <th><i class="fa fa-file-arrow-up"></i></th>
-                            <th><i class="fa fa-ban text-danger"></i></th>
-                            <th><i class="fa fa-check text-success"></th>
+                            <th class="d-none"></th>
+                            <th>ID</th>
+                            <th>Tipo</th>
+                            <th>Fecha Registro</th>
+                            <th>Proyecto</th>
+                            <th>Entregado</th>
+                            <th>Comprobantes</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -47,31 +42,31 @@
                     <div class="row">
                         <div class="col-6">
                             <label class="form-label">Solicitante</label>
-                            <input type="text" id="solicitante" class="form-control" readonly>
+                            <input type="text" id="solicitante" class="form-control" disabled>
                         </div>
                         <div class="col-3">
                             <label class="form-label">Fecha solicitud</label>
-                            <input type="text" id="fechaSolicitud" class="form-control" readonly>
+                            <input type="text" id="fechaSolicitud" class="form-control" disabled>
                         </div>
                         <div class="col-3">
                             <label class="form-label">Fecha limite</label>
-                            <input type="text" id="fechaLimite" class="form-control" readonly>
+                            <input type="text" id="fechaLimite" class="form-control" disabled>
                         </div>
                         <div class="col-5">
                             <label class="form-label">Proyecto</label>
-                            <input type="text" id="proyecto" class="form-control" readonly>
+                            <input type="text" id="proyecto" class="form-control" disabled>
                         </div>
                         <div class="col-3">
                             <label class="form-label">Tipo</label>
-                            <input type="text" id="tipo" class="form-control" readonly>
+                            <input type="text" id="tipo" class="form-control" disabled>
                         </div>
                         <div class="col-2">
                             <label class="form-label">Monto entregado</label>
-                            <input type="text" id="montoSolicitud" class="form-control" readonly>
+                            <input type="text" id="montoSolicitud" class="form-control" disabled>
                         </div>
                         <div class="col-2">
                             <label class="form-label">Monto comprobado</label>
-                            <input type="text" id="montoComprobado" class="form-control" readonly>
+                            <input type="text" id="montoComprobado" class="form-control" disabled>
                         </div>
                     </div>
                 </div>
@@ -134,23 +129,23 @@
                     <div class="card-body p-3">
                         <div class="col">
                             <label class="form-label">Fecha captura</label>
-                            <input type="text" id="fechaCaptura" class="form-control" readonly>
+                            <input type="text" id="fechaCaptura" class="form-control" disabled>
                         </div>
                         <div class="col">
                             <label class="form-label">Concepto</label>
-                            <input type="text" id="concepto" class="form-control" readonly>
+                            <input type="text" id="concepto" class="form-control" disabled>
                         </div>
                         <div class="col">
                             <label class="form-label">Fecha comprobante</label>
-                            <input type="text" id="fechaComprobante" class="form-control" readonly>
+                            <input type="text" id="fechaComprobante" class="form-control" disabled>
                         </div>
                         <div class="col">
                             <label class="form-label">Monto</label>
-                            <input type="text" id="montoComprobante" class="form-control" readonly>
+                            <input type="text" id="montoComprobante" class="form-control" disabled>
                         </div>
                         <div class="col">
-                            <label class="form-label">Observaciones</label>
-                            <textarea id="observaciones" class="form-control" readonly>
+                            <label class="form-label">Observaciones del usuario</label>
+                            <textarea id="observaciones" class="form-control" disabled>
                             </textarea>
                         </div>
                     </div>

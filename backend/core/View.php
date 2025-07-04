@@ -38,6 +38,11 @@ function getMenu()
                     'label' => '2. Comprobación',
                     'url' => '/Viaticos/Validacion',
                     'permisos' => ['1', '2']
+                ],
+                [
+                    'label' => '3. Ajustes',
+                    'url' => '/Viaticos/Ajustes',
+                    'permisos' => ['1', '2']
                 ]
             ]
         ],

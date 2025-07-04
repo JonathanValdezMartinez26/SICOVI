@@ -121,6 +121,7 @@
                                 <thead>
                                     <tr>
                                         <th>Concepto</th>
+                                        <th>Observaciones</th>
                                         <th>Monto</th>
                                         <th>Acciones</th>
                                     </tr>
@@ -130,7 +131,7 @@
                                 <tfoot>
                                     <tr>
                                         <td colspan="4" class="text-center">
-                                            <button type="button" id="btnAgregarConcepto" class="btn btn-success btn-sm">
+                                            <button type="button" class="btn btn-success btn-sm btnAgregarConcepto">
                                                 <i class="fa fa-plus">&nbsp;</i>Agregar
                                             </button>
                                         </td>
@@ -195,7 +196,7 @@
                         <select id="conceptoViaticos" name="conceptoViaticos" class="form-select">
                             <option value="" selected disabled>Seleccione un concepto</option>
                             <option value="1">Transporte</option>
-                            <option value="2">Alimentación</option>
+                            <option value="2">Alimentos</option>
                             <option value="3">Hospedaje</option>
                             <option value="4">Otros</option>
                         </select>
@@ -222,6 +223,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" id="cancelaConcepto" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
+                <button type="button" id="actualizarConcepto" class="btn btn-primary" style="display: none" concepto-id="0">Actualizar Concepto</button>
                 <button type="button" id="agregarConcepto" class="btn btn-primary">Agregar Concepto</button>
             </div>
         </div>
@@ -284,7 +286,7 @@
                     </div>
                     <div class="form-group col-12">
                         <label for="observacionesComprobante" class="form-label">Observaciones</label>
-                        <textarea id="observacionesComprobante" name="observacionesComprobante" class="form-control" placeholder="Observaciones del gasto. Ej.: Se compro material para el evento..." rows="2" maxlength="500"></textarea>
+                        <textarea id="observacionesComprobante" name="observacionesComprobante" class="form-control mayusculas" placeholder="Observaciones del gasto. Ej.: Se compro material para el evento..." rows="2" maxlength="500"></textarea>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                 </div>
@@ -327,48 +329,59 @@
                                 <div class="row">
                                     <div class="form-group col-4">
                                         <label class="form-label">Tipo de Solicitud</label>
-                                        <input type="text" id="verTipoSol" class="form-control" readonly>
+                                        <input type="text" id="verTipoSol" class="form-control" disabled>
                                         <input type="hidden" id="verSolicitudId">
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Fecha de registro</label>
-                                        <input type="text" id="verFechaReg" class="form-control" readonly>
+                                        <input type="text" id="verFechaReg" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Estatus</label>
-                                        <input type="text" id="verEstatus" class="form-control" readonly>
+                                        <input type="text" id="verEstatus" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-12">
                                         <label class="form-label">Proyecto</label>
-                                        <input type="text" id="verProyecto" class="form-control" readonly>
+                                        <input type="text" id="verProyecto" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Fecha de inicio del proyecto</label>
-                                        <input type="text" id="verFechaI" class="form-control" readonly>
+                                        <input type="text" id="verFechaI" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Fecha de termino del proyecto</label>
-                                        <input type="text" id="verFechaF" class="form-control" readonly>
+                                        <input type="text" id="verFechaF" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Monto</label>
-                                        <input type="text" id="verMontoSol" class="form-control" readonly>
+                                        <input type="text" id="verMontoSol" class="form-control" disabled>
                                     </div>
                                 </div>
                                 <div id="verTablaConceptosViaticos" class="row mt-5">
                                     <div class="col-12">
-                                        <h5 class="text-center">Con ceptos solicitados</h5>
+                                        <h5 class="text-center">Conceptos</h5>
                                         <div class="table-responsive text-nowrap">
                                             <table id="tablaVerConceptos" class="table table-bordered table-striped">
                                                 <thead>
                                                     <tr>
+                                                        <th class="d-none"></th>
                                                         <th>Concepto</th>
+                                                        <th>Observaciones</th>
                                                         <th>Monto</th>
                                                         <th>Acciones</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="tbodyVerConceptos">
                                                 </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <td colspan="4" class="text-center">
+                                                            <button type="button" class="btn btn-success btn-sm btnAgregarConcepto">
+                                                                <i class="fa fa-plus">&nbsp;</i>Agregar
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
                                             </table>
                                         </div>
                                     </div>
@@ -393,19 +406,19 @@
                                 <div class="row">
                                     <div class="form-group col-8">
                                         <label class="form-label">Autorizado por</label>
-                                        <input type="text" id="verAutorizadoPor" class="form-control" readonly>
+                                        <input type="text" id="verAutorizadoPor" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Fecha</label>
-                                        <input type="text" id="verFechaAutorizacion" class="form-control" readonly>
+                                        <input type="text" id="verFechaAutorizacion" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Monto autorizado</label>
-                                        <input type="text" id="verMontoAutorizado" class="form-control" readonly>
+                                        <input type="text" id="verMontoAutorizado" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-8">
                                         <label class="form-label">Observaciones</label>
-                                        <input type="text" id="verObsAutorizado" class="form-control" readonly>
+                                        <input type="text" id="verObsAutorizado" class="form-control" disabled>
                                     </div>
                                 </div>
                             </div>
@@ -428,23 +441,23 @@
                                 <div class="row">
                                     <div class="form-group col-8">
                                         <label class="form-label">Entregado por</label>
-                                        <input type="text" id="verEntregadoPor" class="form-control" readonly>
+                                        <input type="text" id="verEntregadoPor" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Sucursal</label>
-                                        <input type="text" id="verSucursalEntrega" class="form-control" readonly>
+                                        <input type="text" id="verSucursalEntrega" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Fecha</label>
-                                        <input type="text" id="verFechaEntrega" class="form-control" readonly>
+                                        <input type="text" id="verFechaEntrega" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Método de entrega</label>
-                                        <input type="text" id="verMetodoEntrega" class="form-control" readonly>
+                                        <input type="text" id="verMetodoEntrega" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Monto entregado</label>
-                                        <input type="text" id="verMontoEntregado" class="form-control" readonly>
+                                        <input type="text" id="verMontoEntregado" class="form-control" disabled>
                                     </div>
                                 </div>
                             </div>
@@ -467,15 +480,15 @@
                                 <div class="row">
                                     <div class="form-group col-4">
                                         <label class="form-label">Fecha limite para registro</label>
-                                        <input type="text" id="verFechaLimite" class="form-control" readonly>
+                                        <input type="text" id="verFechaLimite" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Tiempo restante</label>
-                                        <input type="text" id="verTiempoRestante" class="form-control" readonly>
+                                        <input type="text" id="verTiempoRestante" class="form-control" disabled>
                                     </div>
                                     <div class="form-group col-4">
                                         <label class="form-label">Monto comprobado</label>
-                                        <input type="text" id="verMontoComprobado" class="form-control" readonly>
+                                        <input type="text" id="verMontoComprobado" class="form-control" disabled>
                                     </div>
                                 </div>
                                 <div style="height: 1rem;"></div>

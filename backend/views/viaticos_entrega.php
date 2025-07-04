@@ -48,36 +48,31 @@
                     </div>
                     <div class="col-6">
                         <label class="form-label">Solicitante</label>
-                        <input type="text" id="verSolicitante" class="form-control" readonly>
+                        <input type="text" id="verSolicitante" class="form-control" disabled>
                         <input type="hidden" id="verSolicitudId">
                     </div>
                     <div class="col-4">
                         <label class="form-label">Sucursal de entrega</label>
-                        <input type="text" id="verSucursal" class="form-control" readonly>
+                        <input type="text" id="verSucursal" class="form-control" disabled>
                     </div>
                 </div>
                 <div class="row">
                     <div class="form-group col-4">
                         <label class="form-label">Tipo de Solicitud</label>
-                        <input type="text" id="verTipoSol" class="form-control" readonly>
+                        <input type="text" id="verTipoSol" class="form-control" disabled>
                         <input type="hidden" id="verTipoSolId">
                     </div>
                     <div class="form-group col-4">
                         <label class="form-label">Fecha de inicio del proyecto</label>
-                        <input type="text" id="verFechaI" class="form-control" readonly>
+                        <input type="text" id="verFechaI" class="form-control" disabled>
                     </div>
                     <div class="form-group col-4">
                         <label class="form-label">Fecha de termino del proyecto</label>
-                        <input type="text" id="verFechaF" class="form-control" readonly>
+                        <input type="text" id="verFechaF" class="form-control" disabled>
                     </div>
                     <div class="form-group col-12">
                         <label class="form-label">Proyecto</label>
-                        <input type="text" id="verProyecto" class="form-control" readonly>
-                    </div>
-                    <div class="form-group col-12">
-                        <label class="form-label">Detalle de los Viáticos</label>
-                        <textarea rows="3" type="text" id="verProyecto" class="form-control" disabled>
-                        </textarea>
+                        <input type="text" id="verProyecto" class="form-control" disabled>
                     </div>
                     <div class="form-group col-4">
                         <label class="form-label">Autorizado por</label>
@@ -85,11 +80,18 @@
                     </div>
                     <div class="form-group col-4">
                         <label class="form-label">Fecha de autorización</label>
-                        <input type="text" id="verFechaAutorizado" class="form-control" readonly>
+                        <input type="text" id="verFechaAutorizado" class="form-control" disabled>
                     </div>
                     <div class="form-group col-4">
                         <label class="form-label">Monto Autorizado</label>
-                        <input type="text" id="verMontoAutorizado" class="form-control" readonly>
+                        <input type="text" id="verMontoAutorizado" class="form-control" disabled>
+                    </div>
+                    <div class="form-group col-4">
+                        <label class="form-label">Método de entrega</label>
+                        <select id="metodoEntrega" name="metodoEntrega" class="form-select" disabled>
+                            <?= $metodosEntrega ?>
+                        </select>
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                     <div class="form-group col-4">
                         <label class="form-label">Monto Entregado</label>
@@ -99,16 +101,9 @@
                         </div>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
-                    <div class="form-group col-4">
-                        <label class="form-label">Método de entrega</label>
-                        <select id="metodoEntrega" name="metodoEntrega" class="form-select" disabled>
-                            <?= $metodosEntrega ?>
-                        </select>
-                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                    </div>
                     <div class="form-group col-12">
                         <label for="observacionesEntrega" class="form-label">Observaciones</label>
-                        <textarea id="observacionesEntrega" name="observacionesEntrega" class="form-control" placeholder="Observaciones al entregar. Ej.: Se entrego un monto menor debido a..." rows="2" maxlength="500"></textarea>
+                        <textarea id="observacionesEntrega" name="observacionesEntrega" class="form-control mayusculas" placeholder="Observaciones al entregar. Ej.: Se entrego un monto menor debido a..." rows="2" maxlength="500"></textarea>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                 </div>

@@ -51,6 +51,7 @@ class Viaticos extends Model
                 , V.MONTO
                 , V.ENTREGA_MONTO
                 , V.COMPROBACION_MONTO
+                , V.DIFERENCIA_MONTO
                 , CEV.ID AS ESTATUS_ID
                 , CEV.NOMBRE AS ESTATUS_NOMBRE
                 , CEV.CLASE_FRONT AS ESTATUS_COLOR
@@ -92,7 +93,6 @@ class Viaticos extends Model
                 END AS TIPO_NOMBRE
                 , V.USUARIO AS USUARIO_ID
                 , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
-                , S.NOMBRE AS SUCURSAL_NOMBRE
                 , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD HH24:MI:SS') AS REGISTRO
                 , V.PROYECTO
                 , TO_CHAR(V.DESDE, 'YYYY-MM-DD') AS DESDE
@@ -100,12 +100,15 @@ class Viaticos extends Model
                 , V.MONTO
                 , V.ESTATUS AS ESTATUS_ID
                 , CEV.NOMBRE AS ESTATUS_NOMBRE
+                , TO_CHAR(V.ACTUALIZADO, 'YYYY-MM-DD HH24:MI:SS') AS ACTUALIZADO
                 , V.AUTORIZACION_USUARIO
                 , GET_NOMBRE_USUARIO(V.AUTORIZACION_USUARIO) AS AUTORIZACION_NOMBRE
                 , TO_CHAR(V.AUTORIZACION_FECHA, 'YYYY-MM-DD HH24:SS:MM') AS AUTORIZACION_FECHA
                 , V.AUTORIZACION_MONTO
+                , VO.OBSERVACION AS AUTORIZACION_OBSERVACION
                 , V.ENTREGA_USUARIO
                 , GET_NOMBRE_USUARIO(V.ENTREGA_USUARIO) AS ENTREGA_NOMBRE
+                , S.NOMBRE AS ENTREGA_SUCURSAL
                 , V.ENTREGA_METODO
                 , TO_CHAR(V.ENTREGA_FECHA, 'YYYY-MM-DD HH24:SS:MM') AS ENTREGA_FECHA
                 , CASE
@@ -115,12 +118,19 @@ class Viaticos extends Model
                 , V.ENTREGA_MONTO
                 , TO_CHAR(V.COMPROBACION_LIMITE, 'YYYY-MM-DD') AS COMPROBACION_LIMITE
                 , V.COMPROBACION_MONTO
+                , V.DIFERENCIA_METODO
+                , V.DIFERENCIA_FECHA
+                , V.DIFERENCIA_MONTO
+                , V.DIFERENCIA_USUARIO
+                , GET_NOMBRE_USUARIO(V.DIFERENCIA_USUARIO) AS DIFERENCIA_NOMBRE
+                , V.DIFERENCIA_SUCURSAL
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN CAT_VIATICOS_METODO_ENTREGA CMEV ON CMEV.ID = V.ENTREGA_METODO
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
-                LEFT JOIN SUCURSAL S ON S.ID = U.SUCURSAL
+                LEFT JOIN SUCURSAL S ON S.ID = V.SUCURSAL
+                LEFT JOIN VIATICOS_OBSERVACIONES VO ON VO.ID = V.AUTORIZACION_OBSERVACION
             WHERE
                 V.ID = :solicitudId
         SQL;
@@ -144,13 +154,22 @@ class Viaticos extends Model
         $qry = <<<SQL
             SELECT
                 VC.ID
-                , VC.CONCEPTO
+                , VC.CONCEPTO AS CONCEPTO_ID
+                , CASE VC.CONCEPTO
+                    WHEN 1 THEN 'Transporte'
+                    WHEN 2 THEN 'Alimentos'
+                    WHEN 3 THEN 'Hospedaje'
+                    WHEN 4 THEN 'Otros'
+                    ELSE 'Desconocido'
+                END AS CONCEPTO_NOMBRE
                 , VC.OBSERVACIONES
                 , VC.MONTO
             FROM
                 VIATICOS_CONCEPTOS VC
             WHERE
                 VC.VIATICOS = :solicitudId
+            ORDER BY
+                VC.ID
         SQL;
 
         $val = [
@@ -223,7 +242,7 @@ class Viaticos extends Model
     {
         $qryV = <<<SQL
             INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, ESTATUS, DESDE, HASTA, MONTO, COMPROBACION_LIMITE, COMPROBACION_MONTO, SUCURSAL)
-            VALUES (:tipo, :usuario, :proyecto, :estatus, TO_DATE(:fechaI, 'YYYY-MM-DD'), TO_DATE(:fechaF, 'YYYY-MM-DD'), :monto, TO_DATE(:limite, 'YYYY-MM-DD'), :comprobacion, :sucursal)
+            VALUES (:tipo, :usuario, :proyecto, :estatus, TO_DATE(:desde, 'YYYY-MM-DD'), TO_DATE(:hasta, 'YYYY-MM-DD'), :monto, TO_DATE(:limite, 'YYYY-MM-DD'), :comprobacion, :sucursal)
             RETURNING ID INTO :id
         SQL;
 
@@ -231,8 +250,8 @@ class Viaticos extends Model
             'usuario' => $_SESSION['usuario_id'],
             'tipo' => $datos['tipo'],
             'proyecto' => $datos['proyecto'],
-            'fechaI' => $datos['fechaI'],
-            'fechaF' => $datos['fechaF'],
+            'desde' => $datos['desde'],
+            'hasta' => $datos['hasta'],
             'monto' => $datos['monto'],
             'sucursal' => $datos['sucursal'],
             'estatus' => $datos['tipo'] == 1 ? 1 : 4,
@@ -308,15 +327,15 @@ class Viaticos extends Model
             if (isset($datos['concepto']) && is_array($datos['concepto']) && count($datos['concepto']) > 0) {
                 $qryC = <<<SQL
                     INSERT INTO VIATICOS_CONCEPTOS (VIATICOS, CONCEPTO, OBSERVACIONES, MONTO)
-                    VALUES (:id_viaticos, :concepto, :observaciones, :monto)
+                    VALUES (:solicitudId, :concepto, :observaciones, :monto)
                 SQL;
 
                 foreach ($datos['concepto'] as $key => $concepto) {
                     $valC = [
-                        'id_viaticos' => $retV['id']['valor'],
+                        'solicitudId' => $retV['id']['valor'],
                         'concepto' => $concepto,
                         'observaciones' => $datos['observacionesConcepto'][$key],
-                        'monto' => $datos['montoConcepto'][$key],
+                        'monto' => $datos['montoConcepto'][$key]
                     ];
 
                     $db->CRUD($qryC, $valC);
@@ -354,6 +373,160 @@ class Viaticos extends Model
             return self::resultado(true, 'Solicitud eliminada correctamente.', $result);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al eliminar la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function agregaConceptoSolicitud_V($datos)
+    {
+        $qryC = <<<SQL
+            INSERT INTO VIATICOS_CONCEPTOS (VIATICOS, CONCEPTO, OBSERVACIONES, MONTO)
+            VALUES (:solicitudId, :concepto, :observaciones, :monto)
+            RETURNING ID INTO :conceptoID
+        SQL;
+        $valC = [
+            'solicitudId' => $datos['solicitudId'],
+            'concepto' => $datos['concepto'],
+            'observaciones' => $datos['observaciones'],
+            'monto' => $datos['total']
+        ];
+
+        $qryV = <<<SQL
+            UPDATE
+                VIATICOS
+            SET
+                MONTO = NVL(MONTO, 0) + :monto
+            WHERE
+                ID = :solicitudId
+        SQL;
+        $valV = [
+            'solicitudId' => $valC['solicitudId'],
+            'monto' => $valC['monto']
+        ];
+
+        $ret = [
+            'conceptoID' => [
+                'valor' => '',
+                'tipo' => \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT,
+                'largo' => 40
+            ]
+        ];
+
+        try {
+            $db = new Database();
+            $db->beginTransaction();
+            $result = $db->CRUD($qryC, $valC, $ret);
+            if ($result < 1) throw new \Exception("No se pudo agregar el concepto a la solicitud.");
+            $result = $db->CRUD($qryV, $valV);
+            if ($result < 1) throw new \Exception("No se pudo actualizar el monto de la solicitud.");
+            $db->commit();
+
+            return self::resultado(true, 'Concepto agregado correctamente.', ['CONCEPTO_ID' => $ret['conceptoID']['valor']]);
+        } catch (\Exception $e) {
+            $db->rollback();
+            return self::resultado(false, 'Error al agregar el concepto a la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function eliminaConceptoSolicitud_V($datos)
+    {
+        $qryC = <<<SQL
+            DELETE FROM
+                VIATICOS_CONCEPTOS
+            WHERE
+                ID = :conceptoId
+        SQL;
+
+        $qryV = <<<SQL
+            MERGE INTO
+                VIATICOS V
+            USING (
+                SELECT
+                    VIATICOS
+                    , SUM(MONTO) AS MONTO
+                FROM
+                    VIATICOS_CONCEPTOS
+                WHERE
+                    ID = :conceptoId
+                GROUP BY
+                    VIATICOS
+            ) C ON (V.ID = C.VIATICOS)
+            WHEN MATCHED THEN
+                UPDATE SET
+                    V.MONTO = C.MONTO
+        SQL;
+
+        $val = [
+            'conceptoId' => $datos['conceptoId']
+        ];
+
+        try {
+            $db = new Database();
+            $db->beginTransaction();
+            $result = $db->queryOne($qryC, $val);
+            if (!$result) throw new \Exception("No se encontró el concepto a eliminar.");
+            $result = $db->CRUD($qryV, $val);
+            if ($result < 1) throw new \Exception("No se pudo actualizar el monto de la solicitud.");
+            $db->commit();
+
+            return self::resultado(true, 'Concepto eliminado correctamente.', $result);
+        } catch (\Exception $e) {
+            $db->rollback();
+            return self::resultado(false, 'Error al eliminar el concepto.', null, $e->getMessage());
+        }
+    }
+
+    public static function actualizaConceptoSolicitud_V($datos)
+    {
+        $qryC = <<<SQL
+            UPDATE
+                VIATICOS_CONCEPTOS
+            SET
+                CONCEPTO = :concepto
+                , OBSERVACIONES = :observaciones
+                , MONTO = :monto
+            WHERE
+                ID = :conceptoId
+        SQL;
+
+        $qryV = <<<SQL
+            MERGE INTO
+                VIATICOS V
+            USING (
+                SELECT
+                    VIATICOS
+                    , SUM(MONTO) AS MONTO
+                FROM
+                    VIATICOS_CONCEPTOS
+                WHERE
+                    ID = :conceptoId
+                GROUP BY
+                    VIATICOS
+            ) C ON (V.ID = C.VIATICOS)
+            WHEN MATCHED THEN
+                UPDATE SET
+                    V.MONTO = C.MONTO
+        SQL;
+
+        $val = [
+            'conceptoId' => $datos['conceptoId'],
+            'concepto' => $datos['concepto'],
+            'observaciones' => $datos['observaciones'],
+            'monto' => $datos['monto']
+        ];
+
+        try {
+            $db = new Database();
+            $db->beginTransaction();
+            $result = $db->CRUD($qryC, $val);
+            if ($result < 1) throw new \Exception("No se encontró el concepto a actualizar.");
+            $result = $db->CRUD($qryV, ['conceptoId' => $datos['conceptoId']], $ret);
+            if ($result < 1) throw new \Exception("No se pudo actualizar el monto de la solicitud.");
+            $db->commit();
+
+            return self::resultado(true, 'Concepto actualizado correctamente.');
+        } catch (\Exception $e) {
+            $db->rollback();
+            return self::resultado(false, 'Error al actualizar el concepto.', null, $e->getMessage());
         }
     }
 
@@ -643,7 +816,7 @@ class Viaticos extends Model
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
             WHERE
-                ((V.TIPO = 1 AND V.ESTATUS IN (1, 2, 7)) OR (V.TIPO = 2 AND V.ESTATUS IN (4, 7)))
+                ((V.TIPO = 1 AND CEV.NOMBRE IN ('SOLICITADA', 'AUTORIZADA', 'COMPROBADA', 'RECHAZADA')) OR (V.TIPO = 2 AND CEV.NOMBRE IN ('COMPROBADA', 'RECHAZADA')))
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
             ORDER BY
                 ID DESC
@@ -665,14 +838,35 @@ class Viaticos extends Model
 
     public static function autorizaSolicitud_VG($datos)
     {
+        $qryO = <<<SQL
+            INSERT INTO VIATICOS_OBSERVACIONES (OBSERVACION, USUARIO, VIATICOS, ESTATUS)
+            VALUES (:observaciones, :usuario, :viaticos, (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'AUTORIZADA'))
+            RETURNING ID INTO :id
+        SQL;
+
+        $valO = [
+            'observaciones' => $datos['observaciones'],
+            'usuario' => $datos['usuario'],
+            'viaticos' => $datos['solicitudId']
+        ];
+
+        $retO = [
+            'id' => [
+                'valor' => '',
+                'tipo' => \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT,
+                'largo' => 40
+            ]
+        ];
+
         $qry = <<<SQL
             UPDATE
                 VIATICOS
             SET
-                ESTATUS = :autorizado
+                ESTATUS = (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = :autorizado)
                 , AUTORIZACION_USUARIO = :usuario
                 , AUTORIZACION_FECHA = SYSDATE
                 , AUTORIZACION_MONTO = :monto
+                , AUTORIZACION_OBSERVACION = :observaciones
             WHERE
                 ID = :id
         SQL;
@@ -681,20 +875,22 @@ class Viaticos extends Model
             'id' => $datos['solicitudId'],
             'usuario' => $datos['usuario'],
             'autorizado' => $datos['autorizado'],
-            'monto' => $datos['monto']
+            'monto' => $datos['monto'],
+            'observaciones' => null
         ];
 
         try {
             $db = new Database();
             $db->beginTransaction();
 
+            if (isset($datos['observaciones']) && $datos['observaciones'] != '') {
+                $resultO = $db->CRUD($qryO, $valO, $retO);
+                if ($resultO < 1) throw new \Exception("No se pudo insertar la observación de autorización.");
+                $val['observaciones'] = $retO['id']['valor'];
+            }
+
             $result = $db->CRUD($qry, $val);
             if ($result < 1) throw new \Exception("No se encontró la solicitud a autorizar.");
-
-            if (isset($datos['observaciones']) && $datos['observaciones'] != '') {
-                $resultO = self::insertaObservaciones($datos);
-                if (!$resultO['success']) throw new \Exception($resultO['error'] ?? $resultO['mensaje']);
-            }
 
             $db->commit();
             return self::resultado(true, 'Solicitud autorizada correctamente.');
@@ -724,7 +920,7 @@ class Viaticos extends Model
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
             WHERE
-                (V.TIPO = 1 AND V.ESTATUS = 2) OR (V.TIPO = 2 AND V.ESTATUS = 5)
+                (V.TIPO = 1 AND CEV.NOMBRE = 'AUTORIZADA') OR (V.TIPO = 2 AND CEV.NOMBRE = 'COMPROBADA')
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
                 AND U.SUCURSAL = :sucursal
             ORDER BY
@@ -793,16 +989,16 @@ class Viaticos extends Model
     public static function insertaObservaciones($datos)
     {
         $qry = <<<SQL
-            INSERT INTO VIATICOS_OBSERVACIONES (VIATICOS, ESTATUS, COMPROBANTE, OBSERVACION, USUARIO)
-            VALUES (:viaticos, :estatus, :comprobante, :observaciones, :usuario)
+            INSERT INTO VIATICOS_OBSERVACIONES (OBSERVACION, USUARIO, VIATICOS, ESTATUS, COMPROBANTE)
+            VALUES (:observaciones, :usuario, :viaticos, :estatus, :comprobante)
         SQL;
 
         $val = [
+            'observaciones' => $datos['observaciones'],
+            'usuario' => $datos['usuario'],
             'viaticos' => $datos['solicitudId'],
             'estatus' => isset($datos['estatus']) ? $datos['estatus'] : null,
             'comprobante' => isset($datos['comprobanteId']) ? $datos['comprobanteId'] : null,
-            'observaciones' => $datos['observaciones'],
-            'usuario' => $datos['usuario']
         ];
 
         try {
@@ -860,17 +1056,17 @@ class Viaticos extends Model
     {
         $qry = <<<SQL
             WITH COMPROBANTES AS (
-                    SELECT
-                        VC.VIATICOS
-                        , COUNT(*) AS TOTAL
-                        , SUM(CASE WHEN VC.ESTATUS IS NULL THEN 1 ELSE 0 END) AS REGISTRADOS
-                        , SUM(CASE WHEN VC.ESTATUS = 0 THEN 1 ELSE 0 END) AS RECHAZADOS
-                        , SUM(CASE WHEN VC.ESTATUS = 1 THEN 1 ELSE 0 END) AS ACEPTADOS
-                    FROM
-                        VIATICOS_COMPROBACION VC
-                    GROUP BY
-                        VC.VIATICOS
-                )
+                SELECT
+                    VC.VIATICOS
+                    , COUNT(*) AS TOTAL
+                    , SUM(CASE WHEN VC.ESTATUS IS NULL THEN 1 ELSE 0 END) AS REGISTRADOS
+                    , SUM(CASE WHEN VC.ESTATUS = 0 THEN 1 ELSE 0 END) AS RECHAZADOS
+                    , SUM(CASE WHEN VC.ESTATUS = 1 THEN 1 ELSE 0 END) AS ACEPTADOS
+                FROM
+                    VIATICOS_COMPROBACION VC
+                GROUP BY
+                    VC.VIATICOS
+            )
             SELECT
                 V.ID
                 , V.TIPO AS TIPO_ID
@@ -897,7 +1093,7 @@ class Viaticos extends Model
                 LEFT JOIN COMPROBANTES C ON C.VIATICOS = V.ID
             WHERE
                 (C.REGISTRADOS > 0 OR C.RECHAZADOS > 0)
-                AND ((V.TIPO = 1 AND V.ESTATUS = 4) OR (V.TIPO = 2 AND V.ESTATUS = 2))
+                AND CEV.NOMBRE = 'ACEPTADA'
                 AND TRUNC(V.ACTUALIZADO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
             ORDER BY
                 V.ACTUALIZADO DESC
@@ -988,6 +1184,139 @@ class Viaticos extends Model
             return self::resultado(true, 'Solicitud finalizada correctamente.', $result);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al finalizar la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function getSolicitudesAjustes_VG($datos)
+    {
+        $qry = <<<SQL
+            SELECT
+                V.ID
+                , V.TIPO AS TIPO_ID
+                , CASE 
+                    WHEN V.TIPO = 1 THEN 'Viáticos'
+                    WHEN V.TIPO = 2 THEN 'Gastos'
+                    ELSE 'Desconocido'
+                END AS TIPO_NOMBRE
+                , V.USUARIO AS USUARIO_ID
+                , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
+                , NVL(V.ENTREGA_MONTO, 0) AS ENTREGA_MONTO
+                , NVL(V.COMPROBACION_MONTO, 0) AS COMPROBACION_MONTO
+                , NVL(V.COMPROBACION_MONTO, 0) - NVL(V.ENTREGA_MONTO, 0) AS DIFERENCIA
+            FROM
+                VIATICOS V
+                LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
+            WHERE
+                CEV.NOMBRE = 'FINALIZADA'
+                AND (NVL(V.COMPROBACION_MONTO, 0) - NVL(V.ENTREGA_MONTO, 0)) <> 0
+                AND V.DIFERENCIA_MONTO IS NULL
+                AND TRUNC(V.ACTUALIZADO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
+            ORDER BY
+                ACTUALIZADO DESC
+        SQL;
+
+        $params = [
+            'fechaI' => $datos['fechaI'],
+            'fechaF' => $datos['fechaF']
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryAll($qry, $params);
+            return self::resultado(true, 'Solicitudes encontradas.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function registraAjuste_VG($datos)
+    {
+        $qryO = <<<SQL
+            INSERT INTO VIATICOS_OBSERVACIONES (OBSERVACION, USUARIO, VIATICOS, ESTATUS)
+            VALUES (:observaciones, :usuario, :viaticos, (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'FINALIZADA'))
+            RETURNING ID INTO :id
+        SQL;
+
+        $valO = [
+            'observaciones' => $datos['observaciones'],
+            'usuario' => $datos['usuario'],
+            'viaticos' => $datos['solicitudId']
+        ];
+
+        $retO = [
+            'id' => [
+                'valor' => '',
+                'tipo' => \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT,
+                'largo' => 40
+            ]
+        ];
+
+        $qry = <<<SQL
+            UPDATE
+                VIATICOS
+            SET
+                DIFERENCIA_MONTO = COMPROBACION_MONTO - ENTREGA_MONTO
+                , DIFERENCIA_FECHA = SYSDATE
+                , DIFERENCIA_USUARIO = :usuario
+                , DIFERENCIA_SUCURSAL = :sucursal
+                , DIFERENCIA_OBSERVACION = :observaciones
+            WHERE
+                ID = :id
+        SQL;
+
+        $val = [
+            'id' => $datos['solicitudId'],
+            'usuario' => $datos['usuario'],
+            'sucursal' => $datos['sucursal'],
+            'observaciones' => null
+        ];
+
+        try {
+            $db = new Database();
+            $db->beginTransaction();
+            if (isset($datos['observaciones']) && $datos['observaciones'] != '') {
+                $resultO = $db->CRUD($qryO, $valO, $retO);
+                if ($resultO < 1) throw new \Exception("No se pudo insertar la observación de autorización.");
+                $val['observaciones'] = $retO['id']['valor'];
+            }
+            $result = $db->CRUD($qry, $val);
+            if ($result < 1) throw new \Exception("No se encontró la solicitud a ajustar.");
+            $db->commit();
+
+            return self::resultado(true, 'Ajuste registrado correctamente.', $result);
+        } catch (\Exception $e) {
+            $db->rollback();
+            return self::resultado(false, 'Error al registrar el ajuste.', null, $e->getMessage());
+        }
+    }
+
+    public static function getDatosComprobanteAjuste($datos)
+    {
+        $qry = <<<SQL
+            SELECT
+                V.ID
+                , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
+                , GET_NOMBRE_USUARIO(V.ENTREGA_USUARIO) AS ENTREGA_NOMBRE
+                , V.ENTREGA_MONTO
+                , V.COMPROBACION_MONTO
+                , V.DIFERENCIA_MONTO
+            FROM
+                VIATICOS V
+            WHERE
+                V.ID = :solicitudId
+        SQL;
+
+        $val = [
+            'solicitudId' => $datos['solicitudId']
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryOne($qry, $val);
+            if (!$r) return self::resultado(false, 'No se encontró el comprobante.');
+            return self::resultado(true, 'Comprobante encontrado.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
         }
     }
 }
