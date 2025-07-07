@@ -44,7 +44,7 @@ class Viaticos extends Model
                     WHEN V.TIPO = 2 THEN 'Gastos'
                     ELSE 'Desconocido'
                 END AS TIPO_NOMBRE
-                , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD') AS REGISTRO
+                , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD HH24:MI:SS') AS REGISTRO
                 , V.PROYECTO
                 , TO_CHAR(V.DESDE, 'YYYY-MM-DD') AS DESDE
                 , TO_CHAR(V.HASTA, 'YYYY-MM-DD') AS HASTA
@@ -806,7 +806,7 @@ class Viaticos extends Model
                 , TO_CHAR(V.DESDE, 'YYYY-MM-DD') AS DESDE
                 , TO_CHAR(V.HASTA, 'YYYY-MM-DD') AS HASTA
                 , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
-                , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD') AS FECHA_REGISTRO
+                , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD HH24:MI:SS') AS FECHA_REGISTRO
                 , V.MONTO
                 , V.ESTATUS AS ESTATUS_ID
                 , CEV.NOMBRE AS ESTATUS_NOMBRE
@@ -1164,10 +1164,9 @@ class Viaticos extends Model
             UPDATE
                 VIATICOS
             SET
-                ESTATUS = CASE 
-                    WHEN TIPO = 1 THEN 6
-                    WHEN TIPO = 2 THEN 5
-                    ELSE ESTATUS
+                ESTATUS = CASE WHEN COMPROBACION_MONTO = ENTREGA_MONTO
+                    THEN (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'FINALIZADA')
+                    ELSE (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'VALIDADA')
                 END
             WHERE
                 ID = :id
@@ -1207,7 +1206,7 @@ class Viaticos extends Model
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
             WHERE
-                CEV.NOMBRE = 'FINALIZADA'
+                CEV.NOMBRE = 'VALIDADA'
                 AND (NVL(V.COMPROBACION_MONTO, 0) - NVL(V.ENTREGA_MONTO, 0)) <> 0
                 AND V.DIFERENCIA_MONTO IS NULL
                 AND TRUNC(V.ACTUALIZADO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')

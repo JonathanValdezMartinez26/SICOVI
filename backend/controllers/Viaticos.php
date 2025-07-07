@@ -153,17 +153,6 @@ class Viaticos extends Controller
                 }
 
                 const getTarjetaSolicitud = (color, titulo, total) => {
-                    let descripcion = "Estatus desconocido"
-                    if (titulo == catEstatus_VG.solicitada) descripcion = "Solicitud de viáticos registrada"
-                    if (titulo == catEstatus_VG.autorizada) descripcion = "Viáticos autorizados por el jefe"
-                    if (titulo == catEstatus_VG.entregada) descripcion = "Viáticos entregados al usuario"
-                    if (titulo == catEstatus_VG.comprobada) descripcion = "Gastos comprobados por el usuario"
-                    if (titulo == catEstatus_VG.aceptada) descripcion = "Comprobantes autorizados por el jefe"
-                    if (titulo == catEstatus_VG.validada) descripcion = "Comprobantes de gastos validados por tesorería"
-                    if (titulo == catEstatus_VG.finalizada) descripcion = "Comprobación gastos finalizada"
-                    if (titulo == catEstatus_VG.cancelada) descripcion = "Solicitud cancelada por el usuario"
-                    if (titulo == catEstatus_VG.rechazada) descripcion = "Rechazada por el jefe"
-
                     return (
                         "<div class='col-auto'>" +
                             "<div class='card'>" +
@@ -173,7 +162,6 @@ class Viaticos extends Controller
                                             "<span class='badge rounded-pill " + color + "'>" + titulo + "</span>" +
                                         "</div>" +
                                         "<h4 class='card-title mb-0 me-2'>" + total + "</h4>" +
-                                        "<span class='text-muted small'>" + descripcion + "</span>" +
                                     "</div>" +
                                 "</div>" +
                             "</div>" +
@@ -1501,6 +1489,7 @@ class Viaticos extends Controller
                             $("#btnVerListado").attr("data-bs-target", "#modalVerComprobantes")
                             $("#btnVerListado").html("<i class='far fa-eye'>&nbsp;</i>Comprobantes")
                             $("#montoAutorizado").attr("disabled", true)
+                            $("#montoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_DECIMAL))
                             $("#autorizar").attr("tipo", tipos.comprobacion)
                             $("#rechazar").hide()
                             $("#tbodyComprobantes").empty()
@@ -1514,6 +1503,7 @@ class Viaticos extends Controller
                             $("#btnVerListado").attr("data-bs-target", "#modalVerConceptos")
                             $("#btnVerListado").html("<i class='far fa-eye'>&nbsp;</i>Conceptos")
                             $("#montoAutorizado").attr("disabled", false)
+                            $("#montoAutorizado").val("")
                             $("#autorizar").attr("tipo", tipos.solicitud)
                             $("#rechazar").show()
                             $("#tbodyConceptos").empty()
@@ -1533,7 +1523,6 @@ class Viaticos extends Controller
                         $("#verProyecto").val(informacion.PROYECTO)
                         $("#verFechaI").val(moment(informacion.DESDE).format(MOMENT_FRONT))
                         $("#verFechaF").val(moment(informacion.HASTA).format(MOMENT_FRONT))
-                        $("#montoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_DECIMAL))
                         //$("#observacionesAutorizacion").val(informacion.AUTORIZACION_OBSERVACION)
                         $("#modalVerAutorizacion").modal("show")
                     })
