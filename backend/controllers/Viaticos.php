@@ -1489,7 +1489,7 @@ class Viaticos extends Controller
                             $("#btnVerListado").attr("data-bs-target", "#modalVerComprobantes")
                             $("#btnVerListado").html("<i class='far fa-eye'>&nbsp;</i>Comprobantes")
                             $("#montoAutorizado").attr("disabled", true)
-                            $("#montoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_DECIMAL))
+                            $("#montoAutorizado").val(numeral(informacion.COMPROBACION_MONTO).format(NUMERAL_DECIMAL))
                             $("#autorizar").attr("tipo", tipos.comprobacion)
                             $("#rechazar").hide()
                             $("#tbodyComprobantes").empty()
@@ -2580,7 +2580,7 @@ class Viaticos extends Controller
                         $("#verMontoComprobado").val(numeral(informacion.COMPROBACION_MONTO).format(NUMERAL_MONEDA))
                         
                         const diferencia = numeral(informacion.COMPROBACION_MONTO)
-                        .subtract(informacion.ENTREGA_MONTO)
+                        .subtract(informacion.ENTREGA_MONTO || 0)
                         
                         $("#verMontoDiferencia").val(diferencia.format(NUMERAL_MONEDA))
                         if (diferencia.value() < 0) {

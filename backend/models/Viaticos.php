@@ -865,7 +865,7 @@ class Viaticos extends Model
                 ESTATUS = (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = :autorizado)
                 , AUTORIZACION_USUARIO = :usuario
                 , AUTORIZACION_FECHA = SYSDATE
-                , AUTORIZACION_MONTO = :monto
+                , AUTORIZACION_MONTO = CASE WHEN TIPO = 2 AND AUTORIZACION_MONTO IS NULL THEN COMPROBACION_MONTO ELSE TO_NUMBER(:monto) END
                 , AUTORIZACION_OBSERVACION = :observaciones
             WHERE
                 ID = :id
@@ -875,7 +875,7 @@ class Viaticos extends Model
             'id' => $datos['solicitudId'],
             'usuario' => $datos['usuario'],
             'autorizado' => $datos['autorizado'],
-            'monto' => $datos['monto'],
+            'monto' => isset($datos['monto']) ? $datos['monto'] : null,
             'observaciones' => null
         ];
 
@@ -1254,11 +1254,12 @@ class Viaticos extends Model
             UPDATE
                 VIATICOS
             SET
-                DIFERENCIA_MONTO = COMPROBACION_MONTO - ENTREGA_MONTO
+                DIFERENCIA_MONTO = COMPROBACION_MONTO - NVL(ENTREGA_MONTO, 0)   
                 , DIFERENCIA_FECHA = SYSDATE
                 , DIFERENCIA_USUARIO = :usuario
                 , DIFERENCIA_SUCURSAL = :sucursal
                 , DIFERENCIA_OBSERVACION = :observaciones
+                , ESTATUS = (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'FINALIZADA')
             WHERE
                 ID = :id
         SQL;
