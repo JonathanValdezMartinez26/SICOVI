@@ -46,6 +46,16 @@ function getMenu()
                 ]
             ]
         ],
+        'RH' => [
+            'icono' => 'fa-solid fa-users',
+            'subItems' => [
+                [
+                    'label' => 'Gestión RH',
+                    'url' => '/Rh/GestionRh',
+                    'permisos' => ['1', '2']
+                ]
+            ]
+        ],
         'Reportería' => [
             'icono' => 'fa-solid fa-file',
             'subItems' => [

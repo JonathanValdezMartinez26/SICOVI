@@ -48,7 +48,7 @@ class Usuarios extends Controller
 
         self::set("titulo", "Solicitud de Viáticos");
         self::set("script", $script);
-        self::render("empresas_all");
+        self::render("usuarios_all");
     }
 
     public function detalles($usuario)
@@ -99,5 +99,4 @@ class Usuarios extends Controller
     {
         self::respuestaJSON(EmpresasDAO::getConsultaEmpresas($_POST));
     }
-
 }

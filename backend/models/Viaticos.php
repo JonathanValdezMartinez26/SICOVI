@@ -1232,7 +1232,7 @@ class Viaticos extends Model
     {
         $qryO = <<<SQL
             INSERT INTO VIATICOS_OBSERVACIONES (OBSERVACION, USUARIO, VIATICOS, ESTATUS)
-            VALUES (:observaciones, :usuario, :viaticos, (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'FINALIZADA'))
+            VALUES (:observaciones, :usuario, :viaticos, (SELECT ESTATUS FROM VIATICOS WHERE ID = :viaticos))
             RETURNING ID INTO :id
         SQL;
 
