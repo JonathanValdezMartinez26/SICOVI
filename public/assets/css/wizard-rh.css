@@ -22,6 +22,10 @@
     width: 100%;
 }
 
+.bs-stepper-label {
+    text-align: center !important;
+}
+
 .wizard-icons-example .bs-stepper-header .step-trigger:hover {
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.9);

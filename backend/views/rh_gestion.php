@@ -1,4 +1,4 @@
-<h4>Gestión de Recursos Humanos</h4>
+<h4>Gestión de Capital Humano</h4>
 
 <div class="card">
     <div class="row justify-content-between m-4">
@@ -11,7 +11,7 @@
             </div>
         </div>
         <div class="col-4 d-flex align-self-end justify-content-end">
-            <button id="btnNuevaPersona" class="btn btn-info"><i class="fa fa-plus">&nbsp;</i>Registrar Persona</button>
+            <button id="btnNuevaPersona" class="btn btn-info"><i class="fa fa-plus">&nbsp;</i>Registrar Colaborador</button>
         </div>
     </div>
     <div class="card-datatable table-responsive">
@@ -20,6 +20,7 @@
                 <tr>
                     <th></th>
                     <th>ID</th>
+                    <th>Foto</th>
                     <th>Nombre Completo</th>
                     <th>RFC</th>
                     <th>CURP</th>
@@ -41,7 +42,7 @@
             <div class="modal-header">
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 <div class="text-center w-100">
-                    <h4 id="tituloModalPersona" class="address-title mb-2">Registrar nueva persona</h4>
+                    <h4 id="tituloModalPersona" class="address-title mb-2">Registrar nuevo colaborador</h4>
                     <p class="address-subtitle">Complete los siguientes pasos para el registro</p>
                 </div>
             </div>
@@ -51,7 +52,7 @@
                 <!-- Wizard Container -->
                 <div class="bs-stepper wizard-icons-example">
                     <div class="bs-stepper-header">
-                        <div class="step" data-target="#datos-personales">
+                        <div class="step justify-center" data-target="#datos-personales">
                             <button type="button" class="step-trigger">
                                 <span class="bs-stepper-circle">
                                     <i class="fa fa-user"></i>
@@ -62,7 +63,17 @@
                                 </span>
                             </button>
                         </div>
-                        <div class="line"></div>
+                        <div class="step" data-target="#datos-empresa">
+                            <button type="button" class="step-trigger">
+                                <span class="bs-stepper-circle">
+                                    <i class="fa fa-building"></i>
+                                </span>
+                                <span class="bs-stepper-label">
+                                    <span class="bs-stepper-title">Empresa</span>
+                                    <span class="bs-stepper-subtitle">Información laboral</span>
+                                </span>
+                            </button>
+                        </div>
                         <div class="step" data-target="#datos-usuario">
                             <button type="button" class="step-trigger">
                                 <span class="bs-stepper-circle">
@@ -74,7 +85,6 @@
                                 </span>
                             </button>
                         </div>
-                        <div class="line"></div>
                         <div class="step" data-target="#confirmacion">
                             <button type="button" class="step-trigger">
                                 <span class="bs-stepper-circle">
@@ -166,48 +176,140 @@
                                 </div>
                             </div>
 
-                            <!-- Paso 2: Datos de Usuario -->
+                            <!-- Paso 2: Datos de Empresa -->
+                            <div id="datos-empresa" class="content">
+                                <div class="content-header mb-4">
+                                    <h6 class="mb-0">Información Laboral</h6>
+                                    <small>Configure la información de empresa y puesto de trabajo.</small>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="empresaWizard" class="form-label">Registro Base</label>
+                                        <select id="empresaWizard" name="empresaWizard" class="form-select">
+                                            <option value="" selected disabled>Seleccione una empresa</option>
+                                            <?= $empresas ?? '' ?>
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="sucursalWizard" class="form-label">Oficina Base</label>
+                                        <select id="sucursalWizard" name="sucursalWizard" class="form-select">
+                                            <option value="" selected disabled>Seleccione una sucursal</option>
+                                            <?= $sucursales ?? '' ?>
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="regionWizard" class="form-label">Región</label>
+                                        <input type="text" id="regionWizard" name="regionWizard" class="form-control" disabled>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="nomina" class="form-label">Nómina</label>
+                                        <select id="nomina" name="nomina" class="form-select">
+                                            <option value="" selected disabled>Seleccione tipo</option>
+                                            <option value="Ejecutivos">Ejecutivos</option>
+                                            <option value="Empleados">Empleados</option>
+                                            <option value="Operarios">Operarios</option>
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="tipoNomina" class="form-label">Tipo de Nómina</label>
+                                        <select id="tipoNomina" name="tipoNomina" class="form-select">
+                                            <option value="" selected disabled>Seleccione frecuencia</option>
+                                            <option value="Semanal">Semanal</option>
+                                            <option value="Quincenal">Quincenal</option>
+                                            <option value="Mensual">Mensual</option>
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="numeroNomina" class="form-label"># de Nómina</label>
+                                        <input type="text" id="numeroNomina" name="numeroNomina" class="form-control" maxlength="10">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="jefeInmediato" class="form-label">Jefe Inmediato</label>
+                                        <select id="jefeInmediato" name="jefeInmediato" class="form-select">
+                                            <option value="" selected disabled>Seleccione un jefe</option>
+                                            <!-- Se cargará vía AJAX -->
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="reporta" class="form-label">Reporta a</label>
+                                        <select id="reporta" name="reporta" class="form-select">
+                                            <option value="" selected disabled>Seleccione a quien reporta</option>
+                                            <!-- Se cargará vía AJAX -->
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="puesto" class="form-label">Puesto</label>
+                                        <select id="puesto" name="puesto" class="form-select">
+                                            <option value="" selected disabled>Seleccione un puesto</option>
+                                            <option value="Gerente General">Gerente General</option>
+                                            <option value="Gerente de Área">Gerente de Área</option>
+                                            <option value="Supervisor">Supervisor</option>
+                                            <option value="Coordinador">Coordinador</option>
+                                            <option value="Analista">Analista</option>
+                                            <option value="Asistente">Asistente</option>
+                                            <option value="Auxiliar">Auxiliar</option>
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="correoEmpresa" class="form-label">Correo Electrónico Empresa</label>
+                                        <div id="correosContainer">
+                                            <div class="input-group mb-2">
+                                                <input type="email" name="correoEmpresa[]" class="form-control" placeholder="correo@empresa.com">
+                                                <button type="button" class="btn btn-outline-success" onclick="agregarCorreo()">
+                                                    <i class="fa fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 d-flex justify-content-between mt-4">
+                                    <button class="btn btn-primary btn-prev">
+                                        <i class="bx bx-left-arrow-alt bx-sm ms-sm-n2 me-sm-2"></i>
+                                        <span class="align-middle d-sm-inline-block d-none">Anterior</span>
+                                    </button>
+                                    <button class="btn btn-primary btn-next" id="sigEmpresa">
+                                        <span class="align-middle d-sm-inline-block d-none me-sm-2">Siguiente</span>
+                                        <i class="bx bx-right-arrow-alt bx-sm me-sm-n2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Paso 3: Datos de Usuario -->
                             <div id="datos-usuario" class="content">
                                 <div class="content-header mb-4">
                                     <h6 class="mb-0">Usuario del Sistema</h6>
                                     <small>Configure las credenciales de acceso al sistema.</small>
                                 </div>
                                 <div class="row g-3">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <label for="usuario" class="form-label">Usuario</label>
-                                        <input type="text" id="usuario" name="usuario" class="form-control" maxlength="20">
+                                        <input type="text" id="usuario" name="usuario" class="form-control" maxlength="20" placeholder="Coloca aquí el RFC del colaborador">
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label for="pass" class="form-label">Contraseña</label>
-                                        <input type="password" id="pass" name="pass" class="form-control" minlength="6">
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="password">Contraseña</label>
+                                        <div class="input-group input-group-merge">
+                                            <input
+                                                type="password"
+                                                id="password"
+                                                class="form-control"
+                                                name="password"
+                                                placeholder="Ingresa la contraseña"
+                                                aria-describedby="password" />
+                                            <i class="input-group-text cursor-pointer fa fa-eye-slash z-15" id="passwordIcon" onclick="togglePassword()"></i>
+                                        </div>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label for="empresa" class="form-label">Empresa</label>
-                                        <select id="empresa" name="empresa" class="form-select">
-                                            <option value="" selected disabled>Seleccione una empresa</option>
-                                            <?= $empresas ?? '' ?>
-                                        </select>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="region" class="form-label">Región</label>
-                                        <select id="region" name="region" class="form-select">
-                                            <option value="" selected disabled>Seleccione una región</option>
-                                            <?= $regiones ?? '' ?>
-                                        </select>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="sucursal" class="form-label">Sucursal</label>
-                                        <select id="sucursal" name="sucursal" class="form-select">
-                                            <option value="" selected disabled>Seleccione una sucursal</option>
-                                            <?= $sucursales ?? '' ?>
-                                        </select>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                                    </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <label for="perfil" class="form-label">Perfil de Usuario</label>
                                         <select id="perfil" name="perfil" class="form-select">
                                             <option value="" selected disabled>Seleccione un perfil</option>
@@ -230,44 +332,80 @@
                                 </div>
                             </div>
 
-                            <!-- Paso 3: Confirmación -->
+                            <!-- Paso 4: Confirmación -->
                             <div id="confirmacion" class="content">
                                 <div class="content-header mb-4">
                                     <h6 class="mb-0">Confirmación de Registro</h6>
                                     <small>Revise la información antes de proceder con el registro.</small>
                                 </div>
                                 <div class="row">
-                                    <div class="col-md-4 text-center">
-                                        <h6 class="mb-3">Fotografía</h6>
-                                        <img id="resumenFoto" src="/assets/img/misc/user.svg" alt="Foto de usuario" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #ddd;">
+                                    <!-- Foto y Datos Personales -->
+                                    <div class="col-md-4">
+                                        <div class="text-center mb-3">
+                                            <h6 class="mb-3">Fotografía</h6>
+                                            <img id="resumenFoto" src="/assets/img/misc/user.svg" alt="Foto de usuario" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #ddd;">
+                                        </div>
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">Datos Personales</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p class="mb-1"><strong>Nombre:</strong> <span id="resumenNombre">-</span></p>
+                                                <p class="mb-1"><strong>RFC:</strong> <span id="resumenRfc">-</span></p>
+                                                <p class="mb-1"><strong>CURP:</strong> <span id="resumenCurp">-</span></p>
+                                                <p class="mb-1"><strong>Fecha Nac.:</strong> <span id="resumenFechaNac">-</span></p>
+                                                <p class="mb-0"><strong>Sexo:</strong> <span id="resumenSexo">-</span></p>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    <!-- Información Laboral -->
                                     <div class="col-md-8">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h6 class="mb-0">Resumen de Información</h6>
+                                                <h6 class="mb-0">Información Laboral</h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
                                                     <div class="col-md-6">
-                                                        <h6 class="text-muted mb-2">Datos Personales:</h6>
-                                                        <p class="mb-1"><strong>Nombre:</strong> <span id="resumenNombre">-</span></p>
-                                                        <p class="mb-1"><strong>RFC:</strong> <span id="resumenRfc">-</span></p>
-                                                        <p class="mb-1"><strong>CURP:</strong> <span id="resumenCurp">-</span></p>
-                                                        <p class="mb-1"><strong>Fecha Nac.:</strong> <span id="resumenFechaNac">-</span></p>
-                                                        <p class="mb-0"><strong>Sexo:</strong> <span id="resumenSexo">-</span></p>
+                                                        <p class="mb-1"><strong>Registro Base:</strong> <span id="resumenEmpresa">-</span></p>
+                                                        <p class="mb-1"><strong>Región:</strong> <span id="resumenRegion">-</span></p>
+                                                        <p class="mb-1"><strong>Oficina Base:</strong> <span id="resumenSucursal">-</span></p>
+                                                        <p class="mb-1"><strong>Puesto:</strong> <span id="resumenPuesto">-</span></p>
+                                                        <p class="mb-0"><strong>Nómina:</strong> <span id="resumenNomina">-</span></p>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <h6 class="text-muted mb-2">Usuario del Sistema:</h6>
-                                                        <p class="mb-1"><strong>Usuario:</strong> <span id="resumenUsuario">-</span></p>
-                                                        <p class="mb-0"><strong>Empresa:</strong> <span id="resumenEmpresa">-</span></p>
-                                                        <p class="mb-1"><strong>Región:</strong> <span id="resumenRegion">-</span></p>
-                                                        <p class="mb-1"><strong>Sucursal:</strong> <span id="resumenSucursal">-</span></p>
-                                                        <p class="mb-1"><strong>Perfil:</strong> <span id="resumenPerfil">-</span></p>
+                                                        <p class="mb-1"><strong>Tipo Nómina:</strong> <span id="resumenTipoNomina">-</span></p>
+                                                        <p class="mb-1"><strong># Nómina:</strong> <span id="resumenNumeroNomina">-</span></p>
+                                                        <p class="mb-1"><strong>Jefe Inmediato:</strong> <span id="resumenJefeInmediato">-</span></p>
+                                                        <p class="mb-1"><strong>Reporta a:</strong> <span id="resumenReporta">-</span></p>
+                                                        <p class="mb-0"><strong>Correos Empresa:</strong> <span id="resumenCorreosEmpresa">-</span></p>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="alert alert-info mt-3" role="alert">
+
+                                        <!-- Usuario del Sistema (card angosto) -->
+                                        <div class="row mt-1">
+                                            <div class="col-12 mx-auto">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <h6 class="mb-0">Usuario del Sistema</h6>
+                                                    </div>
+                                                    <div class="d-flex justify-content-around m-5">
+                                                        <p class="mb-1"><strong>Usuario:</strong> <span id="resumenUsuario">-</span></p>
+                                                        <p class="mb-0"><strong>Perfil:</strong> <span id="resumenPerfil">-</span></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Mensaje de confirmación -->
+                                <div class="row mt-3">
+                                    <div class="col-12 mx-auto">
+                                        <div class="alert alert-info" role="alert">
                                             <h6 class="alert-heading mb-2">
                                                 <i class="bx bx-info-circle me-2"></i>Confirmación de Registro
                                             </h6>
@@ -275,6 +413,7 @@
                                         </div>
                                     </div>
                                 </div>
+
                                 <div class="col-12 d-flex justify-content-between mt-4">
                                     <button class="btn btn-primary btn-prev">
                                         <i class="bx bx-left-arrow-alt bx-sm ms-sm-n2 me-sm-2"></i>

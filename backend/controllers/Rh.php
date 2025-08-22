@@ -39,7 +39,7 @@ class Rh extends Controller
                             btn.addEventListener('click', () => {
                                 if (validarPasoActual()) {
                                     wizardPersona.next()
-                                    if (wizardPersona._currentIndex === 2) {
+                                    if (wizardPersona._currentIndex === 3) {
                                         llenarResumen()
                                     }
                                 }
@@ -63,8 +63,10 @@ class Rh extends Controller
                         case 0:
                             return validarDatosPersonales()
                         case 1:
-                            return validarDatosUsuario()
+                            return validarDatosEmpresa()
                         case 2:
+                            return validarDatosUsuario()
+                        case 3:
                             return true
                         default:
                             return true
@@ -110,11 +112,42 @@ class Rh extends Controller
                     return valido
                 }
 
+                const validarDatosEmpresa = () => {
+                    let valido = true
+                    $('.fv-message').text('')
+                    
+                    const campos = ['empresaWizard', 'sucursalWizard', 'puesto', 'nomina', 'tipoNomina', 'numeroNomina']
+                    
+                    campos.forEach(campo => {
+                        const valor = $(`#\${campo}`).val()
+                        if (!valor || valor.trim() === '') {
+                            $(`#\${campo}`).siblings('.fv-message').text('Este campo es requerido')
+                            valido = false
+                        }
+                    })
+
+                    // Validar al menos un correo empresarial
+                    const correos = $('input[name="correoEmpresa[]"]').filter(function() {
+                        return $(this).val().trim() !== ''
+                    })
+                    
+                    if (correos.length === 0) {
+                        $('#correosContainer .fv-message').first().text('Debe agregar al menos un correo empresarial')
+                        valido = false
+                    }
+
+                    if (!valido) {
+                        showError('Por favor complete todos los campos requeridos del paso empresa')
+                    }
+
+                    return valido
+                }
+
                 const validarDatosUsuario = () => {
                     let valido = true
                     $('.fv-message').text('')
                     
-                    const campos = ['usuario', 'pass', 'region', 'sucursal', 'perfil', 'empresa']
+                    const campos = ['usuario', 'pass', 'perfil']
                     
                     campos.forEach(campo => {
                         const valor = $(`#\${campo}`).val()
@@ -144,17 +177,36 @@ class Rh extends Controller
                     const apellido2 = $('#apellido2').val() || ''
                     const nombreCompleto = nombre + ' ' + apellido1 + ' ' + apellido2
 
+                    // Datos personales
                     $('#resumenFoto').attr('src', fotoSrc)
                     $('#resumenNombre').text(nombreCompleto.trim())
                     $('#resumenRfc').text($('#rfc').val())
                     $('#resumenCurp').text($('#curp').val())
                     $('#resumenFechaNac').text($('#fechaNacimiento').val())
                     $('#resumenSexo').text($('#sexo option:selected').text())
+                    
+                    // Datos empresa
+                    $('#resumenEmpresa').text($('#empresaWizard option:selected').text())
+                    $('#resumenRegion').text($('#regionWizard').val())
+                    $('#resumenSucursal').text($('#sucursalWizard option:selected').text())
+                    $('#resumenPuesto').text($('#puesto option:selected').text())
+                    $('#resumenNomina').text($('#nomina option:selected').text())
+                    $('#resumenTipoNomina').text($('#tipoNomina option:selected').text())
+                    $('#resumenNumeroNomina').text($('#numeroNomina').val())
+                    $('#resumenJefeInmediato').text($('#jefeInmediato option:selected').text())
+                    $('#resumenReporta').text($('#reporta option:selected').text())
+                    
+                    // Correos empresariales
+                    const correos = []
+                    $('input[name="correoEmpresa[]"]').each(function() {
+                        const valor = $(this).val().trim()
+                        if (valor) correos.push(valor)
+                    })
+                    $('#resumenCorreosEmpresa').text(correos.join(', '))
+                    
+                    // Datos usuario
                     $('#resumenUsuario').text($('#usuario').val())
-                    $('#resumenRegion').text($('#region option:selected').text())
-                    $('#resumenSucursal').text($('#sucursal option:selected').text())
                     $('#resumenPerfil').text($('#perfil option:selected').text())
-                    $('#resumenEmpresa').text($('#empresa option:selected').text())
                 }
 
                 const confirmaEliminar = (mensaje, callback) => {
@@ -172,6 +224,48 @@ class Rh extends Controller
                             callback()
                         }
                     })
+                }
+                
+                
+                // Función para agregar correos adicionales
+                const agregarCorreo = () => {
+                    const container = $('#correosContainer')
+                    const nuevoCorreo = '<div class="input-group mb-2"><input type="email" name="correoEmpresa[]" class="form-control" placeholder="correo@empresa.com"><button type="button" class="btn btn-outline-danger" onclick="eliminarCorreo(this)"><i class="fa fa-minus"></i></div>'
+                    container.append(nuevoCorreo)
+                }
+                
+                // Función para eliminar correo
+                const eliminarCorreo = (btn) => {
+                    $(btn).closest('.input-group').remove()
+                }
+                
+                // Función para toggle de contraseña
+                const togglePassword = () => {
+                    const passwordField = document.getElementById('pass')
+                    const passwordIcon = document.getElementById('passwordIcon')
+                    
+                    if (passwordField && passwordIcon) {
+                        if (passwordField.type === 'password') {
+                            passwordField.type = 'text'
+                            passwordIcon.classList.remove('fa-eye-slash')
+                            passwordIcon.classList.add('fa-eye')
+                        } else {
+                            passwordField.type = 'password'
+                            passwordIcon.classList.remove('fa-eye')
+                            passwordIcon.classList.add('fa-eye-slash')
+                        }
+                    }
+                }
+                
+                // Función para llenar región automáticamente
+                const actualizarRegion = () => {
+                    const sucursalId = $('#sucursalWizard').val()
+                    if (sucursalId) {
+                        // Aquí se haría una consulta AJAX para obtener la región
+                        // Por ahora simularemos con datos estáticos
+                        const regionTexto = "Región " + sucursalId // Placeholder
+                        $('#regionWizard').val(regionTexto)
+                    }
                 }
                 
                 let modoEdicion = false
@@ -323,9 +417,13 @@ class Rh extends Controller
                                 clase: "text-danger delete-record"
                             }
                             
+                            const fotoUrl = persona.FOTO ? "/uploads/fotos/" + persona.FOTO : "/assets/img/misc/user.svg"
+                            const fotoHtml = '<img src="' + fotoUrl + '" alt="Foto" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">'
+
                             return [
                                 null,
                                 persona.ID,
+                                fotoHtml,
                                 persona.NOMBRE + " " + persona.APELLIDO_1 + " " + (persona.APELLIDO_2 || ""),
                                 persona.RFC,
                                 persona.CURP,
@@ -342,7 +440,7 @@ class Rh extends Controller
                 const nuevaPersona = () => {
                     limpiarPersona()
                     $("#modalPersona").modal("show")
-                    $("#tituloModalPersona").text("Registrar nueva persona")
+                    $("#tituloModalPersona").text("Registrar nuevo colaborador")
                     $("#personaId").val("")
                     
                     if (wizardPersona) {
@@ -433,10 +531,12 @@ class Rh extends Controller
                 }
 
                 const guardarPersona = () => {
-                    if (!validarDatosPersonales() || !validarDatosUsuario()) {
+                    if (!validarDatosPersonales() || !validarDatosEmpresa() || !validarDatosUsuario()) {
                         showError('Por favor complete todos los campos requeridos')
                         return
                     }
+
+                    const fecha = getInputFechas("#fechaNacimiento", false, true)
 
                     const datos = {
                         id: $("#personaId").val(),
@@ -445,15 +545,28 @@ class Rh extends Controller
                         apellido2: $("#apellido2").val(),
                         rfc: $("#rfc").val(),
                         curp: $("#curp").val(),
-                        fechaNacimiento: moment($("#fechaNacimiento").val()).format(MOMENT_BACK),
+                        fechaNacimiento: fecha,
                         sexo: $("#sexo").val(),
                         usuario: $("#usuario").val(),
                         pass: $("#pass").val(),
-                        region: $("#region").val(),
-                        sucursal: $("#sucursal").val(),
                         perfil: $("#perfil").val(),
-                        empresa: $("#empresa").val()
+                        empresa: $("#empresaWizard").val(),
+                        region: $("#regionWizard").val(),
+                        sucursal: $("#sucursalWizard").val(),
+                        puesto: $("#puesto").val(),
+                        nomina: $("#nomina").val(),
+                        tipoNomina: $("#tipoNomina").val(),
+                        numeroNomina: $("#numeroNomina").val(),
+                        jefeInmediato: $("#jefeInmediato").val(),
+                        reporta: $("#reporta").val(),
+                        correosEmpresa: []
                     }
+                    
+                    // Recopilar correos empresariales
+                    $('input[name="correoEmpresa[]"]').each(function() {
+                        const correo = $(this).val().trim()
+                        if (correo) datos.correosEmpresa.push(correo)
+                    })
 
                     consultaServidor("/rh/guardarPersona", datos, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
@@ -474,10 +587,20 @@ class Rh extends Controller
                     $("#sexo").val("")
                     $("#usuario").val("")
                     $("#pass").val("")
-                    $("#region").val("")
-                    $("#sucursal").val("")
                     $("#perfil").val("")
-                    $("#empresa").val("")
+                    $("#empresaWizard").val("")
+                    $("#regionWizard").val("")
+                    $("#sucursalWizard").val("")
+                    $("#puesto").val("")
+                    $("#nomina").val("")
+                    $("#tipoNomina").val("")
+                    $("#numeroNomina").val("")
+                    $("#jefeInmediato").val("")
+                    $("#reporta").val("")
+                    
+                    // Limpiar correos empresariales
+                    $('#correosContainer').html('<div class="input-group mb-2"><input type="email" name="correoEmpresa[]" class="form-control" placeholder="correo@empresa.com"><button type="button" class="btn btn-outline-success" onclick="agregarCorreo()"><i class="fa fa-plus"></i></button></div>')
+                    
                     $("#fotoInput").val("")
                     $("#fotoPreview").attr("src", "/assets/img/misc/user.svg")
                     $('.fv-message').text('')
@@ -618,6 +741,12 @@ class Rh extends Controller
                     configuraTabla(tabla)
                     initWizard()
                     getPersonas()
+
+                    
+                // Declarar funciones globalmente para uso en onclick
+                window.agregarCorreo = agregarCorreo
+                window.eliminarCorreo = eliminarCorreo
+                window.togglePassword = togglePassword
                     
                     $("#btnBuscar").click(() => getPersonas())
                     $("#btnNuevaPersona").click(nuevaPersona)
@@ -632,6 +761,14 @@ class Rh extends Controller
                     
                     $(document).on('click', '#btnGuardarPersona', guardarPersona)
                     $(document).on('click', '#btnGuardarUsuario', guardarUsuario)
+                    
+                    // Event listener para toggle de contraseña
+                    $(document).on('click', '#togglePassword', togglePassword)
+                    
+                    // También agregar event listener directo cuando el modal se abra
+                    $('#modalPersona').on('shown.bs.modal', function() {
+                        $('#togglePassword').off('click').on('click', togglePassword)
+                    })
                     
                     $("#filtroTabla").on("keyup", function() {
                         const valor = $(this).val().toLowerCase()
@@ -650,6 +787,20 @@ class Rh extends Controller
                         const valor = $(this).val()
                         if (valor && valor.trim() !== '') {
                             $(this).siblings('.fv-message').text('')
+                        }
+                    })
+                    
+                    // Event listeners para el nuevo paso de empresa
+                    $('#sucursalWizard').change(actualizarRegion)
+                    
+                    // Event listener para llenar reporta cuando se selecciona jefe inmediato
+                    $('#jefeInmediato').change(function() {
+                        const valor = $(this).val()
+                        const texto = $(this).find('option:selected').text()
+                        if (valor) {
+                            $('#reporta').val(valor)
+                            $('#reporta option').prop('selected', false)
+                            $('#reporta option[value="' + valor + '"]').prop('selected', true)
                         }
                     })
                 })
@@ -681,7 +832,7 @@ class Rh extends Controller
             }
         }
 
-        $this->set('titulo', 'Gestión RH | ' . CONFIGURACION['EMPRESA']);
+        $this->set('titulo', 'Gestión Capital Humano | ' . CONFIGURACION['EMPRESA']);
         $this->set('script', $script);
         $this->set('css', '<link rel="stylesheet" href="/assets/css/wizard-rh.css">');
         $this->set("regiones", $regiones);

@@ -46,11 +46,11 @@ function getMenu()
                 ]
             ]
         ],
-        'RH' => [
+        'Capital Humano' => [
             'icono' => 'fa-solid fa-users',
             'subItems' => [
                 [
-                    'label' => 'Gestión RH',
+                    'label' => 'Gestión CH',
                     'url' => '/Rh/GestionRh',
                     'permisos' => ['1', '2']
                 ]
