@@ -15,12 +15,14 @@ class Rh extends Model
         $params = [];
 
         if (!empty($filtro)) {
-            $where = "AND (UPPER(P.NOMBRE) LIKE UPPER(:filtro) 
+            $where = "(UPPER(P.NOMBRE) LIKE UPPER(:filtro) 
                      OR UPPER(P.APELLIDO_1) LIKE UPPER(:filtro)
                      OR UPPER(P.APELLIDO_2) LIKE UPPER(:filtro)
                      OR UPPER(P.RFC) LIKE UPPER(:filtro)
                      OR UPPER(P.CURP) LIKE UPPER(:filtro))";
             $params['filtro'] = "%$filtro%";
+        } else {
+            $where = "P.ESTATUS = 1";
         }
 
         $qry = <<<SQL
@@ -37,7 +39,6 @@ class Rh extends Model
             FROM
                 PERSONA P
             WHERE
-                P.ESTATUS = 1
             $where
             ORDER BY
                 P.NOMBRE, P.APELLIDO_1, P.APELLIDO_2
@@ -79,9 +80,12 @@ class Rh extends Model
             SELECT
                 U.ID,
                 U.USUARIO,
-                U.ESTATUS
+                U.ESTATUS,
+                U.SUCURSAL,
+                S.NOMBRE AS SUCURSAL_NOMBRE
             FROM
                 USUARIO U
+                LEFT JOIN SUCURSAL S ON U.SUCURSAL = S.ID
             WHERE
                 U.PERSONA = :id
             ORDER BY
@@ -121,21 +125,21 @@ class Rh extends Model
         $sexo = $datos['sexo'] ?? '';
         $usuario = $datos['usuario'] ?? '';
         $pass = $datos['pass'] ?? '';
+        $region = $datos['region'] ?? '';
+        $sucursal = $datos['sucursal'] ?? '';
+        $perfil = $datos['perfil'] ?? '';
+        $empresa = $datos['empresa'] ?? '';
 
         try {
             $db = new Database();
             $db->beginTransaction();
 
             if (empty($id)) {
-                // Obtener el siguiente ID para la persona
-                $qryNextId = "SELECT NVL(MAX(ID), 0) + 1 AS NEXT_ID FROM PERSONA";
-                $nextIdResult = $db->queryOne($qryNextId);
-                $personaId = $nextIdResult['NEXT_ID'];
-
                 // Insertar nueva persona
                 $qryPersona = <<<SQL
                     INSERT INTO PERSONA (NOMBRE, APELLIDO_1, APELLIDO_2, RFC, CURP, FECHA_NACIMIENTO, SEXO, ESTATUS)
                     VALUES (:nombre, :apellido1, :apellido2, :rfc, :curp, TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'), :sexo, 1)
+                    RETURNING ID INTO :id
                 SQL;
 
                 $paramsPersona = [
@@ -148,7 +152,15 @@ class Rh extends Model
                     'sexo' => strtoupper($sexo)
                 ];
 
-                $db->CRUD($qryPersona, $paramsPersona);
+                $retPersona = [
+                    'id' => [
+                        'valor' => '',
+                        'tipo' => \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT,
+                        'largo' => 40
+                    ]
+                ];
+
+                $db->CRUD($qryPersona, $paramsPersona, $retPersona);
 
                 // Insertar usuario asociado
                 if (!empty($usuario) && !empty($pass)) {
@@ -158,15 +170,16 @@ class Rh extends Model
                     $usuarioId = $nextUserIdResult['NEXT_ID'];
 
                     $qryUsuario = <<<SQL
-                        INSERT INTO USUARIO (PERSONA, USUARIO, PASS, ESTATUS)
-                        VALUES (:persona, :usuario, :pass, 1)
+                        INSERT INTO USUARIO (PERSONA, USUARIO, PASS, SUCURSAL, PERFIL, ESTATUS)
+                        VALUES (:persona, :usuario, :pass, :sucursal, :perfil, 1)
                     SQL;
 
                     $paramsUsuario = [
-                        'persona' => $personaId,
-                        'persona' => $personaId,
+                        'persona' => $retPersona['id']['valor'],
                         'usuario' => $usuario,
-                        'pass' => password_hash($pass, PASSWORD_DEFAULT)
+                        'pass' => password_hash($pass, PASSWORD_DEFAULT),
+                        'sucursal' => $sucursal,
+                        'perfil' => $perfil
                     ];
 
                     $db->CRUD($qryUsuario, $paramsUsuario);
@@ -226,6 +239,185 @@ class Rh extends Model
             return self::resultado(true, 'Persona eliminada correctamente.');
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al eliminar la persona.', null, $e->getMessage());
+        }
+    }
+
+    public static function getCatalogoEmpresas()
+    {
+        $qry = <<<SQL
+            SELECT
+                ID,
+                RAZON_SOCIAL
+            FROM
+                EMPRESA
+            WHERE
+                ESTATUS = 1
+            ORDER BY
+                RAZON_SOCIAL
+        SQL;
+
+        try {
+            $db = new Database();
+            $r = $db->queryAll($qry);
+            return self::resultado(true, 'Empresas encontradas.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener las empresas.', null, $e->getMessage());
+        }
+    }
+
+    public static function getUsuarioDetalle($datos)
+    {
+        $id = $datos['id'] ?? 0;
+
+        $qry = <<<SQL
+            SELECT
+                U.ID,
+                U.PERSONA,
+                U.USUARIO,
+                U.PERFIL,
+                U.ESTATUS,
+                R.EMPRESA,
+                S.REGION,
+                U.SUCURSAL
+            FROM
+                USUARIO U
+                LEFT JOIN SUCURSAL S ON U.SUCURSAL = S.ID
+                LEFT JOIN REGION R ON S.REGION = R.ID
+                LEFT JOIN EMPRESA E ON R.EMPRESA = E.ID
+            WHERE
+                U.ID = :id
+        SQL;
+
+        try {
+            $db = new Database();
+            $usuario = $db->queryOne($qry, ['id' => $id]);
+
+            if (!$usuario) {
+                return self::resultado(false, 'Usuario no encontrado.');
+            }
+
+            return self::resultado(true, 'Usuario encontrado.', $usuario);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener el usuario.', null, $e->getMessage());
+        }
+    }
+
+    public static function guardarUsuario($datos)
+    {
+        $id = $datos['id'] ?? '';
+        $persona = $datos['persona'] ?? '';
+        $usuario = $datos['usuario'] ?? '';
+        $pass = $datos['pass'] ?? '';
+        $sucursal = $datos['sucursal'] ?? '';
+        $empresa = $datos['empresa'] ?? '';
+        $perfil = $datos['perfil'] ?? '';
+        $estatus = $datos['estatus'] ?? 1;
+
+        try {
+            $db = new Database();
+            $db->beginTransaction();
+
+            if (!empty($id)) {
+                // Actualizar usuario existente
+                $qry = <<<SQL
+                    UPDATE USUARIO SET
+                        USUARIO = :usuario,
+                        SUCURSAL = :sucursal,
+                        EMPRESA = :empresa,
+                        PERFIL = :perfil,
+                        ESTATUS = :estatus
+                SQL;
+
+                $params = [
+                    'usuario' => $usuario,
+                    'sucursal' => $sucursal,
+                    'empresa' => $empresa,
+                    'perfil' => $perfil,
+                    'estatus' => $estatus
+                ];
+
+                // Solo actualizar contraseña si se proporcionó
+                if (!empty($pass)) {
+                    $qry .= ", PASS = :pass";
+                    $params['pass'] = password_hash($pass, PASSWORD_DEFAULT);
+                }
+
+                $qry .= " WHERE ID = :id";
+                $params['id'] = $id;
+
+                $db->CRUD($qry, $params);
+                $mensaje = 'Usuario actualizado correctamente.';
+            } else {
+                // Crear nuevo usuario
+                $qryNextId = "SELECT NVL(MAX(ID), 0) + 1 AS NEXT_ID FROM USUARIO";
+                $nextIdResult = $db->queryOne($qryNextId);
+                $usuarioId = $nextIdResult['NEXT_ID'];
+
+                $qry = <<<SQL
+                    INSERT INTO USUARIO (ID, PERSONA, USUARIO, PASS, SUCURSAL, EMPRESA, PERFIL, ESTATUS)
+                    VALUES (:id, :persona, :usuario, :pass, :sucursal, :empresa, :perfil, :estatus)
+                SQL;
+
+                $params = [
+                    'id' => $usuarioId,
+                    'persona' => $persona,
+                    'usuario' => $usuario,
+                    'pass' => password_hash($pass, PASSWORD_DEFAULT),
+                    'sucursal' => $sucursal,
+                    'empresa' => $empresa,
+                    'perfil' => $perfil,
+                    'estatus' => $estatus
+                ];
+
+                $db->CRUD($qry, $params);
+                $mensaje = 'Usuario creado correctamente.';
+            }
+
+            $db->commit();
+            return self::resultado(true, $mensaje);
+        } catch (\Exception $e) {
+            $db->rollback();
+            return self::resultado(false, 'Error al guardar el usuario.', null, $e->getMessage());
+        }
+    }
+
+    public static function cambiarEstatusUsuario($datos)
+    {
+        $id = $datos['id'] ?? 0;
+        $estatus = $datos['estatus'] ?? 1;
+
+        $qry = <<<SQL
+            UPDATE USUARIO SET
+                ESTATUS = :estatus
+            WHERE ID = :id
+        SQL;
+
+        try {
+            $db = new Database();
+            $db->CRUD($qry, ['id' => $id, 'estatus' => $estatus]);
+
+            $mensaje = $estatus == 1 ? 'Usuario activado correctamente.' : 'Usuario desactivado correctamente.';
+            return self::resultado(true, $mensaje);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al cambiar el estatus del usuario.', null, $e->getMessage());
+        }
+    }
+
+    public static function eliminarUsuario($datos)
+    {
+        $id = $datos['id'] ?? 0;
+
+        $qry = <<<SQL
+            DELETE FROM USUARIO
+            WHERE ID = :id
+        SQL;
+
+        try {
+            $db = new Database();
+            $db->CRUD($qry, ['id' => $id]);
+            return self::resultado(true, 'Usuario eliminado correctamente.');
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al eliminar el usuario.', null, $e->getMessage());
         }
     }
 }

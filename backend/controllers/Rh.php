@@ -13,7 +13,8 @@ class Rh extends Controller
             <script>
                 const tabla = "#tablaPersonas"
                 let valPersona = null,
-                    modalPersona = null
+                    modalPersona = null,
+                    wizardPersona = null
 
                 const getFecha = (fecha) => {
                     return fecha ? moment(fecha).format(MOMENT_FRONT) : '-'
@@ -23,83 +24,137 @@ class Rh extends Controller
                     const colorClass = tipo === 'success' ? 'text-bg-success' : 'text-bg-danger'
                     return `<span class="badge \${colorClass}">\${texto}</span>`
                 }
+                
+                const initWizard = () => {
+                    const wizardElement = document.querySelector('.wizard-icons-example')
+                    if (wizardElement) {
+                        wizardPersona = new Stepper(wizardElement, {
+                            linear: false
+                        })
+                        
+                        const nextButtons = wizardElement.querySelectorAll('.btn-next')
+                        const prevButtons = wizardElement.querySelectorAll('.btn-prev')
 
-                const validacionPersona = () => {
-                    const campos = {
-                        nombre: {
-                            notEmpty: {
-                                message: "El nombre es requerido"
-                            },
-                            stringLength: {
-                                max: 50,
-                                message: "Máximo 50 caracteres"
-                            }
-                        },
-                        apellido1: {
-                            notEmpty: {
-                                message: "El apellido paterno es requerido"
-                            },
-                            stringLength: {
-                                max: 50,
-                                message: "Máximo 50 caracteres"
-                            }
-                        },
-                        fechaNacimiento: {
-                            notEmpty: {
-                                message: "La fecha de nacimiento es requerida"
-                            },
-                            callback: {
-                                callback: (input) => {
-                                    const fecha = getInputFecha("#fechaNacimiento")
-                                    return fecha !== null ? true : false
-                                },
-                                message: "Fecha de nacimiento inválida"
-                            }
-                        },
-                        sexo: {
-                            notEmpty: {
-                                message: "El sexo es requerido"
-                            }
-                        },
-                        rfc: {
-                            notEmpty: {
-                                message: "El RFC es requerido"
-                            },
-                            stringLength: {
-                                max: 13,
-                                message: "Máximo 13 caracteres"
-                            }
-                        },
-                        curp: {
-                            notEmpty: {
-                                message: "El CURP es requerido"
-                            },
-                            stringLength: {
-                                max: 18,
-                                message: "Máximo 18 caracteres"
-                            }
-                        },
-                        fechaNacimiento: {
-                            notEmpty: {
-                                message: "La fecha de nacimiento es requerida"
-                            },
-                            callback: {
-                                callback: (input) => {
-                                    const fecha = getInputFecha("#fechaNacimiento")
-                                    return fecha !== null ? true : false
-                                },
-                                message: "Fecha de nacimiento inválida"
-                            }
+                        nextButtons.forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                if (validarPasoActual()) {
+                                    wizardPersona.next()
+                                    if (wizardPersona._currentIndex === 2) {
+                                        llenarResumen()
+                                    }
+                                }
+                            })
+                        })
+
+                        prevButtons.forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                wizardPersona.previous()
+                            })
+                        })
+                    }
+                }
+
+                const validarPasoActual = () => {
+                    if (!wizardPersona) return false
+                    
+                    const pasoActual = wizardPersona._currentIndex
+                    
+                    switch(pasoActual) {
+                        case 0:
+                            return validarDatosPersonales()
+                        case 1:
+                            return validarDatosUsuario()
+                        case 2:
+                            return true
+                        default:
+                            return true
+                    }
+                }
+
+                const validarDatosPersonales = () => {
+                    let valido = true
+                    
+                    $('.fv-message').text('')
+                    
+                    const campos = ['nombre', 'apellido1', 'sexo', 'fechaNacimiento', 'rfc', 'curp']
+                    
+                    campos.forEach(campo => {
+                        const valor = $(`#\${campo}`).val()
+                        if (!valor || valor.trim() === '') {
+                            let parent = null
+                            if (campo === 'fechaNacimiento') parent = $(`#\${campo}`).parent()
+                            else parent = $(`#\${campo}`)
+                            parent.siblings('.fv-message').text('Este campo es requerido')
+                            valido = false
+                        } else {
+                            if (campo === 'rfc') {
+                                if (valor && valor.length !== 13) {
+                                    $(`#\${campo}`).siblings('.fv-message').text('El RFC debe tener 13 caracteres')
+                                    valido = false
+                                }
+                            } else if (campo === 'curp') {
+                                if (valor && valor.length !== 18) {
+                                    $(`#\${campo}`).siblings('.fv-message').text('La CURP debe tener 18 caracteres')
+                                    valido = false
+                                }
+                            } 
                         }
+
+
+                    })
+
+                    if (!valido) {
+                        showError('Por favor complete todos los campos requeridos')
                     }
 
-                    valPersona = setValidacionModal(
-                        "#modalPersona",
-                        campos,
-                        "#btnGuardarPersona",
-                        guardarPersona,
-                        "#cancelaSolicitud"
-                    )
+                    return valido
+                }
+
+                const validarDatosUsuario = () => {
+                    let valido = true
+                    $('.fv-message').text('')
+                    
+                    const campos = ['usuario', 'pass', 'region', 'sucursal', 'perfil', 'empresa']
+                    
+                    campos.forEach(campo => {
+                        const valor = $(`#\${campo}`).val()
+                        if (!valor || valor.trim() === '') {
+                            $(`#\${campo}`).siblings('.fv-message').text('Este campo es requerido')
+                            valido = false
+                        }
+                    })
+
+                    const password = $('#pass').val()
+                    if (password && password.length < 6) {
+                        $('#pass').siblings('.fv-message').text('La contraseña debe tener al menos 6 caracteres')
+                        valido = false
+                    }
+
+                    if (!valido) {
+                        showError('Por favor complete todos los campos requeridos')
+                    }
+
+                    return valido
+                }
+
+                const llenarResumen = () => {
+                    const fotoSrc = $('#fotoPreview').attr('src')
+                    const nombre = $('#nombre').val()
+                    const apellido1 = $('#apellido1').val()
+                    const apellido2 = $('#apellido2').val() || ''
+                    const nombreCompleto = nombre + ' ' + apellido1 + ' ' + apellido2
+
+                    $('#resumenFoto').attr('src', fotoSrc)
+                    $('#resumenNombre').text(nombreCompleto.trim())
+                    $('#resumenRfc').text($('#rfc').val())
+                    $('#resumenCurp').text($('#curp').val())
+                    $('#resumenFechaNac').text($('#fechaNacimiento').val())
+                    $('#resumenSexo').text($('#sexo option:selected').text())
+                    $('#resumenUsuario').text($('#usuario').val())
+                    $('#resumenRegion').text($('#region option:selected').text())
+                    $('#resumenSucursal').text($('#sucursal option:selected').text())
+                    $('#resumenPerfil').text($('#perfil option:selected').text())
+                    $('#resumenEmpresa').text($('#empresa option:selected').text())
                 }
 
                 const confirmaEliminar = (mensaje, callback) => {
@@ -118,8 +173,7 @@ class Rh extends Controller
                         }
                     })
                 }
-
-                // Variables para el modo edición
+                
                 let modoEdicion = false
                 let datosOriginales = {}
                 let hayCambios = false
@@ -177,11 +231,9 @@ class Rh extends Controller
 
                 const habilitarEdicion = () => {
                     if (!modoEdicion) {
-                        // Entrar en modo edición
                         modoEdicion = true
                         hayCambios = false
                         
-                        // Guardar datos originales
                         datosOriginales = {
                             nombre: $("#detalleNombre").val(),
                             apellido1: $("#detalleApellido1").val(),
@@ -191,27 +243,16 @@ class Rh extends Controller
                             fechaNacimiento: $("#detalleFechaNacimiento").val(),
                             sexo: $("#detalleSexo").val()
                         }
-
-                        // Habilitar campos (excepto ID)
+                        
                         $("#detalleNombre, #detalleApellido1, #detalleApellido2, #detalleRfc, #detalleCurp, #detalleFechaNacimiento, #detalleSexo").prop("disabled", false)
                         $("#btnCambiarFotoDetalle").prop("disabled", false)
-                        
-                        // Cambiar botón
                         $("#btnHabilitarEdicion").removeClass("btn-warning").addClass("btn-warning")
                         $("#btnHabilitarEdicion").html('<i class="fa fa-times">&nbsp;</i>Cancelar')
-                        
-                        // Agregar listeners para detectar cambios
                         $("#detalleNombre, #detalleApellido1, #detalleApellido2, #detalleRfc, #detalleCurp, #detalleFechaNacimiento, #detalleSexo").on('input change', actualizarBotonEdicion)
                         
                     } else {
-                        // Verificar si hay cambios para guardar
-                        if (verificarCambios() || hayCambios) {
-                            // Guardar cambios
-                            guardarEdicion()
-                        } else {
-                            // Cancelar edición
-                            cancelarEdicion()
-                        }
+                        if (verificarCambios() || hayCambios) guardarEdicion()
+                        else cancelarEdicion()
                     }
                 }
 
@@ -219,7 +260,6 @@ class Rh extends Controller
                     modoEdicion = false
                     hayCambios = false
                     
-                    // Restaurar datos originales
                     $("#detalleNombre").val(datosOriginales.nombre)
                     $("#detalleApellido1").val(datosOriginales.apellido1)
                     $("#detalleApellido2").val(datosOriginales.apellido2)
@@ -227,16 +267,10 @@ class Rh extends Controller
                     $("#detalleCurp").val(datosOriginales.curp)
                     $("#detalleFechaNacimiento").val(datosOriginales.fechaNacimiento)
                     $("#detalleSexo").val(datosOriginales.sexo)
-                    
-                    // Deshabilitar campos
                     $("#detalleNombre, #detalleApellido1, #detalleApellido2, #detalleRfc, #detalleCurp, #detalleFechaNacimiento, #detalleSexo").prop("disabled", true)
                     $("#btnCambiarFotoDetalle").prop("disabled", true)
-                    
-                    // Restaurar botón
                     $("#btnHabilitarEdicion").removeClass("btn-success btn-warning").addClass("btn-warning")
                     $("#btnHabilitarEdicion").html('<i class="fa fa-edit">&nbsp;</i>Editar')
-                    
-                    // Remover listeners
                     $("#detalleNombre, #detalleApellido1, #detalleApellido2, #detalleRfc, #detalleCurp, #detalleFechaNacimiento, #detalleSexo").off('input change', actualizarBotonEdicion)
                 }
 
@@ -255,14 +289,9 @@ class Rh extends Controller
                     consultaServidor("/rh/guardarPersona", datos, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         showSuccess(respuesta.mensaje)
-                        
-                        // Salir del modo edición
                         cancelarEdicion()
-                        
-                        // Actualizar tabla
                         getPersonas(true)
                         
-                        // Actualizar datos mostrados
                         const nombreCompleto = datos.nombre + " " + datos.apellido1 + " " + (datos.apellido2 || "")
                         $("#detalleNombre").val(datos.nombre)
                         $("#detalleApellido1").val(datos.apellido1)
@@ -315,7 +344,10 @@ class Rh extends Controller
                     $("#modalPersona").modal("show")
                     $("#tituloModalPersona").text("Registrar nueva persona")
                     $("#personaId").val("")
-                    $("#btnGuardarPersona").text("Registrar")
+                    
+                    if (wizardPersona) {
+                        wizardPersona.to(1)
+                    }
                 }
 
                 const verPersona = (id) => {
@@ -355,24 +387,34 @@ class Rh extends Controller
                         // Llenar tabla de usuarios
                         $("#tablaUsuariosDetalle tbody").empty()
                         if (usuarios.length === 0) {
-                            $("#tablaUsuariosDetalle tbody").append('<tr><td colspan="4" class="text-center">No hay usuarios asociados</td></tr>')
+                            $("#tablaUsuariosDetalle tbody").append('<tr><td colspan="5" class="text-center">No hay usuarios asociados</td></tr>')
                         } else {
                             usuarios.forEach(usuario => {
-                                const acciones = menuAcciones([{
-                                                    texto: "Editar",
-                                                    icono: "fa-edit",
-                                                    funcion: "editarUsuario(" + usuario.ID + ")"
-                                                },{
-                                                    texto: "Desactivar",
-                                                    icono: "fa-ban",
-                                                    funcion: "inhabilitarUsuario(" + usuario.ID + ")"
-                                                },{
-                                                    texto: "Eliminar",
-                                                    icono: "fa-trash",
-                                                    funcion: "eliminarUsuario(" + usuario.ID + ")"
-                                                }])
+                                // Crear acciones según la cantidad de usuarios
+                                let acciones = [{
+                                    texto: "Editar",
+                                    icono: "fa-edit",
+                                    funcion: "editarUsuario(" + usuario.ID + ")"
+                                },{
+                                    texto: usuario.ESTATUS == 1 ? "Desactivar" : "Activar",
+                                    icono: usuario.ESTATUS == 1 ? "fa-ban" : "fa-check",
+                                    funcion: "cambiarEstatusUsuario(" + usuario.ID + ")",
+                                    clase: usuario.ESTATUS == 1 ? "text-warning" : "text-success"
+                                }]
+                                
+                                // Solo agregar eliminar si hay más de un usuario
+                                if (usuarios.length > 1) {
+                                    acciones.push({
+                                        texto: "Eliminar",
+                                        icono: "fa-trash",
+                                        funcion: "eliminarUsuario(" + usuario.ID + ")",
+                                        clase: "text-danger"
+                                    })
+                                }
+                                
+                                const menuAccs = menuAcciones(acciones)
                                 const estatusBadge = getEstatus(usuario.ESTATUS == 1 ? "Activo" : "Inactivo", usuario.ESTATUS == 1 ? "success" : "danger")
-                                $("#tablaUsuariosDetalle tbody").append("<tr><td>" + usuario.ID + "</td><td>" + usuario.USUARIO + "</td><td>" + estatusBadge + "</td><td>" + acciones + "</td></tr>")
+                                $("#tablaUsuariosDetalle tbody").append("<tr><td>" + usuario.ID + "</td><td>" + usuario.USUARIO + "</td><td>" + (usuario.SUCURSAL_NOMBRE || 'N/A') + "</td><td>" + estatusBadge + "</td><td>" + menuAccs + "</td></tr>")
                             })
                         }
 
@@ -391,6 +433,11 @@ class Rh extends Controller
                 }
 
                 const guardarPersona = () => {
+                    if (!validarDatosPersonales() || !validarDatosUsuario()) {
+                        showError('Por favor complete todos los campos requeridos')
+                        return
+                    }
+
                     const datos = {
                         id: $("#personaId").val(),
                         nombre: $("#nombre").val(),
@@ -398,10 +445,14 @@ class Rh extends Controller
                         apellido2: $("#apellido2").val(),
                         rfc: $("#rfc").val(),
                         curp: $("#curp").val(),
-                        fechaNacimiento: $("#fechaNacimiento").val(),
+                        fechaNacimiento: moment($("#fechaNacimiento").val()).format(MOMENT_BACK),
                         sexo: $("#sexo").val(),
                         usuario: $("#usuario").val(),
-                        pass: $("#pass").val()
+                        pass: $("#pass").val(),
+                        region: $("#region").val(),
+                        sucursal: $("#sucursal").val(),
+                        perfil: $("#perfil").val(),
+                        empresa: $("#empresa").val()
                     }
 
                     consultaServidor("/rh/guardarPersona", datos, (respuesta) => {
@@ -423,8 +474,13 @@ class Rh extends Controller
                     $("#sexo").val("")
                     $("#usuario").val("")
                     $("#pass").val("")
+                    $("#region").val("")
+                    $("#sucursal").val("")
+                    $("#perfil").val("")
+                    $("#empresa").val("")
                     $("#fotoInput").val("")
                     $("#fotoPreview").attr("src", "/assets/img/misc/user.svg")
+                    $('.fv-message').text('')
                 }
 
                 const inhabilitarPersona = () => {
@@ -441,41 +497,172 @@ class Rh extends Controller
                     })
                 }
 
-                $(document).ready(() => {
-                    // Inicializar tabla
-                    configuraTabla(tabla)
-                    
-                    getPersonas()
-                    validacionPersona()
+                const editarUsuario = (id) => {
+                    consultaServidor("/rh/getUsuarioDetalle", {id: id}, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        
+                        const usuario = respuesta.datos
+                        
+                        // Llenar campos del modal de edición
+                        $("#editUsuarioId").val(usuario.ID)
+                        $("#editPersonaId").val(usuario.PERSONA)
+                        $("#editUsuario").val(usuario.USUARIO)
+                        $("#editPass").val("") // Contraseña siempre vacía
+                        $("#editEmpresa").val(usuario.EMPRESA || "")
+                        $("#editRegion").val(usuario.REGION || "")
+                        $("#editSucursal").val(usuario.SUCURSAL || "")
+                        $("#editPerfil").val(usuario.PERFIL || "")
+                        $("#editEstatusUsuario").val(usuario.ESTATUS)
+                        
+                        // Limpiar mensajes de validación
+                        $('.fv-message').text('')
+                        
+                        $("#modalEditarUsuario").modal("show")
+                    })
+                }
 
-                    // Event listeners
+                const guardarUsuario = () => {
+                    // Validar campos requeridos
+                    let valido = true
+                    $('.fv-message').text('')
+                    
+                    const campos = ['editUsuario', 'editRegion', 'editSucursal', 'editPerfil', 'editEmpresa']
+                    
+                    campos.forEach(campo => {
+                        const valor = $("#" + campo).val()
+                        if (!valor || valor.trim() === '') {
+                            $("#" + campo).siblings('.fv-message').text('Este campo es requerido')
+                            valido = false
+                        }
+                    })
+
+                    // Validar contraseña si se proporcionó
+                    const password = $('#editPass').val()
+                    if (password && password.length < 6) {
+                        $('#editPass').siblings('.fv-message').text('La contraseña debe tener al menos 6 caracteres')
+                        valido = false
+                    }
+
+                    if (!valido) {
+                        showError('Por favor complete todos los campos requeridos')
+                        return
+                    }
+
+                    const datos = {
+                        id: $("#editUsuarioId").val(),
+                        persona: $("#editPersonaId").val(),
+                        usuario: $("#editUsuario").val(),
+                        pass: $("#editPass").val(),
+                        region: $("#editRegion").val(),
+                        sucursal: $("#editSucursal").val(),
+                        perfil: $("#editPerfil").val(),
+                        empresa: $("#editEmpresa").val(),
+                        estatus: $("#editEstatusUsuario").val()
+                    }
+
+                    consultaServidor("/rh/guardarUsuario", datos, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        showSuccess(respuesta.mensaje)
+                        $("#modalEditarUsuario").modal("hide")
+                        
+                        // Recargar el detalle de la persona
+                        const personaId = $("#detallePersonaIdHidden").val()
+                        if (personaId) {
+                            verPersona(personaId)
+                        }
+                    })
+                }
+
+                const cambiarEstatusUsuario = (id) => {
+                    consultaServidor("/rh/getUsuarioDetalle", {id: id}, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        
+                        const usuario = respuesta.datos
+                        const accion = usuario.ESTATUS == 1 ? "desactivar" : "activar"
+                        const nuevoEstatus = usuario.ESTATUS == 1 ? 0 : 1
+                        
+                        confirmaEliminar("¿Está seguro de " + accion + " este usuario?", () => {
+                            consultaServidor("/rh/cambiarEstatusUsuario", {id: id, estatus: nuevoEstatus}, (respuesta) => {
+                                if (!respuesta.success) return showError(respuesta.mensaje)
+                                showSuccess(respuesta.mensaje)
+                                
+                                // Recargar el detalle de la persona
+                                const personaId = $("#detallePersonaIdHidden").val()
+                                if (personaId) {
+                                    verPersona(personaId)
+                                }
+                            })
+                        })
+                    })
+                }
+
+                const eliminarUsuario = (id) => {
+                    confirmaEliminar("¿Está seguro de eliminar este usuario?", () => {
+                        consultaServidor("/rh/eliminarUsuario", {id: id}, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+                            showSuccess(respuesta.mensaje)
+                            
+                            // Recargar el detalle de la persona
+                            const personaId = $("#detallePersonaIdHidden").val()
+                            if (personaId) {
+                                verPersona(personaId)
+                            }
+                        })
+                    })
+                }
+
+                $(document).ready(() => {
+                    const maxF = moment().subtract(18, 'years').format('YYYY-MM-DD');
+                    const minF = moment().subtract(70, 'years').format('YYYY-MM-DD');
+                    setInputFechas("#fechaNacimiento", { minF, maxF, iniF: maxF, enModal: true })
+                    configuraTabla(tabla)
+                    initWizard()
+                    getPersonas()
+                    
                     $("#btnBuscar").click(() => getPersonas())
                     $("#btnNuevaPersona").click(nuevaPersona)
                     $("#btnHabilitarEdicion").click(habilitarEdicion)
                     $("#btnInhabilitarPersona").click(inhabilitarPersona)
-
-                    // Event listeners para cambio de foto
                     $("#btnCambiarFoto").click(() => $("#fotoInput").click())
                     $("#btnCambiarFotoDetalle").click(() => $("#detalleFotoInput").click())
-                    
-                    // Manejar cambios de foto
+                    $("#btnCambiarFotoResumen").click(() => $("#resumenFotoInput").click())
+
                     manejarCambiosFoto("#fotoInput", "#fotoPreview")
                     manejarCambiosFoto("#detalleFotoInput", "#detalleFotoPreview")
-
-                    // Filtro de tabla
+                    
+                    $(document).on('click', '#btnGuardarPersona', guardarPersona)
+                    $(document).on('click', '#btnGuardarUsuario', guardarUsuario)
+                    
                     $("#filtroTabla").on("keyup", function() {
                         const valor = $(this).val().toLowerCase()
                         const tabla = $("#tablaPersonas").DataTable()
                         tabla.search(valor).draw()
+                    })
+                    
+                    $('#modalPersona input, #modalPersona select').on('blur change', function() {
+                        const valor = $(this).val()
+                        if (valor && valor.trim() !== '') {
+                            $(this).siblings('.fv-message').text('')
+                        }
+                    })
+                    
+                    $('#modalEditarUsuario input, #modalEditarUsuario select').on('blur change', function() {
+                        const valor = $(this).val()
+                        if (valor && valor.trim() !== '') {
+                            $(this).siblings('.fv-message').text('')
+                        }
                     })
                 })
             </script>
         HTML;
 
         $catSucursales = RhDAO::getCatalogoSucursales();
+        $catEmpresas = RhDAO::getCatalogoEmpresas();
         $sucursales = '';
         $regiones = '';
+        $empresas = '';
         $rgnTmp = [];
+
         if ($catSucursales['success']) {
             foreach ($catSucursales['datos'] as $sucursal) {
                 $seleccion = $_SESSION['sucursal_id'] == $sucursal['ID'] ? 'selected' : '';
@@ -488,10 +675,18 @@ class Rh extends Controller
             }
         }
 
+        if ($catEmpresas['success']) {
+            foreach ($catEmpresas['datos'] as $empresa) {
+                $empresas .= "<option value='{$empresa['ID']}'>{$empresa['RAZON_SOCIAL']}</option>";
+            }
+        }
+
         $this->set('titulo', 'Gestión RH | ' . CONFIGURACION['EMPRESA']);
         $this->set('script', $script);
+        $this->set('css', '<link rel="stylesheet" href="/assets/css/wizard-rh.css">');
         $this->set("regiones", $regiones);
-        self::set("sucursales", $sucursales);
+        $this->set("sucursales", $sucursales);
+        $this->set("empresas", $empresas);
         $this->render('rh_gestion');
     }
 
@@ -538,7 +733,11 @@ class Rh extends Controller
             'fechaNacimiento' => $_POST['fechaNacimiento'] ?? '',
             'sexo' => $_POST['sexo'] ?? '',
             'usuario' => $_POST['usuario'] ?? '',
-            'pass' => $_POST['pass'] ?? ''
+            'pass' => $_POST['pass'] ?? '',
+            'region' => $_POST['region'] ?? '',
+            'sucursal' => $_POST['sucursal'] ?? '',
+            'perfil' => $_POST['perfil'] ?? '',
+            'empresa' => $_POST['empresa'] ?? ''
         ];
 
         $resultado = RhDAO::guardarPersona($datos);
@@ -555,6 +754,69 @@ class Rh extends Controller
         $id = $_POST['id'] ?? 0;
 
         $resultado = RhDAO::eliminarPersona(['id' => $id]);
+        $this->respuestaJSON($resultado);
+    }
+
+    public function getUsuarioDetalle()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            exit;
+        }
+
+        $id = $_POST['id'] ?? 0;
+
+        $detalle = RhDAO::getUsuarioDetalle(['id' => $id]);
+        $this->respuestaJSON($detalle);
+    }
+
+    public function guardarUsuario()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            exit;
+        }
+
+        $datos = [
+            'id' => $_POST['id'] ?? '',
+            'persona' => $_POST['persona'] ?? '',
+            'usuario' => $_POST['usuario'] ?? '',
+            'pass' => $_POST['pass'] ?? '',
+            'region' => $_POST['region'] ?? '',
+            'sucursal' => $_POST['sucursal'] ?? '',
+            'perfil' => $_POST['perfil'] ?? '',
+            'empresa' => $_POST['empresa'] ?? '',
+            'estatus' => $_POST['estatus'] ?? 1
+        ];
+
+        $resultado = RhDAO::guardarUsuario($datos);
+        $this->respuestaJSON($resultado);
+    }
+
+    public function cambiarEstatusUsuario()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            exit;
+        }
+
+        $id = $_POST['id'] ?? 0;
+        $estatus = $_POST['estatus'] ?? 1;
+
+        $resultado = RhDAO::cambiarEstatusUsuario(['id' => $id, 'estatus' => $estatus]);
+        $this->respuestaJSON($resultado);
+    }
+
+    public function eliminarUsuario()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            exit;
+        }
+
+        $id = $_POST['id'] ?? 0;
+
+        $resultado = RhDAO::eliminarUsuario(['id' => $id]);
         $this->respuestaJSON($resultado);
     }
 }
