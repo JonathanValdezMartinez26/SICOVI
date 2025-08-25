@@ -35,7 +35,11 @@ class CapHum extends Model
                 P.CURP,
                 TO_CHAR(P.FECHA_NACIMIENTO, 'YYYY-MM-DD') AS FECHA_NACIMIENTO,
                 P.SEXO,
-                P.ESTATUS
+                P.ESTATUS,
+                CASE 
+                    WHEN P.FOTO IS NOT NULL THEN P.ID
+                    ELSE NULL
+                END AS FOTO
             FROM
                 PERSONA P
             WHERE
@@ -66,7 +70,11 @@ class CapHum extends Model
                 P.CURP,
                 TO_CHAR(P.FECHA_NACIMIENTO, 'YYYY-MM-DD') AS FECHA_NACIMIENTO,
                 P.SEXO,
-                P.ESTATUS
+                P.ESTATUS,
+                CASE 
+                    WHEN P.FOTO IS NOT NULL THEN P.ID
+                    ELSE NULL
+                END AS FOTO
             FROM
                 PERSONA P
             WHERE
@@ -115,7 +123,7 @@ class CapHum extends Model
         }
     }
 
-    public static function guardarPersona($datos)
+    public static function guardarPersona($datos, $fotoData = null)
     {
         $id = $datos['id'] ?? '';
         $nombre = $datos['nombre'] ?? '';
@@ -136,10 +144,13 @@ class CapHum extends Model
 
             if (empty($id)) {
                 // Insertar nueva persona
+                $camposFoto = $fotoData ? ', FOTO' : '';
+                $valoresFoto = $fotoData ? ', EMPTY_BLOB()' : '';
+
                 $qryPersona = <<<SQL
-                    INSERT INTO PERSONA (NOMBRE, APELLIDO_1, APELLIDO_2, RFC, CURP, FECHA_NACIMIENTO, SEXO, ESTATUS)
-                    VALUES (:nombre, :apellido1, :apellido2, :rfc, :curp, TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'), :sexo, 1)
-                    RETURNING ID INTO :id
+                    INSERT INTO PERSONA (NOMBRE, APELLIDO_1, APELLIDO_2, RFC, CURP, FECHA_NACIMIENTO, SEXO, ESTATUS{$camposFoto})
+                    VALUES (:nombre, :apellido1, :apellido2, :rfc, :curp, TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'), :sexo, 1{$valoresFoto})
+                    RETURNING ID, FOTO INTO :id, :foto
                 SQL;
 
                 $paramsPersona = [
@@ -157,6 +168,10 @@ class CapHum extends Model
                         'valor' => '',
                         'tipo' => \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT,
                         'largo' => 40
+                    ],
+                    'foto' => [
+                        'valor' => $fotoData['foto'],
+                        'tipo' => \PDO::PARAM_LOB
                     ]
                 ];
 
@@ -189,6 +204,8 @@ class CapHum extends Model
                 return self::resultado(true, 'Persona registrada correctamente.');
             } else {
                 // Actualizar persona existente
+                $camposFoto = $fotoData ? ', FOTO = :foto' : '';
+
                 $qryPersona = <<<SQL
                     UPDATE PERSONA SET
                         NOMBRE = :nombre,
@@ -197,7 +214,7 @@ class CapHum extends Model
                         RFC = :rfc,
                         CURP = :curp,
                         FECHA_NACIMIENTO = TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'),
-                        SEXO = :sexo
+                        SEXO = :sexo{$camposFoto}
                     WHERE ID = :id
                 SQL;
 
@@ -211,6 +228,11 @@ class CapHum extends Model
                     'fechaNacimiento' => $fechaNacimiento,
                     'sexo' => strtoupper($sexo)
                 ];
+
+                // Agregar datos de la foto si existe
+                if ($fotoData) {
+                    $paramsPersona['foto'] = $fotoData['foto'];
+                }
 
                 $db->CRUD($qryPersona, $paramsPersona);
 
@@ -426,6 +448,34 @@ class CapHum extends Model
             return self::resultado(true, 'Usuario eliminado correctamente.');
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al eliminar el usuario.', null, $e->getMessage());
+        }
+    }
+
+    public static function getFotoPersona($datos)
+    {
+        $qry = <<<SQL
+            SELECT
+                FOTO
+            FROM
+                PERSONA
+            WHERE
+                ID = :personaId
+                AND FOTO IS NOT NULL
+        SQL;
+
+        $params = [
+            'personaId' => $datos['personaId'] ?? 0
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryOne($qry, $params);
+            if (!$r) {
+                return self::resultado(false, 'Foto no encontrada.');
+            }
+            return self::resultado(true, 'Foto obtenida correctamente.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener la foto.', null, $e->getMessage());
         }
     }
 }

@@ -147,7 +147,7 @@ class CapHum extends Controller
                     let valido = true
                     $('.fv-message').text('')
                     
-                    const campos = ['usuario', 'pass', 'perfil']
+                    const campos = ['usuario', 'password', 'perfil']
                     
                     campos.forEach(campo => {
                         const valor = $(`#\${campo}`).val()
@@ -157,9 +157,9 @@ class CapHum extends Controller
                         }
                     })
 
-                    const password = $('#pass').val()
+                    const password = $('#password').val()
                     if (password && password.length < 6) {
-                        $('#pass').siblings('.fv-message').text('La contraseña debe tener al menos 6 caracteres')
+                        $('#password').siblings('.fv-message').text('La contraseña debe tener al menos 6 caracteres')
                         valido = false
                     }
 
@@ -241,7 +241,7 @@ class CapHum extends Controller
                 
                 // Función para toggle de contraseña
                 const togglePassword = () => {
-                    const passwordField = document.getElementById('pass')
+                    const passwordField = document.getElementById('password')
                     const passwordIcon = document.getElementById('passwordIcon')
                     
                     if (passwordField && passwordIcon) {
@@ -417,7 +417,7 @@ class CapHum extends Controller
                                 clase: "text-danger delete-record"
                             }
                             
-                            const fotoUrl = persona.FOTO ? "/uploads/fotos/" + persona.FOTO : "/assets/img/misc/user.svg"
+                            const fotoUrl = persona.FOTO ? "/CapHum/getFotoPersona?personaId=" + persona.ID : "/assets/img/misc/user.svg"
                             const fotoHtml = '<img src="' + fotoUrl + '" alt="Foto" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">'
 
                             return [
@@ -482,6 +482,41 @@ class CapHum extends Controller
                         const estatusBadge = getEstatus(persona.ESTATUS == 1 ? "Activo" : "Inactivo", persona.ESTATUS == 1 ? "success" : "danger")
                         $("#detalleEstatus").html(estatusBadge)
 
+                        // Reutilizar foto de la tabla en lugar de descargarla nuevamente
+                        let fotoSrc = "/assets/img/misc/user.svg" // Imagen por defecto
+                        
+                        try {
+                            // Buscar directamente en el DOM de la tabla visible
+                            const filaEncontrada = $(tabla + ' tbody tr').filter(function() {
+                                const idCelda = $(this).find('td').eq(1).text().trim()
+                                return idCelda == persona.ID
+                            }).first()
+                            
+                            if (filaEncontrada.length > 0) {
+                                const imgTabla = filaEncontrada.find('td').eq(2).find('img')
+                                if (imgTabla.length > 0) {
+                                    const srcTabla = imgTabla.attr('src')
+                                    if (srcTabla && srcTabla !== "/assets/img/misc/user.svg") {
+                                        fotoSrc = srcTabla
+                                        console.log('Foto encontrada en tabla:', fotoSrc)
+                                    }
+                                }
+                            } else {
+                                console.log('No se encontró la fila para ID:', persona.ID)
+                            }
+                        } catch (error) {
+                            console.log('Error al buscar foto en tabla:', error)
+                        }
+                        
+                        // Si no se encuentra la imagen en la tabla y hay foto, usar el endpoint como respaldo
+                        if (fotoSrc === "/assets/img/misc/user.svg" && persona.FOTO) {
+                            fotoSrc = "/CapHum/getFotoPersona?personaId=" + persona.ID
+                            console.log('Usando endpoint como respaldo:', fotoSrc)
+                        }
+                        
+                        console.log('Foto final asignada:', fotoSrc)
+                        $("#detalleFoto").attr("src", fotoSrc)
+
                         // Llenar tabla de usuarios
                         $("#tablaUsuariosDetalle tbody").empty()
                         if (usuarios.length === 0) {
@@ -537,42 +572,52 @@ class CapHum extends Controller
                     }
 
                     const fecha = getInputFechas("#fechaNacimiento", false, true)
-
-                    const datos = {
-                        id: $("#personaId").val(),
-                        nombre: $("#nombre").val(),
-                        apellido1: $("#apellido1").val(),
-                        apellido2: $("#apellido2").val(),
-                        rfc: $("#rfc").val(),
-                        curp: $("#curp").val(),
-                        fechaNacimiento: fecha,
-                        sexo: $("#sexo").val(),
-                        usuario: $("#usuario").val(),
-                        pass: $("#pass").val(),
-                        perfil: $("#perfil").val(),
-                        empresa: $("#empresaWizard").val(),
-                        region: $("#regionWizard").val(),
-                        sucursal: $("#sucursalWizard").val(),
-                        puesto: $("#puesto").val(),
-                        nomina: $("#nomina").val(),
-                        tipoNomina: $("#tipoNomina").val(),
-                        numeroNomina: $("#numeroNomina").val(),
-                        jefeInmediato: $("#jefeInmediato").val(),
-                        reporta: $("#reporta").val(),
-                        correosEmpresa: []
-                    }
+                    
+                    // Crear FormData para enviar archivos
+                    const formData = new FormData()
+                    formData.append('id', $("#personaId").val())
+                    formData.append('nombre', $("#nombre").val())
+                    formData.append('apellido1', $("#apellido1").val())
+                    formData.append('apellido2', $("#apellido2").val())
+                    formData.append('rfc', $("#rfc").val())
+                    formData.append('curp', $("#curp").val())
+                    formData.append('fechaNacimiento', fecha)
+                    formData.append('sexo', $("#sexo").val())
+                    formData.append('usuario', $("#usuario").val())
+                    formData.append('pass', $("#password").val())
+                    formData.append('perfil', $("#perfil").val())
+                    formData.append('empresa', $("#empresaWizard").val())
+                    formData.append('region', $("#regionWizard").val())
+                    formData.append('sucursal', $("#sucursalWizard").val())
+                    formData.append('puesto', $("#puesto").val())
+                    formData.append('nomina', $("#nomina").val())
+                    formData.append('tipoNomina', $("#tipoNomina").val())
+                    formData.append('numeroNomina', $("#numeroNomina").val())
+                    formData.append('jefeInmediato', $("#jefeInmediato").val())
+                    formData.append('reporta', $("#reporta").val())
                     
                     // Recopilar correos empresariales
+                    const correosEmpresa = []
                     $('input[name="correoEmpresa[]"]').each(function() {
                         const correo = $(this).val().trim()
-                        if (correo) datos.correosEmpresa.push(correo)
+                        if (correo) correosEmpresa.push(correo)
                     })
+                    formData.append('correosEmpresa', JSON.stringify(correosEmpresa))
 
-                    consultaServidor("/CapHum/guardarPersona", datos, (respuesta) => {
+                    // Agregar foto si se seleccionó
+                    const fotoInput = $("#fotoInput")[0]
+                    if (fotoInput.files && fotoInput.files[0]) {
+                        formData.append('foto', fotoInput.files[0])
+                    }
+
+                    consultaServidor("/CapHum/guardarPersona", formData, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         showSuccess(respuesta.mensaje)
                         $("#modalPersona").modal("hide")
                         getPersonas(true)
+                    }, {
+                        procesar: false,
+                        tipoContenido: false
                     })
                 }
 
@@ -586,7 +631,7 @@ class CapHum extends Controller
                     $("#fechaNacimiento").val("")
                     $("#sexo").val("")
                     $("#usuario").val("")
-                    $("#pass").val("")
+                    $("#password").val("")
                     $("#perfil").val("")
                     $("#empresaWizard").val("")
                     $("#regionWizard").val("")
@@ -888,10 +933,57 @@ class CapHum extends Controller
             'region' => $_POST['region'] ?? '',
             'sucursal' => $_POST['sucursal'] ?? '',
             'perfil' => $_POST['perfil'] ?? '',
-            'empresa' => $_POST['empresa'] ?? ''
+            'empresa' => $_POST['empresa'] ?? '',
+            'puesto' => $_POST['puesto'] ?? '',
+            'nomina' => $_POST['nomina'] ?? '',
+            'tipoNomina' => $_POST['tipoNomina'] ?? '',
+            'numeroNomina' => $_POST['numeroNomina'] ?? '',
+            'jefeInmediato' => $_POST['jefeInmediato'] ?? '',
+            'reporta' => $_POST['reporta'] ?? '',
+            'correosEmpresa' => $_POST['correosEmpresa'] ?? []
         ];
 
-        $resultado = CapHumDAO::guardarPersona($datos);
+        // Procesar foto si se envió
+        $fotoData = null;
+        if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
+            if ($_FILES['foto']['size'] > 5 * 1024 * 1024) {
+                return $this->respuestaJSON([
+                    'success' => false,
+                    'mensaje' => 'La foto excede el tamaño máximo permitido de 5 MB.'
+                ]);
+            }
+
+            // Validar que sea una imagen
+            $tipoArchivo = $_FILES['foto']['type'];
+            if (!in_array($tipoArchivo, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                return $this->respuestaJSON([
+                    'success' => false,
+                    'mensaje' => 'Solo se permiten archivos de imagen (JPEG, PNG, GIF).'
+                ]);
+            }
+
+            try {
+                $fotoData = [
+                    'foto' => fopen($_FILES['foto']['tmp_name'], 'rb'),
+                    'nombre' => $_FILES['foto']['name'],
+                    'tipo' => $_FILES['foto']['type'],
+                    'tamano' => $_FILES['foto']['size']
+                ];
+            } catch (\Exception $e) {
+                return $this->respuestaJSON([
+                    'success' => false,
+                    'mensaje' => 'Error al procesar la foto: ' . $e->getMessage()
+                ]);
+            }
+        }
+
+        $resultado = CapHumDAO::guardarPersona($datos, $fotoData);
+
+        // Cerrar el recurso de la foto si se abrió
+        if ($fotoData && is_resource($fotoData['foto'])) {
+            fclose($fotoData['foto']);
+        }
+
         $this->respuestaJSON($resultado);
     }
 
@@ -969,5 +1061,25 @@ class CapHum extends Controller
 
         $resultado = CapHumDAO::eliminarUsuario(['id' => $id]);
         $this->respuestaJSON($resultado);
+    }
+
+    public function getFotoPersona()
+    {
+        $datos = $_SERVER['REQUEST_METHOD'] !== 'POST' ? $_GET : $_POST;
+
+        $foto = CapHumDAO::getFotoPersona($datos);
+        if (!$foto['success']) return $this->respuestaJSON($foto);
+
+        $archivo = $foto['datos']['FOTO'];
+        $archivo = is_resource($archivo) ? stream_get_contents($archivo) : $archivo;
+        if ($archivo === false) {
+            return $this->respuestaJSON(self::respuesta(false, 'Error al leer el archivo de la foto.'));
+        }
+
+        header('Content-Transfer-Encoding: binary');
+        echo $archivo;
+        if (is_resource($archivo)) {
+            fclose($archivo);
+        }
     }
 }
