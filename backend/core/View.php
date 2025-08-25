@@ -51,7 +51,7 @@ function getMenu()
             'subItems' => [
                 [
                     'label' => 'Gestión CH',
-                    'url' => '/Rh/GestionRh',
+                    'url' => '/CapHum/GestionCapHum',
                     'permisos' => ['1', '2']
                 ]
             ]

@@ -5,7 +5,7 @@ namespace Models;
 use Core\Model;
 use Core\Database;
 
-class Rh extends Model
+class CapHum extends Model
 {
     public static function getPersonas($datos)
     {
@@ -55,8 +55,6 @@ class Rh extends Model
 
     public static function getPersonaDetalle($datos)
     {
-        $id = $datos['id'] ?? 0;
-
         // Obtener datos de la persona
         $qryPersona = <<<SQL
             SELECT
@@ -92,15 +90,19 @@ class Rh extends Model
                 U.ID
         SQL;
 
+        $params = [
+            'id' => $datos['id'] ?? 0
+        ];
+
         try {
             $db = new Database();
 
-            $persona = $db->queryOne($qryPersona, ['id' => $id]);
+            $persona = $db->queryOne($qryPersona, $params);
             if (!$persona) {
                 return self::resultado(false, 'Persona no encontrada.');
             }
 
-            $usuarios = $db->queryAll($qryUsuarios, ['id' => $id]);
+            $usuarios = $db->queryAll($qryUsuarios, $params);
 
             $resultado = [
                 'persona' => $persona,
@@ -125,10 +127,8 @@ class Rh extends Model
         $sexo = $datos['sexo'] ?? '';
         $usuario = $datos['usuario'] ?? '';
         $pass = $datos['pass'] ?? '';
-        $region = $datos['region'] ?? '';
         $sucursal = $datos['sucursal'] ?? '';
         $perfil = $datos['perfil'] ?? '';
-        $empresa = $datos['empresa'] ?? '';
 
         try {
             $db = new Database();
@@ -225,17 +225,19 @@ class Rh extends Model
 
     public static function eliminarPersona($datos)
     {
-        $id = $datos['id'] ?? 0;
-
         $qry = <<<SQL
             UPDATE PERSONA SET
                 ESTATUS = 0
             WHERE ID = :id
         SQL;
 
+        $params = [
+            'id' => $datos['id'] ?? 0
+        ];
+
         try {
             $db = new Database();
-            $db->CRUD($qry, ['id' => $id]);
+            $db->CRUD($qry, $params);
             return self::resultado(true, 'Persona eliminada correctamente.');
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al eliminar la persona.', null, $e->getMessage());
@@ -267,8 +269,6 @@ class Rh extends Model
 
     public static function getUsuarioDetalle($datos)
     {
-        $id = $datos['id'] ?? 0;
-
         $qry = <<<SQL
             SELECT
                 U.ID,
@@ -288,9 +288,13 @@ class Rh extends Model
                 U.ID = :id
         SQL;
 
+        $params = [
+            'id' => $datos['id'] ?? 0
+        ];
+
         try {
             $db = new Database();
-            $usuario = $db->queryOne($qry, ['id' => $id]);
+            $usuario = $db->queryOne($qry, $params);
 
             if (!$usuario) {
                 return self::resultado(false, 'Usuario no encontrado.');
@@ -383,20 +387,22 @@ class Rh extends Model
 
     public static function cambiarEstatusUsuario($datos)
     {
-        $id = $datos['id'] ?? 0;
-        $estatus = $datos['estatus'] ?? 1;
-
         $qry = <<<SQL
             UPDATE USUARIO SET
                 ESTATUS = :estatus
             WHERE ID = :id
         SQL;
 
+        $params = [
+            'id' => $datos['id'] ?? 0,
+            'estatus' => $datos['estatus'] ?? 1
+        ];
+
         try {
             $db = new Database();
-            $db->CRUD($qry, ['id' => $id, 'estatus' => $estatus]);
+            $db->CRUD($qry, $params);
 
-            $mensaje = $estatus == 1 ? 'Usuario activado correctamente.' : 'Usuario desactivado correctamente.';
+            $mensaje = $params['estatus'] == 1 ? 'Usuario activado correctamente.' : 'Usuario desactivado correctamente.';
             return self::resultado(true, $mensaje);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al cambiar el estatus del usuario.', null, $e->getMessage());
@@ -405,16 +411,18 @@ class Rh extends Model
 
     public static function eliminarUsuario($datos)
     {
-        $id = $datos['id'] ?? 0;
-
         $qry = <<<SQL
             DELETE FROM USUARIO
             WHERE ID = :id
         SQL;
 
+        $params = [
+            'id' => $datos['id'] ?? 0
+        ];
+
         try {
             $db = new Database();
-            $db->CRUD($qry, ['id' => $id]);
+            $db->CRUD($qry, $params);
             return self::resultado(true, 'Usuario eliminado correctamente.');
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al eliminar el usuario.', null, $e->getMessage());

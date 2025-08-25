@@ -3,11 +3,11 @@
 namespace Controllers;
 
 use Core\Controller;
-use Models\Rh as RhDAO;
+use Models\CapHum as CapHumDAO;
 
-class Rh extends Controller
+class CapHum extends Controller
 {
-    public function GestionRh()
+    public function GestionCapHum()
     {
         $script = <<<HTML
             <script>
@@ -380,7 +380,7 @@ class Rh extends Controller
                         sexo: $("#detalleSexo").val()
                     }
 
-                    consultaServidor("/rh/guardarPersona", datos, (respuesta) => {
+                    consultaServidor("/CapHum/guardarPersona", datos, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         showSuccess(respuesta.mensaje)
                         cancelarEdicion()
@@ -400,7 +400,7 @@ class Rh extends Controller
                         filtro: filtro
                     }
 
-                    consultaServidor("/rh/getPersonas", parametros, (respuesta) => {
+                    consultaServidor("/CapHum/getPersonas", parametros, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         
                         const datos = respuesta.datos.map((persona) => {
@@ -449,7 +449,7 @@ class Rh extends Controller
                 }
 
                 const verPersona = (id) => {
-                    consultaServidor("/rh/getPersonaDetalle", {id: id}, (respuesta) => {
+                    consultaServidor("/CapHum/getPersonaDetalle", {id: id}, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         
                         const persona = respuesta.datos.persona
@@ -522,7 +522,7 @@ class Rh extends Controller
 
                 const eliminarPersona = (id) => {
                     confirmaEliminar("¿Está seguro de eliminar esta persona?", () => {
-                        consultaServidor("/rh/eliminarPersona", {id: id}, (respuesta) => {
+                        consultaServidor("/CapHum/eliminarPersona", {id: id}, (respuesta) => {
                             if (!respuesta.success) return showError(respuesta.mensaje)
                             showSuccess(respuesta.mensaje)
                             getPersonas(true)
@@ -568,7 +568,7 @@ class Rh extends Controller
                         if (correo) datos.correosEmpresa.push(correo)
                     })
 
-                    consultaServidor("/rh/guardarPersona", datos, (respuesta) => {
+                    consultaServidor("/CapHum/guardarPersona", datos, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         showSuccess(respuesta.mensaje)
                         $("#modalPersona").modal("hide")
@@ -611,7 +611,7 @@ class Rh extends Controller
                     if (!id) return showError("No se ha seleccionado una persona")
                     
                     confirmaEliminar("¿Está seguro de desactivar esta persona?", () => {
-                        consultaServidor("/rh/eliminarPersona", {id: id}, (respuesta) => {
+                        consultaServidor("/CapHum/eliminarPersona", {id: id}, (respuesta) => {
                             if (!respuesta.success) return showError(respuesta.mensaje)
                             showSuccess(respuesta.mensaje)
                             $("#modalDetallePersona").modal("hide")
@@ -621,7 +621,7 @@ class Rh extends Controller
                 }
 
                 const editarUsuario = (id) => {
-                    consultaServidor("/rh/getUsuarioDetalle", {id: id}, (respuesta) => {
+                    consultaServidor("/CapHum/getUsuarioDetalle", {id: id}, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         
                         const usuario = respuesta.datos
@@ -683,7 +683,7 @@ class Rh extends Controller
                         estatus: $("#editEstatusUsuario").val()
                     }
 
-                    consultaServidor("/rh/guardarUsuario", datos, (respuesta) => {
+                    consultaServidor("/CapHum/guardarUsuario", datos, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         showSuccess(respuesta.mensaje)
                         $("#modalEditarUsuario").modal("hide")
@@ -697,7 +697,7 @@ class Rh extends Controller
                 }
 
                 const cambiarEstatusUsuario = (id) => {
-                    consultaServidor("/rh/getUsuarioDetalle", {id: id}, (respuesta) => {
+                    consultaServidor("/CapHum/getUsuarioDetalle", {id: id}, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         
                         const usuario = respuesta.datos
@@ -705,7 +705,7 @@ class Rh extends Controller
                         const nuevoEstatus = usuario.ESTATUS == 1 ? 0 : 1
                         
                         confirmaEliminar("¿Está seguro de " + accion + " este usuario?", () => {
-                            consultaServidor("/rh/cambiarEstatusUsuario", {id: id, estatus: nuevoEstatus}, (respuesta) => {
+                            consultaServidor("/CapHum/cambiarEstatusUsuario", {id: id, estatus: nuevoEstatus}, (respuesta) => {
                                 if (!respuesta.success) return showError(respuesta.mensaje)
                                 showSuccess(respuesta.mensaje)
                                 
@@ -721,7 +721,7 @@ class Rh extends Controller
 
                 const eliminarUsuario = (id) => {
                     confirmaEliminar("¿Está seguro de eliminar este usuario?", () => {
-                        consultaServidor("/rh/eliminarUsuario", {id: id}, (respuesta) => {
+                        consultaServidor("/CapHum/eliminarUsuario", {id: id}, (respuesta) => {
                             if (!respuesta.success) return showError(respuesta.mensaje)
                             showSuccess(respuesta.mensaje)
                             
@@ -807,8 +807,8 @@ class Rh extends Controller
             </script>
         HTML;
 
-        $catSucursales = RhDAO::getCatalogoSucursales();
-        $catEmpresas = RhDAO::getCatalogoEmpresas();
+        $catSucursales = CapHumDAO::getCatalogoSucursales();
+        $catEmpresas = CapHumDAO::getCatalogoEmpresas();
         $sucursales = '';
         $regiones = '';
         $empresas = '';
@@ -850,7 +850,7 @@ class Rh extends Controller
 
         $filtro = $_POST['filtro'] ?? '';
 
-        $personas = RhDAO::getPersonas(['filtro' => $filtro]);
+        $personas = CapHumDAO::getPersonas(['filtro' => $filtro]);
         $this->respuestaJSON($personas);
     }
 
@@ -863,7 +863,7 @@ class Rh extends Controller
 
         $id = $_POST['id'] ?? 0;
 
-        $detalle = RhDAO::getPersonaDetalle(['id' => $id]);
+        $detalle = CapHumDAO::getPersonaDetalle(['id' => $id]);
         $this->respuestaJSON($detalle);
     }
 
@@ -891,7 +891,7 @@ class Rh extends Controller
             'empresa' => $_POST['empresa'] ?? ''
         ];
 
-        $resultado = RhDAO::guardarPersona($datos);
+        $resultado = CapHumDAO::guardarPersona($datos);
         $this->respuestaJSON($resultado);
     }
 
@@ -904,7 +904,7 @@ class Rh extends Controller
 
         $id = $_POST['id'] ?? 0;
 
-        $resultado = RhDAO::eliminarPersona(['id' => $id]);
+        $resultado = CapHumDAO::eliminarPersona(['id' => $id]);
         $this->respuestaJSON($resultado);
     }
 
@@ -917,7 +917,7 @@ class Rh extends Controller
 
         $id = $_POST['id'] ?? 0;
 
-        $detalle = RhDAO::getUsuarioDetalle(['id' => $id]);
+        $detalle = CapHumDAO::getUsuarioDetalle(['id' => $id]);
         $this->respuestaJSON($detalle);
     }
 
@@ -940,7 +940,7 @@ class Rh extends Controller
             'estatus' => $_POST['estatus'] ?? 1
         ];
 
-        $resultado = RhDAO::guardarUsuario($datos);
+        $resultado = CapHumDAO::guardarUsuario($datos);
         $this->respuestaJSON($resultado);
     }
 
@@ -954,7 +954,7 @@ class Rh extends Controller
         $id = $_POST['id'] ?? 0;
         $estatus = $_POST['estatus'] ?? 1;
 
-        $resultado = RhDAO::cambiarEstatusUsuario(['id' => $id, 'estatus' => $estatus]);
+        $resultado = CapHumDAO::cambiarEstatusUsuario(['id' => $id, 'estatus' => $estatus]);
         $this->respuestaJSON($resultado);
     }
 
@@ -967,7 +967,7 @@ class Rh extends Controller
 
         $id = $_POST['id'] ?? 0;
 
-        $resultado = RhDAO::eliminarUsuario(['id' => $id]);
+        $resultado = CapHumDAO::eliminarUsuario(['id' => $id]);
         $this->respuestaJSON($resultado);
     }
 }
