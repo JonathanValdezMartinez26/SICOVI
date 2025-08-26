@@ -63,6 +63,17 @@
                                 </span>
                             </button>
                         </div>
+                        <div class="step" data-target="#datos-adicionales">
+                            <button type="button" class="step-trigger">
+                                <span class="bs-stepper-circle">
+                                    <i class="fa fa-notes-medical"></i>
+                                </span>
+                                <span class="bs-stepper-label">
+                                    <span class="bs-stepper-title">Datos Adicionales</span>
+                                    <span class="bs-stepper-subtitle">Contacto y emergencias</span>
+                                </span>
+                            </button>
+                        </div>
                         <div class="step" data-target="#datos-empresa">
                             <button type="button" class="step-trigger">
                                 <span class="bs-stepper-circle">
@@ -74,14 +85,14 @@
                                 </span>
                             </button>
                         </div>
-                        <div class="step" data-target="#datos-usuario">
+                        <div class="step" data-target="#datos-nomina">
                             <button type="button" class="step-trigger">
                                 <span class="bs-stepper-circle">
                                     <i class="fa fa-building-lock"></i>
                                 </span>
                                 <span class="bs-stepper-label">
-                                    <span class="bs-stepper-title">Usuario Sistema</span>
-                                    <span class="bs-stepper-subtitle">Credenciales de acceso</span>
+                                    <span class="bs-stepper-title">Nómina</span>
+                                    <span class="bs-stepper-subtitle">Información de nómina</span>
                                 </span>
                             </button>
                         </div>
@@ -100,14 +111,13 @@
 
                     <div class="bs-stepper-content">
                         <form onSubmit="return false">
-                            <!-- Paso 1: Datos Personales -->
+                            <!-- Datos Personales -->
                             <div id="datos-personales" class="content">
                                 <div class="content-header mb-4">
                                     <h6 class="mb-0">Datos Personales</h6>
                                     <small>Ingrese la información personal básica.</small>
                                 </div>
                                 <div class="row">
-                                    <!-- Sección de foto - Reducida a 2 columnas -->
                                     <div class="col-md-2 d-flex flex-column justify-content-center align-items-center">
                                         <div class="mb-3">
                                             <input type="file" id="fotoInput" accept="image/*" style="display: none;">
@@ -118,7 +128,6 @@
                                         </button>
                                     </div>
                                     <div class="col-md-10">
-                                        <!-- Fila 1: Nombres completos -->
                                         <div class="row">
                                             <div class="col-md-4 mt-0">
                                                 <label for="nombre" class="form-label">Nombre(s)</label>
@@ -136,8 +145,6 @@
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
                                         </div>
-
-                                        <!-- Fila 2: Fecha nacimiento, sexo, RFC, CURP -->
                                         <div class="row">
                                             <div class="col-md-3 mt-0">
                                                 <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento</label>
@@ -167,8 +174,6 @@
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
                                         </div>
-
-                                        <!-- Fila 3: Estado civil, nacionalidad, NSS -->
                                         <div class="row">
                                             <div class="col-md-4 mt-0">
                                                 <label for="estadoCivil" class="form-label">Estado Civil</label>
@@ -194,8 +199,6 @@
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
                                         </div>
-
-                                        <!-- Fila 4: Domicilio -->
                                         <div class="row">
                                             <div class="col-md-9 mt-0">
                                                 <label for="calle" class="form-label">Calle y numero</label>
@@ -243,7 +246,74 @@
                                 </div>
                             </div>
 
-                            <!-- Paso 2: Datos de Empresa -->
+                            <!-- Datos Adicionales -->
+                            <div id="datos-adicionales" class="content">
+                                <div class="content-header mb-4">
+                                    <h6 class="mb-0">Datos Adicionales</h6>
+                                    <small>Contacto, emergencias y antecedentes médicos.</small>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mt-0">
+                                        <label for="contactoTelefonoPrincipal" class="form-label">Numero de teléfono (Principal)</label>
+                                        <input type="tel" id="contactoTelefonoPrincipal" name="contactoTelefonoPrincipal" class="form-control" maxlength="10">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4 mt-0">
+                                        <label for="contactoTelefonoAlterno" class="form-label">Numero de teléfono (Alterno)</label>
+                                        <input type="tel" id="contactoTelefonoAlterno" name="contactoTelefonoAlterno" class="form-control" maxlength="10">
+                                    </div>
+                                    <div class="col-md-4 mt-0">
+                                        <label for="contactoCorreoPrincipal" class="form-label">Correo electrónico</label>
+                                        <input type="email" id="contactoCorreoPrincipal" name="contactoCorreoPrincipal" class="form-control" maxlength="100">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mt-0">
+                                        <label for="contactoEmergenciaNombre" class="form-label">Nombre Contacto de Emergencia</label>
+                                        <input type="text" id="contactoEmergenciaNombre" name="contactoEmergenciaNombre" class="form-control" maxlength="100">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4 mt-0">
+                                        <label for="contactoEmergenciaParentesco" class="form-label">Parentesco</label>
+                                        <input type="text" id="contactoEmergenciaParentesco" name="contactoEmergenciaParentesco" class="form-control" maxlength="50">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4 mt-0">
+                                        <label for="contactoEmergenciaTelefono" class="form-label">Teléfono de Emergencia</label>
+                                        <input type="tel" id="contactoEmergenciaTelefono" name="contactoEmergenciaTelefono" class="form-control" maxlength="10">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-12 mt-0">
+                                        <label for="condicionesMedicas" class="form-label">Condiciones Médicas (opcional)</label>
+                                        <textarea id="condicionesMedicas" name="condicionesMedicas" class="form-control" rows="3" maxlength="1000" placeholder="Alergias, enfermedades crónicas, medicación, etc."></textarea>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-12">
+                                        <label for="informacionAdicional" class="form-label">Información Adicional (opcional)</label>
+                                        <textarea id="informacionAdicional" name="informacionAdicional" class="form-control" rows="3" maxlength="1000" placeholder="Notas adicionales relevantes"></textarea>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                </div>
+                                <div class="col-12 d-flex justify-content-between mt-4">
+                                    <button class="btn btn-primary btn-prev">
+                                        <i class="bx bx-left-arrow-alt bx-sm ms-sm-n2 me-sm-2"></i>
+                                        <span class="align-middle d-sm-inline-block d-none">Anterior</span>
+                                    </button>
+                                    <button class="btn btn-primary btn-next">
+                                        <span class="align-middle d-sm-inline-block d-none me-sm-2">Siguiente</span>
+                                        <i class="bx bx-right-arrow-alt bx-sm me-sm-n2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Datos de Empresa -->
                             <div id="datos-empresa" class="content">
                                 <div class="content-header mb-4">
                                     <h6 class="mb-0">Información Laboral</h6>
@@ -272,31 +342,6 @@
                                             <option value="" selected disabled>Seleccione una región</option>
                                             <?= $regiones ?? '' ?>
                                         </select>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                                    </div>
-                                    <div class="col-md-4 mt-0">
-                                        <label for="nomina" class="form-label">Nómina</label>
-                                        <select id="nomina" name="nomina" class="form-select">
-                                            <option value="" selected disabled>Seleccione tipo</option>
-                                            <option value="Ejecutivos">Ejecutivos</option>
-                                            <option value="Empleados">Empleados</option>
-                                            <option value="Operarios">Operarios</option>
-                                        </select>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                                    </div>
-                                    <div class="col-md-4 mt-0">
-                                        <label for="tipoNomina" class="form-label">Tipo de Nómina</label>
-                                        <select id="tipoNomina" name="tipoNomina" class="form-select">
-                                            <option value="" selected disabled>Seleccione frecuencia</option>
-                                            <option value="Semanal">Semanal</option>
-                                            <option value="Quincenal">Quincenal</option>
-                                            <option value="Mensual">Mensual</option>
-                                        </select>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                                    </div>
-                                    <div class="col-md-4 mt-0">
-                                        <label for="numeroNomina" class="form-label"># de Nómina</label>
-                                        <input type="text" id="numeroNomina" name="numeroNomina" class="form-control" maxlength="10">
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-6 mt-0">
@@ -341,31 +386,13 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-12 d-flex justify-content-between mt-4">
-                                    <button class="btn btn-primary btn-prev">
-                                        <i class="bx bx-left-arrow-alt bx-sm ms-sm-n2 me-sm-2"></i>
-                                        <span class="align-middle d-sm-inline-block d-none">Anterior</span>
-                                    </button>
-                                    <button class="btn btn-primary btn-next" id="sigEmpresa">
-                                        <span class="align-middle d-sm-inline-block d-none me-sm-2">Siguiente</span>
-                                        <i class="bx bx-right-arrow-alt bx-sm me-sm-n2"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Paso 3: Datos de Usuario -->
-                            <div id="datos-usuario" class="content">
-                                <div class="content-header mb-4">
-                                    <h6 class="mb-0">Usuario del Sistema</h6>
-                                    <small>Configure las credenciales de acceso al sistema.</small>
-                                </div>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
+                                <div class="row">
+                                    <div class="col-md-4 mt-0">
                                         <label for="usuario" class="form-label">Usuario</label>
                                         <input type="text" id="usuario" name="usuario" class="form-control" maxlength="20" placeholder="Coloca aquí el RFC del colaborador">
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 mt-0">
                                         <label class="form-label" for="password">Contraseña</label>
                                         <div class="input-group input-group-merge">
                                             <input
@@ -379,13 +406,81 @@
                                         </div>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-4 mt-0">
                                         <label for="perfil" class="form-label">Perfil de Usuario</label>
                                         <select id="perfil" name="perfil" class="form-select">
                                             <option value="" selected disabled>Seleccione un perfil</option>
                                             <option value="1">Administrador</option>
                                             <option value="2">Usuario</option>
                                             <option value="3">Consulta</option>
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                </div>
+                                <div class="col-12 d-flex justify-content-between mt-4">
+                                    <button class="btn btn-primary btn-prev">
+                                        <i class="bx bx-left-arrow-alt bx-sm ms-sm-n2 me-sm-2"></i>
+                                        <span class="align-middle d-sm-inline-block d-none">Anterior</span>
+                                    </button>
+                                    <button class="btn btn-primary btn-next" id="sigEmpresa">
+                                        <span class="align-middle d-sm-inline-block d-none me-sm-2">Siguiente</span>
+                                        <i class="bx bx-right-arrow-alt bx-sm me-sm-n2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Datos de Nomina -->
+                            <div id="datos-nomina" class="content">
+                                <div class="content-header mb-4">
+                                    <h6 class="mb-0">Nómina</h6>
+                                    <small>Ingrese la información básica para la nómina</small>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-3 mt-0">
+                                        <label for="fechaIngreso" class="form-label">Fecha de ingreso</label>
+                                        <input type="text" id="fechaIngreso" name="fechaIngreso" class="form-control">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-3 mt-0">
+                                        <label for="nomina" class="form-label">Nómina</label>
+                                        <select id="nomina" name="nomina" class="form-select">
+                                            <option value="" disabled>Seleccione tipo</option>
+                                            <option value="Ejecutivos">Ejecutivos</option>
+                                            <option value="Empleados">Empleados</option>
+                                            <option value="Operarios">Operarios</option>
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-3 mt-0">
+                                        <label for="tipoNomina" class="form-label">Tipo de Nómina</label>
+                                        <select id="tipoNomina" name="tipoNomina" class="form-select">
+                                            <option value="" disabled>Seleccione frecuencia</option>
+                                            <option value="Semanal">Semanal</option>
+                                            <option value="Quincenal">Quincenal</option>
+                                            <option value="Mensual">Mensual</option>
+                                        </select>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-3 mt-0">
+                                        <label for="numeroNomina" class="form-label"># de Nómina</label>
+                                        <input type="text" id="numeroNomina" name="numeroNomina" class="form-control" maxlength="10">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mt-0">
+                                        <label for="banco" class="form-label">Banco</label>
+                                        <input type="text" id="banco" name="banco" class="form-control" maxlength="20">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4 mt-0">
+                                        <label for="cuentaBancaria" class="form-label">Cuenta bancaria</label>
+                                        <input type="text" id="cuentaBancaria" name="cuentaBancaria" class="form-control" maxlength="18" placeholder="18 dígitos">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                    <div class="col-md-4 mt-0">
+                                        <label for="noTarjeta" class="form-label">No. de tarjeta</label>
+                                        <input type="text" id="noTarjeta" name="noTarjeta" class="form-control" maxlength="16" placeholder="16 dígitos">
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>

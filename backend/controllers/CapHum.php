@@ -63,10 +63,12 @@ class CapHum extends Controller
                         case 0:
                             return validarDatosPersonales()
                         case 1:
-                            return validarDatosEmpresa()
+                            return validarDatosAdicionales()
                         case 2:
-                            return validarDatosUsuario()
+                            return validarDatosEmpresa()
                         case 3:
+                            return validarDatosNomina()
+                        case 4:
                             return true
                         default:
                             return true
@@ -126,7 +128,7 @@ class CapHum extends Controller
                     let valido = true
                     $('.fv-message').text('')
                     
-                    const campos = ['empresaWizard', 'sucursalWizard', 'puesto', 'nomina', 'tipoNomina', 'numeroNomina']
+                    const campos = ['empresaWizard', 'sucursalWizard', 'puesto', 'usuario', 'password', 'perfil']
                     
                     campos.forEach(campo => {
                         const valor = $(`#\${campo}`).val()
@@ -153,12 +155,12 @@ class CapHum extends Controller
                     return valido
                 }
 
-                const validarDatosUsuario = () => {
+                const validarDatosNomina = () => {
                     let valido = true
                     $('.fv-message').text('')
-                    
-                    const campos = ['usuario', 'password', 'perfil']
-                    
+
+                    const campos = [ 'numeroNomina', 'nomina', 'tipoNomina', 'banco', 'noTarjeta']
+
                     campos.forEach(campo => {
                         const valor = $(`#\${campo}`).val()
                         if (!valor || valor.trim() === '') {
@@ -180,6 +182,31 @@ class CapHum extends Controller
                     return valido
                 }
 
+                // Validación para Datos Adicionales (Contacto de emergencia obligatorio)
+                const validarDatosAdicionales = () => {
+                    let valido = true
+                    $('.fv-message').text('')
+
+                    const camposObligatorios = ['contactoTelefonoPrincipal', 'contactoCorreoPrincipal', 'contactoEmergenciaNombre', 'contactoEmergenciaParentesco', 'contactoEmergenciaTelefono']
+                    camposObligatorios.forEach(campo => {
+                        const valor = $("#" + campo).val()
+                        if (!valor || valor.trim() === '') {
+                            $("#" + campo).siblings('.fv-message').text('Este campo es requerido')
+                            valido = false
+                        } else {
+                            if (['contactoTelefonoPrincipal', 'contactoEmergenciaTelefono'].includes(campo)) {
+                                if (valor.length !== 10) {
+                                    $("#" + campo).siblings('.fv-message').text('Este campo debe tener 10 dígitos')
+                                    valido = false
+                                }
+                            }
+                        }
+                    })
+
+                    if (!valido) showError('Por favor complete los campos obligatorios de contacto de emergencia')
+                    return valido
+                }
+
                 const llenarResumen = () => {
                     const fotoSrc = $('#fotoPreview').attr('src')
                     const nombre = $('#nombre').val()
@@ -187,7 +214,6 @@ class CapHum extends Controller
                     const apellido2 = $('#apellido2').val() || ''
                     const nombreCompleto = nombre + ' ' + apellido1 + ' ' + apellido2
 
-                    // Datos personales
                     $('#resumenFoto').attr('src', fotoSrc)
                     $('#resumenNombre').text(nombreCompleto.trim())
                     $('#resumenRfc').text($('#rfc').val())
@@ -197,16 +223,11 @@ class CapHum extends Controller
                     $('#resumenEstadoCivil').text($('#estadoCivil option:selected').text())
                     $('#resumenNacionalidad').text($('#nacionalidad').val())
                     $('#resumenNss').text($('#nss').val() || 'No proporcionado')
-                    
-                    // Datos domicilio
                     $('#resumenCalle').text($('#calle').val())
                     $('#resumenCodigoPostal').text($('#codigoPostal').val())
                     $('#resumenColonia').text($('#colonia option:selected').text())
-                    $('#resumenLocalidad').text($('#localidad option:selected').text())
                     $('#resumenMunicipio').text($('#municipio option:selected').text())
                     $('#resumenEstado').text($('#estado option:selected').text())
-                    
-                    // Datos empresa
                     $('#resumenEmpresa').text($('#empresaWizard option:selected').text())
                     $('#resumenRegion').text($('#regionWizard').val())
                     $('#resumenSucursal').text($('#sucursalWizard option:selected').text())
@@ -224,8 +245,6 @@ class CapHum extends Controller
                         if (valor) correos.push(valor)
                     })
                     $('#resumenCorreosEmpresa').text(correos.join(', '))
-                    
-                    // Datos usuario
                     $('#resumenUsuario').text($('#usuario').val())
                     $('#resumenPerfil').text($('#perfil option:selected').text())
                 }
@@ -601,6 +620,11 @@ class CapHum extends Controller
                     formData.append('estado', $("#estado").val())
                     formData.append('municipio', $("#municipio").val())
                     formData.append('colonia', $("#colonia").val())
+                    formData.append('contactoEmergenciaNombre', $("#contactoEmergenciaNombre").val())
+                    formData.append('contactoEmergenciaParentesco', $("#contactoEmergenciaParentesco").val())
+                    formData.append('contactoEmergenciaTelefono', $("#contactoEmergenciaTelefono").val())
+                    formData.append('condicionesMedicas', $("#condicionesMedicas").val())
+                    formData.append('informacionAdicional', $("#informacionAdicional").val())
                     formData.append('usuario', $("#usuario").val())
                     formData.append('pass', $("#password").val())
                     formData.append('perfil', $("#perfil").val())
@@ -660,12 +684,14 @@ class CapHum extends Controller
                     $("#numeroNomina").val("")
                     $("#jefeInmediato").val("")
                     $("#reporta").val("")
-                    
-                    // Limpiar correos empresariales
                     $('#correosContainer').html('<div class="input-group mb-2"><input type="email" name="correoEmpresa[]" class="form-control" placeholder="correo@empresa.com"><button type="button" class="btn btn-outline-success" onclick="agregarCorreo()"><i class="fa fa-plus"></i></button></div>')
-                    
                     $("#fotoInput").val("")
                     $("#fotoPreview").attr("src", "/assets/img/misc/user.svg")
+                    $("#contactoEmergenciaNombre").val("")
+                    $("#contactoEmergenciaParentesco").val("")
+                    $("#contactoEmergenciaTelefono").val("")
+                    $("#condicionesMedicas").val("")
+                    $("#informacionAdicional").val("")
                     $('.fv-message').text('')
                 }
 
@@ -797,19 +823,84 @@ class CapHum extends Controller
                     })
                 }
 
+                // Funciones para consulta SEPOMEX
+                const resetSelectsSepomex = () => {
+                    $('#estado, #municipio, #localidad, #colonia').prop('disabled', true).html('<option value="">Seleccione CP primero</option>');
+                }
+
+                const consultarSepomex = async (cp) => {
+                    try {
+                        $('#estado, #municipio, #localidad, #colonia').prop('disabled', true).html('<option value="">Cargando...</option>');
+                        
+                        const response = await fetch("https://api.condusef.gob.mx/sepomex/colonias/?cp=" + cp);
+                        const data = await response.json();
+
+                        if (!data.colonias || data.colonias.length === 0) {
+                            $('#codigoPostal').siblings('.fv-message').text('Código postal no encontrado');
+                            resetSelectsSepomex();
+                            return;
+                        }
+                        
+                        $('#codigoPostal').siblings('.fv-message').text('');
+                        const colonias = data.colonias;
+                        validaEstado(colonias);
+                        validaMunicipio(colonias);
+                        validaColonia(colonias);
+
+                    } catch (error) {
+                        console.error('Error al consultar SEPOMEX:', error);
+                        $('#codigoPostal').siblings('.fv-message').text('Error al consultar código postal. Verifique su conexión a internet.');
+                        resetSelectsSepomex();
+                    }
+                }
+
+                const validaEstado = (edo) => {
+                    const estado = document.querySelector("#estado")
+                    const estados = getOpciones(edo, "estadoId", "estado")
+                    insertaOpciones(estado, estados)
+                }
+
+                const validaMunicipio = (mun) => {
+                    const municipio = document.querySelector("#municipio")
+                    const municipios = getOpciones(mun, "municipioId", "municipio")
+                    insertaOpciones(municipio, municipios)
+                }
+
+                const validaColonia = (col) => {
+                    const colonia = document.querySelector("#colonia")
+                    const colonias = getOpciones(col, "coloniaId", "colonia")
+                    insertaOpciones(colonia, colonias)
+                }
+
+                const getOpciones = (elementos, key, value) => {
+                    const opciones = []
+                    elementos.forEach((elemento) => {
+                        const opcion = "<option value='" + elemento[key] + "'>" + elemento[value] + "</option>"
+                        if (!opciones.includes(opcion)) opciones.push(opcion)
+                    })
+                    return opciones
+                }
+
+                const insertaOpciones = (elemento, opciones = []) => {
+                    if (opciones.length > 1) opciones.unshift("<option value='' disabled>Seleccione</option>")
+
+                    elemento.innerHTML = opciones.join("")
+                    elemento.selectedIndex = 0
+                    elemento.disabled = !(opciones.length > 1)
+                }
+
                 $(document).ready(() => {
                     const maxF = moment().subtract(18, 'years').format('YYYY-MM-DD');
                     const minF = moment().subtract(70, 'years').format('YYYY-MM-DD');
                     setInputFechas("#fechaNacimiento", { minF, maxF, iniF: maxF, enModal: true })
+                    setInputFechas("#fechaIngreso", { minD: 1800, maxD: 7, enModal: true })
                     configuraTabla(tabla)
                     initWizard()
                     getPersonas()
-
                     
-                // Declarar funciones globalmente para uso en onclick
-                window.agregarCorreo = agregarCorreo
-                window.eliminarCorreo = eliminarCorreo
-                window.togglePassword = togglePassword
+                    window.agregarCorreo = agregarCorreo
+                    window.eliminarCorreo = eliminarCorreo
+                    window.togglePassword = togglePassword
                     
                     $("#btnBuscar").click(() => getPersonas())
                     $("#btnNuevaPersona").click(nuevaPersona)
@@ -923,72 +1014,6 @@ class CapHum extends Controller
                         }
                     })
                 })
-
-                // Funciones para consulta SEPOMEX
-                const resetSelectsSepomex = () => {
-                    $('#estado, #municipio, #localidad, #colonia').prop('disabled', true).html('<option value="">Seleccione CP primero</option>');
-                }
-
-                const consultarSepomex = async (cp) => {
-                    try {
-                        $('#estado, #municipio, #localidad, #colonia').prop('disabled', true).html('<option value="">Cargando...</option>');
-                        
-                        const response = await fetch("https://api.condusef.gob.mx/sepomex/colonias/?cp=" + cp);
-                        const data = await response.json();
-
-                        if (!data.colonias || data.colonias.length === 0) {
-                            $('#codigoPostal').siblings('.fv-message').text('Código postal no encontrado');
-                            resetSelectsSepomex();
-                            return;
-                        }
-                        
-                        $('#codigoPostal').siblings('.fv-message').text('');
-                        const colonias = data.colonias;
-                        validaEstado(colonias);
-                        validaMunicipio(colonias);
-                        validaColonia(colonias);
-
-                    } catch (error) {
-                        console.error('Error al consultar SEPOMEX:', error);
-                        $('#codigoPostal').siblings('.fv-message').text('Error al consultar código postal. Verifique su conexión a internet.');
-                        resetSelectsSepomex();
-                    }
-                }
-
-                const validaEstado = (edo) => {
-                    const estado = document.querySelector("#estado")
-                    const estados = getOpciones(edo, "estadoId", "estado")
-                    insertaOpciones(estado, estados)
-                }
-
-                const validaMunicipio = (mun) => {
-                    const municipio = document.querySelector("#municipio")
-                    const municipios = getOpciones(mun, "municipioId", "municipio")
-                    insertaOpciones(municipio, municipios)
-                }
-
-                const validaColonia = (col) => {
-                    const colonia = document.querySelector("#colonia")
-                    const colonias = getOpciones(col, "coloniaId", "colonia")
-                    insertaOpciones(colonia, colonias)
-                }
-
-                const getOpciones = (elementos, key, value) => {
-                    const opciones = []
-                    elementos.forEach((elemento) => {
-                        const opcion = "<option value='" + elemento[key] + "'>" + elemento[value] + "</option>"
-                        if (!opciones.includes(opcion)) opciones.push(opcion)
-                    })
-                    return opciones
-                }
-
-                const insertaOpciones = (elemento, opciones = []) => {
-                    if (opciones.length > 1) opciones.unshift("<option value='' disabled>Seleccione</option>")
-
-                    elemento.innerHTML = opciones.join("")
-                    elemento.selectedIndex = 0
-                    elemento.disabled = !(opciones.length > 1)
-                }
             </script>
         HTML;
 
