@@ -78,7 +78,7 @@ class CapHum extends Controller
                     
                     $('.fv-message').text('')
                     
-                    const campos = ['nombre', 'apellido1', 'sexo', 'fechaNacimiento', 'rfc', 'curp']
+                    const campos = ['nombre', 'apellido1', 'sexo', 'fechaNacimiento', 'rfc', 'curp', 'estadoCivil', 'nacionalidad', 'calle', 'codigoPostal', 'colonia']
                     
                     campos.forEach(campo => {
                         const valor = $(`#\${campo}`).val()
@@ -99,11 +99,21 @@ class CapHum extends Controller
                                     $(`#\${campo}`).siblings('.fv-message').text('La CURP debe tener 18 caracteres')
                                     valido = false
                                 }
-                            } 
+                            } else if (campo === 'codigoPostal') {
+                                if (valor && valor.length !== 5) {
+                                    $(`#\${campo}`).siblings('.fv-message').text('El código postal debe tener 5 dígitos')
+                                    valido = false
+                                }
+                            }
                         }
-
-
                     })
+
+                    // Validaciones opcionales pero con formato específico
+                    const nss = $('#nss').val()
+                    if (nss && nss.length !== 11) {
+                        $('#nss').siblings('.fv-message').text('El NSS debe tener exactamente 11 dígitos')
+                        valido = false
+                    }
 
                     if (!valido) {
                         showError('Por favor complete todos los campos requeridos')
@@ -184,6 +194,17 @@ class CapHum extends Controller
                     $('#resumenCurp').text($('#curp').val())
                     $('#resumenFechaNac').text($('#fechaNacimiento').val())
                     $('#resumenSexo').text($('#sexo option:selected').text())
+                    $('#resumenEstadoCivil').text($('#estadoCivil option:selected').text())
+                    $('#resumenNacionalidad').text($('#nacionalidad').val())
+                    $('#resumenNss').text($('#nss').val() || 'No proporcionado')
+                    
+                    // Datos domicilio
+                    $('#resumenCalle').text($('#calle').val())
+                    $('#resumenCodigoPostal').text($('#codigoPostal').val())
+                    $('#resumenColonia').text($('#colonia option:selected').text())
+                    $('#resumenLocalidad').text($('#localidad option:selected').text())
+                    $('#resumenMunicipio').text($('#municipio option:selected').text())
+                    $('#resumenEstado').text($('#estado option:selected').text())
                     
                     // Datos empresa
                     $('#resumenEmpresa').text($('#empresaWizard option:selected').text())
@@ -583,6 +604,15 @@ class CapHum extends Controller
                     formData.append('curp', $("#curp").val())
                     formData.append('fechaNacimiento', fecha)
                     formData.append('sexo', $("#sexo").val())
+                    formData.append('estadoCivil', $("#estadoCivil").val())
+                    formData.append('nacionalidad', $("#nacionalidad").val())
+                    formData.append('nss', $("#nss").val())
+                    formData.append('calle', $("#calle").val())
+                    formData.append('codigoPostal', $("#codigoPostal").val())
+                    formData.append('estado', $("#estado").val())
+                    formData.append('municipio', $("#municipio").val())
+                    formData.append('localidad', $("#localidad").val())
+                    formData.append('colonia', $("#colonia").val())
                     formData.append('usuario', $("#usuario").val())
                     formData.append('pass', $("#password").val())
                     formData.append('perfil', $("#perfil").val())
@@ -848,7 +878,113 @@ class CapHum extends Controller
                             $('#reporta option[value="' + valor + '"]').prop('selected', true)
                         }
                     })
+                    
+                    // Validación de NSS - solo números y exactamente 11 dígitos si se llena
+                    $('#nss').on('input', function() {
+                        let valor = $(this).val().replace(/\D/g, ''); // Solo números
+                        if (valor.length > 11) {
+                            valor = valor.substring(0, 11);
+                        }
+                        $(this).val(valor);
+                        
+                        // Validar longitud si hay valor
+                        if (valor && valor.length !== 11) {
+                            $(this).siblings('.fv-message').text('El NSS debe tener exactamente 11 dígitos');
+                        } else {
+                            $(this).siblings('.fv-message').text('');
+                        }
+                    })
+                    
+                    // Validación de Código Postal y consulta SEPOMEX
+                    $('#codigoPostal').on('input', function() {
+                        let valor = $(this).val().replace(/\D/g, ''); // Solo números
+                        if (valor.length > 5) {
+                            valor = valor.substring(0, 5);
+                        }
+                        $(this).val(valor);
+                        
+                        // Limpiar selects cuando cambie el CP
+                        if (valor.length < 5) {
+                            resetSelectsSepomex();
+                        }
+                    })
+                    
+                    $('#codigoPostal').on('blur', function() {
+                        const cp = $(this).val();
+                        if (cp && cp.length === 5) {
+                            consultarSepomex(cp);
+                        } else if (cp && cp.length < 5) {
+                            $(this).siblings('.fv-message').text('El código postal debe tener 5 dígitos');
+                            resetSelectsSepomex();
+                        }
+                    })
                 })
+
+                // Funciones para consulta SEPOMEX
+                const resetSelectsSepomex = () => {
+                    $('#estado, #municipio, #localidad, #colonia').prop('disabled', true).html('<option value="">Seleccione CP primero</option>');
+                }
+
+                const consultarSepomex = async (cp) => {
+                    try {
+                        $('#estado, #municipio, #localidad, #colonia').prop('disabled', true).html('<option value="">Cargando...</option>');
+                        
+                        const response = await fetch("https://api.condusef.gob.mx/sepomex/colonias/?cp=" + cp);
+                        const data = await response.json();
+
+                        if (!data.colonias || data.colonias.length === 0) {
+                            $('#codigoPostal').siblings('.fv-message').text('Código postal no encontrado');
+                            resetSelectsSepomex();
+                            return;
+                        }
+                        
+                        $('#codigoPostal').siblings('.fv-message').text('');
+                        const colonias = data.colonias;
+                        validaEstado(colonias);
+                        validaMunicipio(colonias);
+                        validaColonia(colonias);
+
+                    } catch (error) {
+                        console.error('Error al consultar SEPOMEX:', error);
+                        $('#codigoPostal').siblings('.fv-message').text('Error al consultar código postal. Verifique su conexión a internet.');
+                        resetSelectsSepomex();
+                    }
+                }
+
+                const validaEstado = (edo) => {
+                    const estado = document.querySelector("#estado")
+                    const estados = getOpciones(edo, "estadoId", "estado")
+                    insertaOpciones(estado, estados)
+                }
+
+                const validaMunicipio = (mun) => {
+                    const municipio = document.querySelector("#municipio")
+                    const municipios = getOpciones(mun, "municipioId", "municipio")
+                    insertaOpciones(municipio, municipios)
+                }
+
+                const validaColonia = (col) => {
+                    const colonia = document.querySelector("#colonia")
+                    const colonias = getOpciones(col, "coloniaId", "colonia")
+                    insertaOpciones(colonia, colonias)
+                }
+
+                const getOpciones = (elementos, key, value) => {
+                    const opciones = []
+                    elementos.forEach((elemento) => {
+                        const opcion = "<option value='" + elemento[key] + "'>" + elemento[value] + "</option>"
+                        if (!opciones.includes(opcion)) opciones.push(opcion)
+                    })
+                    return opciones
+                }
+
+                const insertaOpciones = (elemento, opciones = []) => {
+                    if (opciones.length > 1) opciones.unshift("<option value='' disabled>Seleccione</option>")
+
+                    elemento.innerHTML = opciones.join("")
+                    elemento.selectedIndex = 0
+                    elemento.disabled = !(opciones.length > 1)
+                }
             </script>
         HTML;
 

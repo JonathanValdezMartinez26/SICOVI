@@ -107,31 +107,44 @@
                                     <small>Ingrese la información personal básica.</small>
                                 </div>
                                 <div class="row">
-                                    <!-- Sección de foto -->
-                                    <div class="col-md-4 d-flex flex-column justify-content-center align-items-center">
+                                    <!-- Sección de foto - Reducida a 2 columnas -->
+                                    <div class="col-md-2 d-flex flex-column justify-content-center align-items-center">
                                         <div class="mb-3">
                                             <input type="file" id="fotoInput" accept="image/*" style="display: none;">
-                                            <img src="/assets/img/misc/user.svg" alt="Foto de usuario" id="fotoPreview" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #ddd;">
+                                            <img src="/assets/img/misc/user.svg" alt="Foto de usuario" id="fotoPreview" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #ddd;">
                                         </div>
                                         <button type="button" id="btnCambiarFoto" class="btn btn-sm btn-outline-primary">
                                             <i class="fa fa-camera">&nbsp;</i>Cambiar Foto
                                         </button>
                                     </div>
-                                    <div class="col-md-8">
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
+                                    <div class="col-md-10">
+                                        <!-- Fila 1: Nombres completos -->
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-4">
                                                 <label for="nombre" class="form-label">Nombre(s)</label>
                                                 <input type="text" id="nombre" name="nombre" class="form-control mayusculas" maxlength="50">
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label for="apellido1" class="form-label">Apellido Paterno</label>
                                                 <input type="text" id="apellido1" name="apellido1" class="form-control mayusculas" maxlength="50">
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label for="apellido2" class="form-label">Apellido Materno</label>
                                                 <input type="text" id="apellido2" name="apellido2" class="form-control mayusculas" maxlength="50">
+                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Fila 2: Fecha nacimiento, sexo, RFC, CURP -->
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-3">
+                                                <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento</label>
+                                                <div class="input-group input-group-merge cursor-pointer">
+                                                    <input type="text" id="fechaNacimiento" name="fechaNacimiento" class="form-control" readonly>
+                                                    <i class="input-group-text fa fa-calendar-days"></i>
+                                                </div>
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
                                             <div class="col-md-3">
@@ -144,21 +157,75 @@
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
                                             <div class="col-md-3">
-                                                <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento</label>
-                                                <div class="input-group input-group-merge">
-                                                    <input type="text" id="fechaNacimiento" name="fechaNacimiento" class="form-control">
-                                                    <i class="input-group-text fa fa-calendar-days"></i>
-                                                </div>
-                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                                            </div>
-                                            <div class="col-md-6">
                                                 <label for="rfc" class="form-label">RFC</label>
                                                 <input type="text" id="rfc" name="rfc" class="form-control mayusculas" maxlength="13">
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-3">
                                                 <label for="curp" class="form-label">CURP</label>
                                                 <input type="text" id="curp" name="curp" class="form-control mayusculas" maxlength="18">
+                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Fila 3: Estado civil, nacionalidad, NSS -->
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-4">
+                                                <label for="estadoCivil" class="form-label">Estado Civil</label>
+                                                <select id="estadoCivil" name="estadoCivil" class="form-select">
+                                                    <option value="" selected disabled>Seleccione</option>
+                                                    <option value="SOLTERO">Soltero(a)</option>
+                                                    <option value="CASADO">Casado(a)</option>
+                                                    <option value="UNION_LIBRE">Unión Libre</option>
+                                                    <option value="DIVORCIADO">Divorciado(a)</option>
+                                                    <option value="VIUDO">Viudo(a)</option>
+                                                    <option value="SEPARADO">Separado(a)</option>
+                                                </select>
+                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="nacionalidad" class="form-label">Nacionalidad</label>
+                                                <input type="text" id="nacionalidad" name="nacionalidad" class="form-control mayusculas" value="MEXICANA" maxlength="50">
+                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="nss" class="form-label">NSS (Número de Seguro Social)</label>
+                                                <input type="text" id="nss" name="nss" class="form-control" maxlength="11" pattern="[0-9]*" placeholder="11 dígitos (opcional)">
+                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Fila 4: Domicilio -->
+                                        <div class="row g-3">
+                                            <div class="col-md-12">
+                                                <label for="calle" class="form-label">Calle y numero</label>
+                                                <input type="text" id="calle" name="calle" class="form-control" maxlength="150" placeholder="Calle, número exterior e interior">
+                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="codigoPostal" class="form-label">Código Postal</label>
+                                                <input type="text" id="codigoPostal" name="codigoPostal" class="form-control" maxlength="5" pattern="[0-9]*" placeholder="5 dígitos">
+                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="colonia" class="form-label">Colonia</label>
+                                                <select id="colonia" name="colonia" class="form-select" disabled>
+                                                    <option value="">Ingrese CP</option>
+                                                </select>
+                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="municipio" class="form-label">Municipio</label>
+                                                <select id="municipio" name="municipio" class="form-select" disabled>
+                                                    <option value="">Ingrese CP</option>
+                                                </select>
+                                                <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="estado" class="form-label">Estado</label>
+                                                <select id="estado" name="estado" class="form-select" disabled>
+                                                    <option value="">Ingrese CP</option>
+                                                </select>
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
                                         </div>
@@ -354,7 +421,24 @@
                                                 <p class="mb-1"><strong>RFC:</strong> <span id="resumenRfc">-</span></p>
                                                 <p class="mb-1"><strong>CURP:</strong> <span id="resumenCurp">-</span></p>
                                                 <p class="mb-1"><strong>Fecha Nac.:</strong> <span id="resumenFechaNac">-</span></p>
-                                                <p class="mb-0"><strong>Sexo:</strong> <span id="resumenSexo">-</span></p>
+                                                <p class="mb-1"><strong>Sexo:</strong> <span id="resumenSexo">-</span></p>
+                                                <p class="mb-1"><strong>Estado Civil:</strong> <span id="resumenEstadoCivil">-</span></p>
+                                                <p class="mb-1"><strong>Nacionalidad:</strong> <span id="resumenNacionalidad">-</span></p>
+                                                <p class="mb-0"><strong>NSS:</strong> <span id="resumenNss">-</span></p>
+                                            </div>
+                                        </div>
+
+                                        <div class="card mt-3">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">Domicilio</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p class="mb-1"><strong>Calle:</strong> <span id="resumenCalle">-</span></p>
+                                                <p class="mb-1"><strong>Código Postal:</strong> <span id="resumenCodigoPostal">-</span></p>
+                                                <p class="mb-1"><strong>Colonia:</strong> <span id="resumenColonia">-</span></p>
+                                                <p class="mb-1"><strong>Localidad:</strong> <span id="resumenLocalidad">-</span></p>
+                                                <p class="mb-1"><strong>Municipio:</strong> <span id="resumenMunicipio">-</span></p>
+                                                <p class="mb-0"><strong>Estado:</strong> <span id="resumenEstado">-</span></p>
                                             </div>
                                         </div>
                                     </div>

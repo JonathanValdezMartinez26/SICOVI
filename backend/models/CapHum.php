@@ -70,6 +70,15 @@ class CapHum extends Model
                 P.CURP,
                 TO_CHAR(P.FECHA_NACIMIENTO, 'YYYY-MM-DD') AS FECHA_NACIMIENTO,
                 P.SEXO,
+                P.ESTADO_CIVIL,
+                P.NACIONALIDAD,
+                P.NSS,
+                P.CALLE,
+                P.CODIGO_POSTAL,
+                P.ESTADO,
+                P.MUNICIPIO,
+                P.LOCALIDAD,
+                P.COLONIA,
                 P.ESTATUS,
                 CASE 
                     WHEN P.FOTO IS NOT NULL THEN P.ID
@@ -133,10 +142,23 @@ class CapHum extends Model
         $curp = $datos['curp'] ?? '';
         $fechaNacimiento = $datos['fechaNacimiento'] ?? '';
         $sexo = $datos['sexo'] ?? '';
+        $estadoCivil = $datos['estadoCivil'] ?? '';
+        $nacionalidad = $datos['nacionalidad'] ?? '';
+        $nss = $datos['nss'] ?? '';
+        $calle = $datos['calle'] ?? '';
+        $codigoPostal = $datos['codigoPostal'] ?? '';
+        $estado = $datos['estado'] ?? '';
+        $municipio = $datos['municipio'] ?? '';
+        $localidad = $datos['localidad'] ?? '';
+        $colonia = $datos['colonia'] ?? '';
         $usuario = $datos['usuario'] ?? '';
         $pass = $datos['pass'] ?? '';
         $sucursal = $datos['sucursal'] ?? '';
         $perfil = $datos['perfil'] ?? '';
+        $empresa = $datos['empresa'] ?? '';
+        $puesto = $datos['puesto'] ?? '';
+        $fechaIngreso = $datos['fechaIngreso'] ?? '';
+        $reporta = $datos['reporta'] ?? '';
 
         try {
             $db = new Database();
@@ -148,8 +170,8 @@ class CapHum extends Model
                 $valoresFoto = $fotoData ? ', EMPTY_BLOB()' : '';
 
                 $qryPersona = <<<SQL
-                    INSERT INTO PERSONA (NOMBRE, APELLIDO_1, APELLIDO_2, RFC, CURP, FECHA_NACIMIENTO, SEXO, ESTATUS{$camposFoto})
-                    VALUES (:nombre, :apellido1, :apellido2, :rfc, :curp, TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'), :sexo, 1{$valoresFoto})
+                    INSERT INTO PERSONA (NOMBRE, APELLIDO_1, APELLIDO_2, RFC, CURP, FECHA_NACIMIENTO, SEXO, ESTADO_CIVIL, NACIONALIDAD, NSS, CALLE, CODIGO_POSTAL, ESTADO, MUNICIPIO, LOCALIDAD, COLONIA, ESTATUS{$camposFoto})
+                    VALUES (:nombre, :apellido1, :apellido2, :rfc, :curp, TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'), :sexo, :estadoCivil, :nacionalidad, :nss, :calle, :codigoPostal, :estado, :municipio, :localidad, :colonia, 1{$valoresFoto})
                     RETURNING ID, FOTO INTO :id, :foto
                 SQL;
 
@@ -160,7 +182,16 @@ class CapHum extends Model
                     'rfc' => strtoupper($rfc),
                     'curp' => strtoupper($curp),
                     'fechaNacimiento' => $fechaNacimiento,
-                    'sexo' => strtoupper($sexo)
+                    'sexo' => strtoupper($sexo),
+                    'estadoCivil' => strtoupper($estadoCivil),
+                    'nacionalidad' => strtoupper($nacionalidad),
+                    'nss' => $nss,
+                    'calle' => strtoupper($calle),
+                    'codigoPostal' => $codigoPostal,
+                    'estado' => strtoupper($estado),
+                    'municipio' => strtoupper($municipio),
+                    'localidad' => strtoupper($localidad),
+                    'colonia' => strtoupper($colonia)
                 ];
 
                 $retPersona = [
