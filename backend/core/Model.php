@@ -16,6 +16,29 @@ class Model
         return $resultado;
     }
 
+    public static function getCatalogoEmpresas()
+    {
+        $qry = <<<SQL
+            SELECT
+                ID,
+                RAZON_SOCIAL
+            FROM
+                EMPRESA
+            WHERE
+                ESTATUS = 1
+            ORDER BY
+                RAZON_SOCIAL
+        SQL;
+
+        try {
+            $db = new Database();
+            $r = $db->queryAll($qry);
+            return self::resultado(true, 'Empresas encontradas.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener las empresas.', null, $e->getMessage());
+        }
+    }
+
     public static function getCatalogoSucursales()
     {
         $query = <<<SQL

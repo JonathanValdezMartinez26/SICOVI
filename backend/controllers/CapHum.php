@@ -278,17 +278,6 @@ class CapHum extends Controller
                     }
                 }
                 
-                // Función para llenar región automáticamente
-                const actualizarRegion = () => {
-                    const sucursalId = $('#sucursalWizard').val()
-                    if (sucursalId) {
-                        // Aquí se haría una consulta AJAX para obtener la región
-                        // Por ahora simularemos con datos estáticos
-                        const regionTexto = "Región " + sucursalId // Placeholder
-                        $('#regionWizard').val(regionTexto)
-                    }
-                }
-                
                 let modoEdicion = false
                 let datosOriginales = {}
                 let hayCambios = false
@@ -611,7 +600,6 @@ class CapHum extends Controller
                     formData.append('codigoPostal', $("#codigoPostal").val())
                     formData.append('estado', $("#estado").val())
                     formData.append('municipio', $("#municipio").val())
-                    formData.append('localidad', $("#localidad").val())
                     formData.append('colonia', $("#colonia").val())
                     formData.append('usuario', $("#usuario").val())
                     formData.append('pass', $("#password").val())
@@ -866,7 +854,23 @@ class CapHum extends Controller
                     })
                     
                     // Event listeners para el nuevo paso de empresa
-                    $('#sucursalWizard').change(actualizarRegion)
+                    $('#empresaWizard').on('change', () => {
+                        const empresaId = $('#empresaWizard option:selected').val()
+                        $('#sucursalWizard option').each(function() {
+                            const sucursalEmpresaId = $(this).attr('data-empresa')
+                            if (sucursalEmpresaId !== empresaId) {
+                                $(this).hide()
+                            } else {
+                                $(this).show()
+                            }
+                        })
+                    })
+
+
+                    $('#sucursalWizard').on('change', () => {
+                        const sucursalId = $('#sucursalWizard option:selected').attr('data-region')
+                        if (sucursalId) $('#regionWizard').val(sucursalId)
+                    })
                     
                     // Event listener para llenar reporta cuando se selecciona jefe inmediato
                     $('#jefeInmediato').change(function() {
@@ -989,27 +993,26 @@ class CapHum extends Controller
         HTML;
 
         $catSucursales = CapHumDAO::getCatalogoSucursales();
-        $catEmpresas = CapHumDAO::getCatalogoEmpresas();
         $sucursales = '';
         $regiones = '';
         $empresas = '';
         $rgnTmp = [];
+        $empTmp = [];
 
         if ($catSucursales['success']) {
             foreach ($catSucursales['datos'] as $sucursal) {
                 $seleccion = $_SESSION['sucursal_id'] == $sucursal['ID'] ? 'selected' : '';
-                $sucursales .= "<option value='{$sucursal['ID']}' data-region='{$sucursal['REGION_ID']}' $seleccion>{$sucursal['NOMBRE']}</option>";
+                $sucursales .= "<option value='{$sucursal['ID']}' data-region='{$sucursal['REGION_ID']}' data-empresa='{$sucursal['EMPRESA_ID']}' $seleccion>{$sucursal['NOMBRE']}</option>";
 
                 if (!in_array($sucursal['REGION_ID'], $rgnTmp)) {
                     $rgnTmp[] = $sucursal['REGION_ID'];
-                    $regiones .= "<option value='{$sucursal['REGION_ID']}'>{$sucursal['REGION_NOMBRE']}</option>";
-                }
-            }
-        }
+                    $regiones .= "<option value='{$sucursal['REGION_ID']}' data-empresa='{$sucursal['EMPRESA_ID']}'>{$sucursal['REGION_NOMBRE']}</option>";
 
-        if ($catEmpresas['success']) {
-            foreach ($catEmpresas['datos'] as $empresa) {
-                $empresas .= "<option value='{$empresa['ID']}'>{$empresa['RAZON_SOCIAL']}</option>";
+                    if (!in_array($sucursal['EMPRESA_ID'], $empTmp)) {
+                        $empTmp[] = $sucursal['EMPRESA_ID'];
+                        $empresas .= "<option value='{$sucursal['EMPRESA_ID']}'>{$sucursal['EMPRESA_NOMBRE']}</option>";
+                    }
+                }
             }
         }
 
@@ -1024,62 +1027,18 @@ class CapHum extends Controller
 
     public function getPersonas()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit;
-        }
-
-        $filtro = $_POST['filtro'] ?? '';
-
-        $personas = CapHumDAO::getPersonas(['filtro' => $filtro]);
+        $personas = CapHumDAO::getPersonas($_POST);
         $this->respuestaJSON($personas);
     }
 
     public function getPersonaDetalle()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit;
-        }
-
-        $id = $_POST['id'] ?? 0;
-
-        $detalle = CapHumDAO::getPersonaDetalle(['id' => $id]);
+        $detalle = CapHumDAO::getPersonaDetalle($_POST);
         $this->respuestaJSON($detalle);
     }
 
     public function guardarPersona()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit;
-        }
-
-        $datos = [
-            'id' => $_POST['id'] ?? '',
-            'nombre' => $_POST['nombre'] ?? '',
-            'apellido1' => $_POST['apellido1'] ?? '',
-            'apellido2' => $_POST['apellido2'] ?? '',
-            'rfc' => $_POST['rfc'] ?? '',
-            'curp' => $_POST['curp'] ?? '',
-            'fechaNacimiento' => $_POST['fechaNacimiento'] ?? '',
-            'sexo' => $_POST['sexo'] ?? '',
-            'usuario' => $_POST['usuario'] ?? '',
-            'pass' => $_POST['pass'] ?? '',
-            'region' => $_POST['region'] ?? '',
-            'sucursal' => $_POST['sucursal'] ?? '',
-            'perfil' => $_POST['perfil'] ?? '',
-            'empresa' => $_POST['empresa'] ?? '',
-            'puesto' => $_POST['puesto'] ?? '',
-            'nomina' => $_POST['nomina'] ?? '',
-            'tipoNomina' => $_POST['tipoNomina'] ?? '',
-            'numeroNomina' => $_POST['numeroNomina'] ?? '',
-            'jefeInmediato' => $_POST['jefeInmediato'] ?? '',
-            'reporta' => $_POST['reporta'] ?? '',
-            'correosEmpresa' => $_POST['correosEmpresa'] ?? []
-        ];
-
-        // Procesar foto si se envió
         $fotoData = null;
         if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
             if ($_FILES['foto']['size'] > 5 * 1024 * 1024) {
@@ -1101,9 +1060,6 @@ class CapHum extends Controller
             try {
                 $fotoData = [
                     'foto' => fopen($_FILES['foto']['tmp_name'], 'rb'),
-                    'nombre' => $_FILES['foto']['name'],
-                    'tipo' => $_FILES['foto']['type'],
-                    'tamano' => $_FILES['foto']['size']
                 ];
             } catch (\Exception $e) {
                 return $this->respuestaJSON([
@@ -1113,7 +1069,7 @@ class CapHum extends Controller
             }
         }
 
-        $resultado = CapHumDAO::guardarPersona($datos, $fotoData);
+        $resultado = CapHumDAO::guardarPersona($_POST, $fotoData);
 
         // Cerrar el recurso de la foto si se abrió
         if ($fotoData && is_resource($fotoData['foto'])) {
@@ -1125,77 +1081,31 @@ class CapHum extends Controller
 
     public function eliminarPersona()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit;
-        }
-
-        $id = $_POST['id'] ?? 0;
-
-        $resultado = CapHumDAO::eliminarPersona(['id' => $id]);
+        $resultado = CapHumDAO::eliminarPersona($_POST);
         $this->respuestaJSON($resultado);
     }
 
     public function getUsuarioDetalle()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit;
-        }
-
-        $id = $_POST['id'] ?? 0;
-
-        $detalle = CapHumDAO::getUsuarioDetalle(['id' => $id]);
+        $detalle = CapHumDAO::getUsuarioDetalle($_POST);
         $this->respuestaJSON($detalle);
     }
 
     public function guardarUsuario()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit;
-        }
-
-        $datos = [
-            'id' => $_POST['id'] ?? '',
-            'persona' => $_POST['persona'] ?? '',
-            'usuario' => $_POST['usuario'] ?? '',
-            'pass' => $_POST['pass'] ?? '',
-            'region' => $_POST['region'] ?? '',
-            'sucursal' => $_POST['sucursal'] ?? '',
-            'perfil' => $_POST['perfil'] ?? '',
-            'empresa' => $_POST['empresa'] ?? '',
-            'estatus' => $_POST['estatus'] ?? 1
-        ];
-
-        $resultado = CapHumDAO::guardarUsuario($datos);
+        $resultado = CapHumDAO::guardarUsuario($_POST);
         $this->respuestaJSON($resultado);
     }
 
     public function cambiarEstatusUsuario()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit;
-        }
-
-        $id = $_POST['id'] ?? 0;
-        $estatus = $_POST['estatus'] ?? 1;
-
-        $resultado = CapHumDAO::cambiarEstatusUsuario(['id' => $id, 'estatus' => $estatus]);
+        $resultado = CapHumDAO::cambiarEstatusUsuario($_POST);
         $this->respuestaJSON($resultado);
     }
 
     public function eliminarUsuario()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            exit;
-        }
-
-        $id = $_POST['id'] ?? 0;
-
-        $resultado = CapHumDAO::eliminarUsuario(['id' => $id]);
+        $resultado = CapHumDAO::eliminarUsuario($_POST);
         $this->respuestaJSON($resultado);
     }
 

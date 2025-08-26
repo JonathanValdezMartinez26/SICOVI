@@ -73,11 +73,10 @@ class CapHum extends Model
                 P.ESTADO_CIVIL,
                 P.NACIONALIDAD,
                 P.NSS,
-                P.CALLE,
-                P.CODIGO_POSTAL,
+                P.CALLE_NUMERO,
+                P.CP,
                 P.ESTADO,
                 P.MUNICIPIO,
-                P.LOCALIDAD,
                 P.COLONIA,
                 P.ESTATUS,
                 CASE 
@@ -135,64 +134,38 @@ class CapHum extends Model
     public static function guardarPersona($datos, $fotoData = null)
     {
         $id = $datos['id'] ?? '';
-        $nombre = $datos['nombre'] ?? '';
-        $apellido1 = $datos['apellido1'] ?? '';
-        $apellido2 = $datos['apellido2'] ?? '';
-        $rfc = $datos['rfc'] ?? '';
-        $curp = $datos['curp'] ?? '';
-        $fechaNacimiento = $datos['fechaNacimiento'] ?? '';
-        $sexo = $datos['sexo'] ?? '';
-        $estadoCivil = $datos['estadoCivil'] ?? '';
-        $nacionalidad = $datos['nacionalidad'] ?? '';
-        $nss = $datos['nss'] ?? '';
-        $calle = $datos['calle'] ?? '';
-        $codigoPostal = $datos['codigoPostal'] ?? '';
-        $estado = $datos['estado'] ?? '';
-        $municipio = $datos['municipio'] ?? '';
-        $localidad = $datos['localidad'] ?? '';
-        $colonia = $datos['colonia'] ?? '';
-        $usuario = $datos['usuario'] ?? '';
-        $pass = $datos['pass'] ?? '';
-        $sucursal = $datos['sucursal'] ?? '';
-        $perfil = $datos['perfil'] ?? '';
-        $empresa = $datos['empresa'] ?? '';
-        $puesto = $datos['puesto'] ?? '';
-        $fechaIngreso = $datos['fechaIngreso'] ?? '';
-        $reporta = $datos['reporta'] ?? '';
 
         try {
             $db = new Database();
             $db->beginTransaction();
 
+            $paramsPersona = [
+                'nombre' => $datos['nombre'],
+                'apellido1' => $datos['apellido1'],
+                'apellido2' => $datos['apellido2'],
+                'rfc' => $datos['rfc'],
+                'curp' => $datos['curp'],
+                'fechaNacimiento' => $datos['fechaNacimiento'],
+                'sexo' => $datos['sexo'],
+                'estadoCivil' => $datos['estadoCivil'],
+                'nacionalidad' => $datos['nacionalidad'],
+                'nss' => $datos['nss'],
+                'calle' => $datos['calle'],
+                'cp' => $datos['codigoPostal'],
+                'estado' => $datos['estado'],
+                'municipio' => $datos['municipio'],
+                'colonia' => $datos['colonia']
+            ];
+
             if (empty($id)) {
-                // Insertar nueva persona
                 $camposFoto = $fotoData ? ', FOTO' : '';
                 $valoresFoto = $fotoData ? ', EMPTY_BLOB()' : '';
 
                 $qryPersona = <<<SQL
-                    INSERT INTO PERSONA (NOMBRE, APELLIDO_1, APELLIDO_2, RFC, CURP, FECHA_NACIMIENTO, SEXO, ESTADO_CIVIL, NACIONALIDAD, NSS, CALLE, CODIGO_POSTAL, ESTADO, MUNICIPIO, LOCALIDAD, COLONIA, ESTATUS{$camposFoto})
-                    VALUES (:nombre, :apellido1, :apellido2, :rfc, :curp, TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'), :sexo, :estadoCivil, :nacionalidad, :nss, :calle, :codigoPostal, :estado, :municipio, :localidad, :colonia, 1{$valoresFoto})
+                    INSERT INTO PERSONA (NOMBRE, APELLIDO_1, APELLIDO_2, RFC, CURP, FECHA_NACIMIENTO, SEXO, ESTADO_CIVIL, NACIONALIDAD, NSS, CALLE_NUMERO, CP, ESTADO, MUNICIPIO, COLONIA, ESTATUS{$camposFoto})
+                    VALUES (:nombre, :apellido1, :apellido2, :rfc, :curp, TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'), :sexo, :estadoCivil, :nacionalidad, :nss, :calle, :cp, :estado, :municipio, :colonia, 1{$valoresFoto})
                     RETURNING ID, FOTO INTO :id, :foto
                 SQL;
-
-                $paramsPersona = [
-                    'nombre' => strtoupper($nombre),
-                    'apellido1' => strtoupper($apellido1),
-                    'apellido2' => strtoupper($apellido2),
-                    'rfc' => strtoupper($rfc),
-                    'curp' => strtoupper($curp),
-                    'fechaNacimiento' => $fechaNacimiento,
-                    'sexo' => strtoupper($sexo),
-                    'estadoCivil' => strtoupper($estadoCivil),
-                    'nacionalidad' => strtoupper($nacionalidad),
-                    'nss' => $nss,
-                    'calle' => strtoupper($calle),
-                    'codigoPostal' => $codigoPostal,
-                    'estado' => strtoupper($estado),
-                    'municipio' => strtoupper($municipio),
-                    'localidad' => strtoupper($localidad),
-                    'colonia' => strtoupper($colonia)
-                ];
 
                 $retPersona = [
                     'id' => [
@@ -208,25 +181,20 @@ class CapHum extends Model
 
                 $db->CRUD($qryPersona, $paramsPersona, $retPersona);
 
-                // Insertar usuario asociado
-                if (!empty($usuario) && !empty($pass)) {
-                    // Obtener el siguiente ID para el usuario
-                    $qryNextUserId = "SELECT NVL(MAX(ID), 0) + 1 AS NEXT_ID FROM USUARIO";
-                    $nextUserIdResult = $db->queryOne($qryNextUserId);
-                    $usuarioId = $nextUserIdResult['NEXT_ID'];
+                $paramsUsuario = [
+                    'persona' => $retPersona['id']['valor'],
+                    'usuario' => $datos['usuario'],
+                    'pass' => $datos['pass'],
+                    'sucursal' => $datos['sucursal'],
+                    'perfil' => $datos['perfil']
+                ];
 
+                // Insertar usuario asociado
+                if (!empty($paramsUsuario['usuario']) && !empty($paramsUsuario['pass'])) {
                     $qryUsuario = <<<SQL
                         INSERT INTO USUARIO (PERSONA, USUARIO, PASS, SUCURSAL, PERFIL, ESTATUS)
                         VALUES (:persona, :usuario, :pass, :sucursal, :perfil, 1)
                     SQL;
-
-                    $paramsUsuario = [
-                        'persona' => $retPersona['id']['valor'],
-                        'usuario' => $usuario,
-                        'pass' => password_hash($pass, PASSWORD_DEFAULT),
-                        'sucursal' => $sucursal,
-                        'perfil' => $perfil
-                    ];
 
                     $db->CRUD($qryUsuario, $paramsUsuario);
                 }
@@ -234,9 +202,6 @@ class CapHum extends Model
                 $db->commit();
                 return self::resultado(true, 'Persona registrada correctamente.');
             } else {
-                // Actualizar persona existente
-                $camposFoto = $fotoData ? ', FOTO = :foto' : '';
-
                 $qryPersona = <<<SQL
                     UPDATE PERSONA SET
                         NOMBRE = :nombre,
@@ -245,25 +210,19 @@ class CapHum extends Model
                         RFC = :rfc,
                         CURP = :curp,
                         FECHA_NACIMIENTO = TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'),
-                        SEXO = :sexo{$camposFoto}
+                        SEXO = :sexo,
+                        ESTADO_CIVIL = :estadoCivil,
+                        NACIONALIDAD = :nacionalidad,
+                        NSS = :nss,
+                        CALLE_NUMERO = :calle,
+                        CP = :cp,
+                        ESTADO = :estado,
+                        MUNICIPIO = :municipio,
+                        COLONIA = :colonia
                     WHERE ID = :id
                 SQL;
 
-                $paramsPersona = [
-                    'id' => $id,
-                    'nombre' => strtoupper($nombre),
-                    'apellido1' => strtoupper($apellido1),
-                    'apellido2' => strtoupper($apellido2),
-                    'rfc' => strtoupper($rfc),
-                    'curp' => strtoupper($curp),
-                    'fechaNacimiento' => $fechaNacimiento,
-                    'sexo' => strtoupper($sexo)
-                ];
-
-                // Agregar datos de la foto si existe
-                if ($fotoData) {
-                    $paramsPersona['foto'] = $fotoData['foto'];
-                }
+                $paramsPersona['id'] = $id;
 
                 $db->CRUD($qryPersona, $paramsPersona);
 
@@ -294,29 +253,6 @@ class CapHum extends Model
             return self::resultado(true, 'Persona eliminada correctamente.');
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al eliminar la persona.', null, $e->getMessage());
-        }
-    }
-
-    public static function getCatalogoEmpresas()
-    {
-        $qry = <<<SQL
-            SELECT
-                ID,
-                RAZON_SOCIAL
-            FROM
-                EMPRESA
-            WHERE
-                ESTATUS = 1
-            ORDER BY
-                RAZON_SOCIAL
-        SQL;
-
-        try {
-            $db = new Database();
-            $r = $db->queryAll($qry);
-            return self::resultado(true, 'Empresas encontradas.', $r);
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al obtener las empresas.', null, $e->getMessage());
         }
     }
 
