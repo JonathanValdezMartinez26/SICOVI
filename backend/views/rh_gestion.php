@@ -50,7 +50,7 @@
                 <input type="hidden" id="personaId" name="personaId">
 
                 <!-- Wizard Container -->
-                <div class="bs-stepper wizard-icons-example">
+                <div class="bs-stepper wizard-registro-colaborador">
                     <div class="bs-stepper-header">
                         <div class="step justify-center" data-target="#datos-personales">
                             <button type="button" class="step-trigger">
@@ -255,12 +255,12 @@
                                 <div class="row">
                                     <div class="col-md-4 mt-0">
                                         <label for="contactoTelefonoPrincipal" class="form-label">Numero de teléfono (Principal)</label>
-                                        <input type="tel" id="contactoTelefonoPrincipal" name="contactoTelefonoPrincipal" class="form-control" maxlength="10">
+                                        <input type="text" id="contactoTelefonoPrincipal" name="contactoTelefonoPrincipal" class="form-control" pattern="[0-9]{10}" maxlength="10">
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-4 mt-0">
                                         <label for="contactoTelefonoAlterno" class="form-label">Numero de teléfono (Alterno)</label>
-                                        <input type="tel" id="contactoTelefonoAlterno" name="contactoTelefonoAlterno" class="form-control" maxlength="10">
+                                        <input type="text" id="contactoTelefonoAlterno" name="contactoTelefonoAlterno" class="form-control" pattern="[0-9]{10}" maxlength="10">
                                     </div>
                                     <div class="col-md-4 mt-0">
                                         <label for="contactoCorreoPrincipal" class="form-label">Correo electrónico</label>
@@ -281,7 +281,7 @@
                                     </div>
                                     <div class="col-md-4 mt-0">
                                         <label for="contactoEmergenciaTelefono" class="form-label">Teléfono de Emergencia</label>
-                                        <input type="tel" id="contactoEmergenciaTelefono" name="contactoEmergenciaTelefono" class="form-control" maxlength="10">
+                                        <input type="text" id="contactoEmergenciaTelefono" name="contactoEmergenciaTelefono" class="form-control" pattern="[0-9]{10}" maxlength="10">
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                 </div>
@@ -528,6 +528,10 @@
                                                 <p class="mb-1"><strong>Colonia:</strong> <span id="resumenColonia">-</span></p>
                                                 <p class="mb-1"><strong>Municipio:</strong> <span id="resumenMunicipio">-</span></p>
                                                 <p class="mb-1"><strong>Estado:</strong> <span id="resumenEstado">-</span></p>
+                                                <h6 class="mb-3 mt-3"><strong>Contactos</strong></h6>
+                                                <p class="mb-1"><strong>Tel. Principal:</strong> <span id="resumenContactoTelPrincipal">-</span></p>
+                                                <p class="mb-1"><strong>Tel. Alterno:</strong> <span id="resumenContactoTelAlterno">-</span></p>
+                                                <p class="mb-1"><strong>Correo:</strong> <span id="resumenContactoCorreo">-</span></p>
                                             </div>
                                         </div>
                                     </div>
@@ -545,14 +549,33 @@
                                                         <p class="mb-1"><strong>Región:</strong> <span id="resumenRegion">-</span></p>
                                                         <p class="mb-1"><strong>Oficina Base:</strong> <span id="resumenSucursal">-</span></p>
                                                         <p class="mb-1"><strong>Puesto:</strong> <span id="resumenPuesto">-</span></p>
-                                                        <p class="mb-0"><strong>Nómina:</strong> <span id="resumenNomina">-</span></p>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <p class="mb-1"><strong>Tipo Nómina:</strong> <span id="resumenTipoNomina">-</span></p>
-                                                        <p class="mb-1"><strong># Nómina:</strong> <span id="resumenNumeroNomina">-</span></p>
                                                         <p class="mb-1"><strong>Jefe Inmediato:</strong> <span id="resumenJefeInmediato">-</span></p>
                                                         <p class="mb-1"><strong>Reporta a:</strong> <span id="resumenReporta">-</span></p>
-                                                        <p class="mb-0"><strong>Correos Empresa:</strong> <span id="resumenCorreosEmpresa">-</span></p>
+                                                        <p class="mb-1"><strong>Correos Empresa:</strong> <span id="resumenCorreosEmpresa">-</span></p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>Fecha de Ingreso:</strong> <span id="resumenFechaIngreso">-</span></p>
+                                                        <p class="mb-1"><strong>Nómina:</strong> <span id="resumenNomina">-</span></p>
+                                                        <p class="mb-1"><strong>Tipo Nómina:</strong> <span id="resumenTipoNomina">-</span></p>
+                                                        <p class="mb-1"><strong># Nómina:</strong> <span id="resumenNumeroNomina">-</span></p>
+                                                        <p class="mb-1"><strong>Banco:</strong> <span id="resumenBanco">-</span></p>
+                                                        <p class="mb-1"><strong>Cuenta bancaria:</strong> <span id="resumenCuentaBancaria">-</span></p>
+                                                        <p class="mb-0"><strong>No. Tarjeta:</strong> <span id="resumenNoTarjeta">-</span></p>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <h6 class="mt-3"><strong>Datos Adicionales</strong></h6>
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <p class="mb-1"><strong>Contacto Emergencia:</strong> <span id="resumenContactoEmergenciaNombre">-</span></p>
+                                                        <p class="mb-1"><strong>Parentesco:</strong> <span id="resumenContactoEmergenciaParentesco">-</span></p>
+                                                        <p class="mb-1"><strong>Tel. Emergencia:</strong> <span id="resumenContactoEmergenciaTelefono">-</span></p>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <p class="mb-1"><strong>Condiciones Médicas:</strong><br><span id="resumenCondicionesMedicas">-</span></p>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <p class="mb-1"><strong>Información Adicional:</strong><br><span id="resumenInformacionAdicional">-</span></p>
                                                     </div>
                                                 </div>
                                             </div>

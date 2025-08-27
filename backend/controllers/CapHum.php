@@ -26,11 +26,9 @@ class CapHum extends Controller
                 }
                 
                 const initWizard = () => {
-                    const wizardElement = document.querySelector('.wizard-icons-example')
+                    const wizardElement = document.querySelector('.wizard-registro-colaborador')
                     if (wizardElement) {
-                        wizardPersona = new Stepper(wizardElement, {
-                            linear: false
-                        })
+                        wizardPersona = new Stepper(wizardElement, { linear: true, animation: true })
                         
                         const nextButtons = wizardElement.querySelectorAll('.btn-next')
                         const prevButtons = wizardElement.querySelectorAll('.btn-prev')
@@ -39,7 +37,7 @@ class CapHum extends Controller
                             btn.addEventListener('click', () => {
                                 if (validarPasoActual()) {
                                     wizardPersona.next()
-                                    if (wizardPersona._currentIndex === 3) {
+                                    if (wizardPersona._currentIndex === 4) {
                                         llenarResumen()
                                     }
                                 }
@@ -214,6 +212,10 @@ class CapHum extends Controller
                     const apellido2 = $('#apellido2').val() || ''
                     const nombreCompleto = nombre + ' ' + apellido1 + ' ' + apellido2
 
+                    console.log($('#nomina option:selected').text());
+                    console.log($('#tipoNomina option:selected').text());
+                    console.log($('#numeroNomina').val());
+
                     $('#resumenFoto').attr('src', fotoSrc)
                     $('#resumenNombre').text(nombreCompleto.trim())
                     $('#resumenRfc').text($('#rfc').val())
@@ -229,16 +231,21 @@ class CapHum extends Controller
                     $('#resumenMunicipio').text($('#municipio option:selected').text())
                     $('#resumenEstado').text($('#estado option:selected').text())
                     $('#resumenEmpresa').text($('#empresaWizard option:selected').text())
-                    $('#resumenRegion').text($('#regionWizard').val())
+                    $('#resumenRegion').text($('#regionWizard option:selected').text())
                     $('#resumenSucursal').text($('#sucursalWizard option:selected').text())
                     $('#resumenPuesto').text($('#puesto option:selected').text())
+                    $('#resumenJefeInmediato').text($('#jefeInmediato option:selected').text())
+                    $('#resumenReporta').text($('#reporta option:selected').text())
+                    $('#resumenFechaIngreso').text($('#fechaIngreso').val())
                     $('#resumenNomina').text($('#nomina option:selected').text())
                     $('#resumenTipoNomina').text($('#tipoNomina option:selected').text())
                     $('#resumenNumeroNomina').text($('#numeroNomina').val())
-                    $('#resumenJefeInmediato').text($('#jefeInmediato option:selected').text())
-                    $('#resumenReporta').text($('#reporta option:selected').text())
-                    
-                    // Correos empresariales
+                    $('#resumenBanco').text($('#banco').val())
+                    $('#resumenCuentaBancaria').text($('#cuentaBancaria').val())
+                    $('#resumenNoTarjeta').text($('#noTarjeta').val())
+                    $('#resumenContactoTelPrincipal').text($('#contactoTelefonoPrincipal').val() || '-')
+                    $('#resumenContactoTelAlterno').text($('#contactoTelefonoAlterno').val() || '-')
+                    $('#resumenContactoCorreo').text($('#contactoCorreoPrincipal').val() || '-')
                     const correos = []
                     $('input[name="correoEmpresa[]"]').each(function() {
                         const valor = $(this).val().trim()
@@ -247,6 +254,11 @@ class CapHum extends Controller
                     $('#resumenCorreosEmpresa').text(correos.join(', '))
                     $('#resumenUsuario').text($('#usuario').val())
                     $('#resumenPerfil').text($('#perfil option:selected').text())
+                    $('#resumenContactoEmergenciaNombre').text($('#contactoEmergenciaNombre').val() || '-')
+                    $('#resumenContactoEmergenciaParentesco').text($('#contactoEmergenciaParentesco').val() || '-')
+                    $('#resumenContactoEmergenciaTelefono').text($('#contactoEmergenciaTelefono').val() || '-')
+                    $('#resumenCondicionesMedicas').text($('#condicionesMedicas').val() ? $('#condicionesMedicas').val() : '-')
+                    $('#resumenInformacionAdicional').text($('#informacionAdicional').val() ? $('#informacionAdicional').val() : '-')
                 }
 
                 const confirmaEliminar = (mensaje, callback) => {
@@ -595,7 +607,7 @@ class CapHum extends Controller
                 }
 
                 const guardarPersona = () => {
-                    if (!validarDatosPersonales() || !validarDatosEmpresa() || !validarDatosUsuario()) {
+                    if (!validarDatosPersonales() || !validarDatosEmpresa() || !validarDatosNomina()) {
                         showError('Por favor complete todos los campos requeridos')
                         return
                     }
@@ -893,7 +905,7 @@ class CapHum extends Controller
                     const maxF = moment().subtract(18, 'years').format('YYYY-MM-DD');
                     const minF = moment().subtract(70, 'years').format('YYYY-MM-DD');
                     setInputFechas("#fechaNacimiento", { minF, maxF, iniF: maxF, enModal: true })
-                    setInputFechas("#fechaIngreso", { minD: 1800, maxD: 7, enModal: true })
+                    setInputFechas("#fechaIngreso", { minD: -1800, maxD: 7, enModal: true })
                     configuraTabla(tabla)
                     initWizard()
                     getPersonas()
@@ -977,17 +989,18 @@ class CapHum extends Controller
                     // Validación de NSS - solo números y exactamente 11 dígitos si se llena
                     $('#nss').on('input', function() {
                         let valor = $(this).val().replace(/\D/g, ''); // Solo números
-                        if (valor.length > 11) {
-                            valor = valor.substring(0, 11);
-                        }
+                        if (valor.length > 11) valor = valor.substring(0, 11);
                         $(this).val(valor);
-                        
-                        // Validar longitud si hay valor
-                        if (valor && valor.length !== 11) {
-                            $(this).siblings('.fv-message').text('El NSS debe tener exactamente 11 dígitos');
-                        } else {
-                            $(this).siblings('.fv-message').text('');
-                        }
+                        if (valor && valor.length !== 11) $(this).siblings('.fv-message').text('El NSS debe tener exactamente 11 dígitos');
+                        else $(this).siblings('.fv-message').text('')
+                    })
+
+                    $('#contactoTelefonoPrincipal, #contactoTelefonoAlterno, #contactoEmergenciaTelefono').on('input', function() {
+                        let valor = $(this).val().replace(/\D/g, ''); // Solo números
+                        if (valor.length > 10) valor = valor.substring(0, 10);
+                        $(this).val(valor);
+                        if (valor && valor.length !== 10) $(this).siblings('.fv-message').text('El número de teléfono debe ser de 10 dígitos');
+                        else $(this).siblings('.fv-message').text('')
                     })
                     
                     // Validación de Código Postal y consulta SEPOMEX
