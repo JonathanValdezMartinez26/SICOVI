@@ -4,6 +4,7 @@ namespace Models;
 
 use Core\Model;
 use Core\Database;
+use Error;
 
 class CapHum extends Model
 {
@@ -104,6 +105,12 @@ class CapHum extends Model
         }
     }
 
+    private static function getErrorMessage($resultado)
+    {
+        if ($resultado['error']) return $resultado['error'];
+        return $resultado['mensaje'] ?? null;
+    }
+
     // Orquestador: registra persona y datos relacionados en una transacción
     public static function guardarPersona($datos, $fotoData = null)
     {
@@ -114,80 +121,78 @@ class CapHum extends Model
 
             // 1) Crear persona
             $crea = self::crearPersona($datos, $fotoData, $db);
-            if (!is_array($crea) || empty($crea['success']) || !$crea['success']) {
-                throw new \Exception($crea['mensaje'] ?? 'Error creando persona');
-            }
-            $personaId = $crea['id'];
+            if (!$crea['success']) throw new \Exception(self::getErrorMessage($crea) ?? 'Error creando persona');
+            $personaId = $crea['datos']['id'];
 
             // 2) Telefonos persona
-            if (!empty($datos['telefonos']) && is_array($datos['telefonos'])) {
-                $insTel = self::insertarTelefonosPersona($personaId, $datos['telefonos'], $db);
-                if (empty($insTel['success'])) throw new \Exception($insTel['mensaje'] ?? 'Error insertando telefonos persona');
-            }
+            $telefonos = [
+                ['1', $datos['telefonoPrincipal'] ?? null],
+                ['2', $datos['telefonoAlterno'] ?? null]
+            ];
+            $insTel = self::insertarTelefonosPersona($personaId, $telefonos, $db);
+            if (!$insTel['success']) throw new \Exception(self::getErrorMessage($insTel) ?? 'Error insertando teléfonos persona');
 
             // 3) Emails persona
-            if (!empty($datos['emails']) && is_array($datos['emails'])) {
-                $insEmail = self::insertarEmailsPersona($personaId, $datos['emails'], $db);
-                if (empty($insEmail['success'])) throw new \Exception($insEmail['mensaje'] ?? 'Error insertando emails persona');
+            $emails[] = ['1', $datos['correoPrincipal'] ?? null];
+            $laborales = explode(',', $datos['correoLaboral'] ?? '');
+            foreach ($laborales as $email) {
+                $emails[] = ['4', $email];
             }
+            $insEmail = self::insertarEmailsPersona($personaId, $emails, $db);
+            if (empty($insEmail['success'])) throw new \Exception(self::getErrorMessage($insEmail) ?? 'Error insertando emails persona');
 
-            // 4) Contacto emergencia
-            if (!empty($datos['contacto_emergencia']) && is_array($datos['contacto_emergencia'])) {
-                $creaContacto = self::crearContactoEmergencia($personaId, $datos['contacto_emergencia'], $db);
-                if (empty($creaContacto['success'])) throw new \Exception($creaContacto['mensaje'] ?? 'Error creando contacto');
-                $contactoId = $creaContacto['id'];
-                if (!empty($datos['contacto_emergencia']['telefonos']) && is_array($datos['contacto_emergencia']['telefonos'])) {
-                    $insTelContacto = self::insertarTelefonosContacto($contactoId, $datos['contacto_emergencia']['telefonos'], $db);
-                    if (empty($insTelContacto['success'])) throw new \Exception($insTelContacto['mensaje'] ?? 'Error telefono contacto');
-                }
-            }
+            // 4) Nomina
+            $creaNom = self::crearNomina($personaId, $datos, $db);
+            if (empty($creaNom['success'])) throw new \Exception(self::getErrorMessage($creaNom) ?? 'Error creando nomina');
 
-            // 5) Nomina
-            if (!empty($datos['nomina']) && is_array($datos['nomina'])) {
-                $creaNom = self::crearNomina($personaId, $datos['nomina'], $db);
-                if (empty($creaNom['success'])) throw new \Exception($creaNom['mensaje'] ?? 'Error creando nomina');
-            }
+            // 5) Datos bancarios
+            $insBanco = self::insertarDatosBancarios($personaId, $datos, $db);
+            if (empty($insBanco['success'])) throw new \Exception(self::getErrorMessage($insBanco) ?? 'Error datos bancarios');
 
-            // 6) Datos bancarios
-            if (!empty($datos['datos_bancarios']) && is_array($datos['datos_bancarios'])) {
-                $insBanco = self::insertarDatosBancarios($personaId, $datos['datos_bancarios'], $db);
-                if (empty($insBanco['success'])) throw new \Exception($insBanco['mensaje'] ?? 'Error datos bancarios');
-            }
+            // 6) Contacto emergencia
+            $creaContacto = self::crearContactoEmergencia($personaId, $datos, $db);
+            if (empty($creaContacto['success'])) throw new \Exception(self::getErrorMessage($creaContacto) ?? 'Error creando contacto');
 
             $db->commit();
-            return self::resultado(true, 'Registro completado correctamente.', ['persona_id' => $personaId]);
+            return self::resultado(true, 'Registro completado correctamente.');
         } catch (\Exception $e) {
-            try {
-                $db->rollBack();
-            } catch (\Exception $__) {
-            }
-            return self::resultado(true, 'Error al registrar persona: ' . $e->getMessage());
+            $db->rollBack();
+            return self::resultado(false, 'Error al registrar persona.', null, $e->getMessage());
         }
     }
 
     // Crea la fila en PERSONA y devuelve el id
     public static function crearPersona($datos, $fotoData = null, $db = null)
     {
-        $closeDb = false;
-        if (!$db) {
-            $db = new Database();
-            $closeDb = true;
+        if ($fotoData) {
+            $retFoto = [
+                'foto' => [
+                    'valor' => $fotoData['foto'] ?? null,
+                    'tipo' => \PDO::PARAM_LOB
+                ]
+            ];
+            $qryFoto = [
+                'col' => ', FOTO',
+                'val' => ', EMPTY_BLOB()',
+                'ret' => ', :foto'
+            ];
         }
+
 
         $qry = <<<SQL
             INSERT INTO PERSONA (
                 NOMBRE, APELLIDO_1, APELLIDO_2, RFC, CURP, FECHA_NACIMIENTO,
                 SEXO, ESTADO_CIVIL, NACIONALIDAD, NSS, CALLE_NUMERO, CP,
                 ESTADO, MUNICIPIO, COLONIA,
-                CONDICIONES_MEDICAS, OTROS_DATOS_RELEVANTES, ESTATUS, FOTO
+                CONDICIONES_MEDICAS, OTROS_DATOS_RELEVANTES{$qryFoto['col']}
             )
             VALUES (
                 :nombre, :apellido1, :apellido2, :rfc, :curp, TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'),
                 :sexo, :estado_civil, :nacionalidad, :nss, :calle_numero, :cp,
                 :estado, :municipio, :colonia,
-                :condiciones_medicas, :informacion_adicional, :estatus, EMPTY_BLOB()
+                :condiciones_medicas, :informacion_adicional{$qryFoto['val']}
             )
-            RETURNING ID, FOTO INTO :id, :foto
+            RETURNING ID{$qryFoto['col']} INTO :id{$qryFoto['ret']}
         SQL;
 
         $params = [
@@ -207,173 +212,138 @@ class CapHum extends Model
             'municipio' => $datos['municipio'] ?? null,
             'colonia' => $datos['colonia'] ?? null,
             'condiciones_medicas' => $datos['condiciones_medicas'] ?? null,
-            'informacion_adicional' => $datos['informacion_adicional'] ?? null,
-            'estatus' => $datos['estatus'] ?? 1
+            'informacion_adicional' => $datos['informacion_adicional'] ?? null
         ];
 
         $ret = [
-            'foto' => [
-                'valor' => $fotoData['foto'],
-                'tipo' => \PDO::PARAM_LOB
-            ],
             'id' => [
                 'valor' => '',
                 'tipo' => \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT,
                 'largo' => 40
             ]
         ];
+        if ($fotoData) $ret = array_merge($ret, $retFoto);
 
-        $res = $db->CRUD($qry, $params, $ret);
-        if (!$res || !isset($ret['id'])) {
-            throw new \Exception('No se pudo insertar persona.');
+        try {
+            if (!$db) $db = new Database();
+            $res = $db->CRUD($qry, $params, $ret);
+            if (!$res || !isset($ret['id'])) return self::resultado(false, 'No se pudo insertar persona.');
+
+            $id = $ret['id']['valor'];
+            return self::resultado(true, "Persona registrada", ['id' => $id]);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al registrar persona: ' . $e->getMessage());
         }
-
-        $id = $ret['id'];
-
-        if ($closeDb) { /* no-op */
-        }
-        return ['success' => true, 'id' => $id];
     }
 
     public static function insertarTelefonosPersona($personaId, $telefonos, $db = null)
     {
-        $closeDb = false;
-        if (!$db) {
-            $db = new Database();
-            $closeDb = true;
-        }
+        $qry = "INSERT INTO PERSONA_TELEFONO (PERSONA, NUMERO, TIPO) VALUES (:persona, :numero, :tipo)";
+        try {
+            if (!$db) $db = new Database();
+            foreach ($telefonos as $telefono) {
+                if (!$telefono || is_array($telefono)) continue;
+                $params = ['persona' => $personaId, 'numero' => $telefono[1], 'tipo' => $telefono[0]];
+                $db->CRUD($qry, $params);
+            }
 
-        $qry = "INSERT INTO PERSONA_TELEFONO (PERSONA, TIPO, TELEFONO) VALUES (:persona, :tipo, :telefono)";
-        foreach ($telefonos as $t) {
-            $params = ['persona' => $personaId, 'tipo' => $t['tipo'] ?? 'PRINCIPAL', 'telefono' => $t['telefono'] ?? null];
-            $db->queryOne($qry, $params);
+            return self::resultado(true, "Teléfonos insertados");
+        } catch (\Exception $e) {
+            return self::resultado(false, 'No se pudo insertar teléfonos persona. ', null, $e->getMessage());
         }
-
-        if ($closeDb) { /* no-op */
-        }
-        return ['success' => true];
     }
 
     public static function insertarEmailsPersona($personaId, $emails, $db = null)
     {
-        $closeDb = false;
-        if (!$db) {
-            $db = new Database();
-            $closeDb = true;
+        $qry = "INSERT INTO PERSONA_EMAIL (PERSONA, DIRECCION, TIPO) VALUES (:persona, :direccion, :tipo)";
+        try {
+            if (!$db) $db = new Database();
+            foreach ($emails as $email) {
+                if (!$email || is_array($email)) continue;
+                $params = ['persona' => $personaId, 'direccion' => $email[1], 'tipo' => $email[0]];
+                $db->CRUD($qry, $params);
+            }
+
+            return self::resultado(true, "Emails insertados");
+        } catch (\Exception $e) {
+            return self::resultado(false, 'No se pudo insertar emails persona. ', null, $e->getMessage());
         }
-
-        $qry = "INSERT INTO PERSONA_EMAIL (PERSONA, TIPO, EMAIL) VALUES (:persona, :tipo, :email)";
-        foreach ($emails as $e) {
-            $params = ['persona' => $personaId, 'tipo' => $e['tipo'] ?? 'PRINCIPAL', 'email' => $e['email'] ?? null];
-            $db->queryOne($qry, $params);
-        }
-
-        if ($closeDb) { /* no-op */
-        }
-        return ['success' => true];
-    }
-
-    public static function crearContactoEmergencia($personaId, $contacto, $db = null)
-    {
-        $closeDb = false;
-        if (!$db) {
-            $db = new Database();
-            $closeDb = true;
-        }
-
-        $qry = "INSERT INTO PERSONA_CONTACTO_EMERGENCIA (PERSONA, NOMBRE, PARENTESCO, TELEFONO) VALUES (:persona, :nombre, :parentesco, :telefono) RETURNING ID";
-        $params = ['persona' => $personaId, 'nombre' => $contacto['nombre'] ?? null, 'parentesco' => $contacto['parentesco'] ?? null, 'telefono' => $contacto['telefono'] ?? null];
-        $res = $db->queryOne($qry, $params);
-        $id = $res['id'] ?? $res['ID'] ?? null;
-
-        if (!$id) throw new \Exception('No se pudo insertar contacto de emergencia.');
-
-        if ($closeDb) { /* no-op */
-        }
-        return ['success' => true, 'id' => $id];
-    }
-
-    public static function insertarTelefonosContacto($contactoId, $telefonos, $db = null)
-    {
-        $closeDb = false;
-        if (!$db) {
-            $db = new Database();
-            $closeDb = true;
-        }
-
-        $qry = "INSERT INTO PERSONA_CONTACTO_TELEFONO (CONTACTO_ID, TIPO, TELEFONO) VALUES (:contacto, :tipo, :telefono)";
-        foreach ($telefonos as $t) {
-            $params = ['contacto' => $contactoId, 'tipo' => $t['tipo'] ?? 'PRINCIPAL', 'telefono' => $t['telefono'] ?? null];
-            $db->queryOne($qry, $params);
-        }
-
-        if ($closeDb) { /* no-op */
-        }
-        return ['success' => true];
     }
 
     public static function crearNomina($personaId, $nomina, $db = null)
     {
-        $closeDb = false;
-        if (!$db) {
-            $db = new Database();
-            $closeDb = true;
-        }
-
         $qry = <<<SQL
             INSERT INTO NOMINA (
-                PERSONA, SUCURSAL, PUESTO, FECHA_INGRESO, TIPO_CONTRATO,
-                SALARIO, FRECUENCIA_PAGO, CLAVE_IMSS
+                PERSONA, SUCURSAL, JEFE, PUESTO, INGRESO, NOMINA, TIPO, NUMERO
             )
             VALUES (
-                :persona, :sucursal, :puesto, :fecha_ingreso, :tipo_contrato,
-                :salario, :frecuencia_pago, :clave_imss
+                :persona, :sucursal, :jefe, :puesto, TO_DATE(:fecha_ingreso, 'YYYY-MM-DD'), :nomina, :tipo, :numero
             )
-            RETURNING ID
             SQL;
 
         $params = [
             'persona' => $personaId,
             'sucursal' => $nomina['sucursal'] ?? null,
+            'jefe' => 2, //$nomina['jefeInmediato'] ?? -1,
             'puesto' => $nomina['puesto'] ?? null,
-            'fecha_ingreso' => $nomina['fecha_ingreso'] ?? null,
-            'tipo_contrato' => $nomina['tipo_contrato'] ?? null,
-            'salario' => $nomina['salario'] ?? null,
-            'frecuencia_pago' => $nomina['frecuencia_pago'] ?? null,
-            'clave_imss' => $nomina['clave_imss'] ?? null,
+            'fecha_ingreso' => $nomina['fechaIngreso'] ?? null,
+            'nomina' => $nomina['nomina'] ?? null,
+            'tipo' => $nomina['tipoNomina'] ?? null,
+            'numero' => $nomina['numeroNomina'] ?? null
         ];
 
-        $res = $db->queryOne($qry, $params);
-        $id = $res['id'] ?? $res['ID'] ?? null;
-        if (!$id) throw new \Exception('No se pudo insertar registro de nómina.');
-
-        if ($closeDb) { /* no-op */
+        try {
+            if (!$db) $db = new Database();
+            $db->CRUD($qry, $params);
+            return self::resultado(true, 'Nómina creada');
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al crear nómina', null, $e->getMessage());
         }
-        return ['success' => true, 'id' => $id];
     }
 
     public static function insertarDatosBancarios($personaId, $datosBancarios, $db = null)
     {
-        $closeDb = false;
-        if (!$db) {
-            $db = new Database();
-            $closeDb = true;
-        }
-
-        $qry = "INSERT INTO PERSONA_DATOS_BANCARIOS (PERSONA, BANCO, CLABE, NUMERO_CUENTA, TITULAR) VALUES (:persona, :banco, :clabe, :numero_cuenta, :titular)";
-        $params = [
+        $qry = "INSERT INTO PERSONA_DATOS_BANCARIOS (PERSONA, ID_BANCO, NUMERO, TIPO_NUMERO) VALUES (:persona, :banco, :numero, :tipo)";
+        $paramsTarjeta = [
             'persona' => $personaId,
             'banco' => $datosBancarios['banco'] ?? null,
-            'clabe' => $datosBancarios['clabe'] ?? null,
-            'numero_cuenta' => $datosBancarios['numero_cuenta'] ?? null,
-            'titular' => $datosBancarios['titular'] ?? null,
+            'numero' => $datosBancarios['noTarjeta'] ?? null,
+            'tipo' => 2,
+        ];
+        $paramsCuenta = [
+            'persona' => $personaId,
+            'banco' => $datosBancarios['banco'] ?? null,
+            'numero' => $datosBancarios['cuentaBancaria'] ?? null,
+            'tipo' => 1,
         ];
 
-        $db->queryOne($qry, $params);
-
-        if ($closeDb) { /* no-op */
+        try {
+            if (!$db) $db = new Database();
+            $db->CRUD($qry, $paramsTarjeta);
+            $db->CRUD($qry, $paramsCuenta);
+            return self::resultado(true, 'Datos bancarios registrados correctamente');
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al registrar datos bancarios', null, $e->getMessage());
         }
-        return ['success' => true];
+    }
+
+    public static function crearContactoEmergencia($personaId, $contacto, $db = null)
+    {
+        $qry = "INSERT INTO PERSONA_CONTACTO_EMERGENCIA (PERSONA, NOMBRE, PARENTESCO, TELEFONO) VALUES (:persona, :nombre, :parentesco, :telefono)";
+        $params = [
+            'persona' => $personaId,
+            'nombre' => $contacto['contactoEmergenciaNombre'] ?? null,
+            'parentesco' => $contacto['contactoEmergenciaParentesco'] ?? null,
+            'telefono' => $contacto['contactoEmergenciaTelefono'] ?? null
+        ];
+
+        try {
+            if (!$db) $db = new Database();
+            $db->CRUD($qry, $params);
+            return self::resultado(true, 'Contacto de emergencia creado');
+        } catch (\Exception $e) {
+            return self::resultado(false, 'No se pudo registrar el contacto de emergencia', null, $e->getMessage());
+        }
     }
 
     public static function eliminarPersona($datos)

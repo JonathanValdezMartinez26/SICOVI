@@ -37,9 +37,7 @@ class CapHum extends Controller
                             btn.addEventListener('click', () => {
                                 if (validarPasoActual()) {
                                     wizardPersona.next()
-                                    if (wizardPersona._currentIndex === 4) {
-                                        llenarResumen()
-                                    }
+                                    if (wizardPersona._currentIndex === 3) llenarResumen()
                                 }
                             })
                         })
@@ -240,7 +238,7 @@ class CapHum extends Controller
                     $('#resumenNomina').text($('#nomina option:selected').text())
                     $('#resumenTipoNomina').text($('#tipoNomina option:selected').text())
                     $('#resumenNumeroNomina').text($('#numeroNomina').val())
-                    $('#resumenBanco').text($('#banco').val())
+                    $('#resumenBanco').text($('#banco option:selected').text())
                     $('#resumenCuentaBancaria').text($('#cuentaBancaria').val())
                     $('#resumenNoTarjeta').text($('#noTarjeta').val())
                     $('#resumenContactoTelPrincipal').text($('#contactoTelefonoPrincipal').val() || '-')
@@ -613,7 +611,8 @@ class CapHum extends Controller
                     }
 
                     const fecha = getInputFechas("#fechaNacimiento", false, true)
-                    
+                    const fechaIngreso = getInputFechas("#fechaIngreso", false, true)
+
                     // Crear FormData para enviar archivos
                     const formData = new FormData()
                     formData.append('id', $("#personaId").val())
@@ -649,15 +648,21 @@ class CapHum extends Controller
                     formData.append('numeroNomina', $("#numeroNomina").val())
                     formData.append('jefeInmediato', $("#jefeInmediato").val())
                     formData.append('reporta', $("#reporta").val())
-                    
-                    // Recopilar correos empresariales
-                    const correosEmpresa = []
-                    $('input[name="correoEmpresa[]"]').each(function() {
-                        const correo = $(this).val().trim()
-                        if (correo) correosEmpresa.push(correo)
-                    })
-                    formData.append('correosEmpresa', JSON.stringify(correosEmpresa))
+                    formData.append('fechaIngreso', fechaIngreso)
+                    formData.append('banco',$('#banco').val())
+                    formData.append('cuentaBancaria',$('#cuentaBancaria').val())
+                    formData.append('noTarjeta', $('#noTarjeta').val())
+                    formData.append('telefonoPrincipal', $('#contactoTelefonoPrincipal').val())
+                    formData.append('telefonoAlterno', $('#contactoTelefonoAlterno').val())
+                    formData.append('correoPrincipal', $('#contactoCorreoPrincipal').val())
 
+                    const correos = []
+                    $('input[name="correoEmpresa[]"]').each(function() {
+                        const valor = $(this).val().trim()
+                        if (valor) correos.push(valor)
+                    })
+                    formData.append('correoLaboral', correos.join(', '))
+                    
                     // Agregar foto si se seleccionó
                     const fotoInput = $("#fotoInput")[0]
                     if (fotoInput.files && fotoInput.files[0]) {
@@ -1039,8 +1044,7 @@ class CapHum extends Controller
 
         if ($catSucursales['success']) {
             foreach ($catSucursales['datos'] as $sucursal) {
-                $seleccion = $_SESSION['sucursal_id'] == $sucursal['ID'] ? 'selected' : '';
-                $sucursales .= "<option value='{$sucursal['ID']}' data-region='{$sucursal['REGION_ID']}' data-empresa='{$sucursal['EMPRESA_ID']}' $seleccion>{$sucursal['NOMBRE']}</option>";
+                $sucursales .= "<option value='{$sucursal['ID']}' data-region='{$sucursal['REGION_ID']}' data-empresa='{$sucursal['EMPRESA_ID']}'>{$sucursal['NOMBRE']}</option>";
 
                 if (!in_array($sucursal['REGION_ID'], $rgnTmp)) {
                     $rgnTmp[] = $sucursal['REGION_ID'];
@@ -1054,12 +1058,22 @@ class CapHum extends Controller
             }
         }
 
+        $catBancos = CapHumDAO::getCatalogoBancos();
+        $bancos = '';
+
+        if ($catBancos['success']) {
+            foreach ($catBancos['datos'] as $banco) {
+                $bancos .= "<option value='{$banco['ID']}'>{$banco['NOMBRE']}</option>";
+            }
+        }
+
         $this->set('titulo', 'Gestión Capital Humano | ' . CONFIGURACION['EMPRESA']);
         $this->set('script', $script);
         $this->set('css', '<link rel="stylesheet" href="/assets/css/wizard-rh.css">');
         $this->set("regiones", $regiones);
         $this->set("sucursales", $sucursales);
         $this->set("empresas", $empresas);
+        $this->set("bancos", $bancos);
         $this->render('rh_gestion');
     }
 

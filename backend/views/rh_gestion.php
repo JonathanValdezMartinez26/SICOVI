@@ -364,13 +364,13 @@
                                         <label for="puesto" class="form-label">Puesto</label>
                                         <select id="puesto" name="puesto" class="form-select">
                                             <option value="" selected disabled>Seleccione un puesto</option>
-                                            <option value="Gerente General">Gerente General</option>
-                                            <option value="Gerente de Área">Gerente de Área</option>
-                                            <option value="Supervisor">Supervisor</option>
-                                            <option value="Coordinador">Coordinador</option>
-                                            <option value="Analista">Analista</option>
-                                            <option value="Asistente">Asistente</option>
-                                            <option value="Auxiliar">Auxiliar</option>
+                                            <option value="1">Gerente General</option>
+                                            <option value="2">Gerente de Área</option>
+                                            <option value="3">Supervisor</option>
+                                            <option value="4">Coordinador</option>
+                                            <option value="5">Analista</option>
+                                            <option value="6">Asistente</option>
+                                            <option value="7">Auxiliar</option>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -445,9 +445,9 @@
                                         <label for="nomina" class="form-label">Nómina</label>
                                         <select id="nomina" name="nomina" class="form-select">
                                             <option value="" disabled>Seleccione tipo</option>
-                                            <option value="Ejecutivos">Ejecutivos</option>
-                                            <option value="Empleados">Empleados</option>
-                                            <option value="Operarios">Operarios</option>
+                                            <option value="1">Ejecutivos</option>
+                                            <option value="2">Empleados</option>
+                                            <option value="3">Operarios</option>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -470,7 +470,10 @@
                                 <div class="row">
                                     <div class="col-md-4 mt-0">
                                         <label for="banco" class="form-label">Banco</label>
-                                        <input type="text" id="banco" name="banco" class="form-control" maxlength="20">
+                                        <select id="banco" name="banco" class="form-select">
+                                            <option value="" selected disabled>Seleccione un banco</option>
+                                            <?= $bancos ?? '' ?>
+                                        </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-4 mt-0">
@@ -528,7 +531,7 @@
                                                 <p class="mb-1"><strong>Colonia:</strong> <span id="resumenColonia">-</span></p>
                                                 <p class="mb-1"><strong>Municipio:</strong> <span id="resumenMunicipio">-</span></p>
                                                 <p class="mb-1"><strong>Estado:</strong> <span id="resumenEstado">-</span></p>
-                                                <h6 class="mb-3 mt-3"><strong>Contactos</strong></h6>
+                                                <h6 class="mb-3 mt-3"><strong>Contacto</strong></h6>
                                                 <p class="mb-1"><strong>Tel. Principal:</strong> <span id="resumenContactoTelPrincipal">-</span></p>
                                                 <p class="mb-1"><strong>Tel. Alterno:</strong> <span id="resumenContactoTelAlterno">-</span></p>
                                                 <p class="mb-1"><strong>Correo:</strong> <span id="resumenContactoCorreo">-</span></p>
@@ -540,7 +543,7 @@
                                     <div class="col-md-8">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h6 class="mb-0">Información Laboral</h6>
+                                                <h6 class="mb-0"><strong>Información Laboral</strong></h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
@@ -586,7 +589,7 @@
                                             <div class="col-12 mx-auto">
                                                 <div class="card">
                                                     <div class="card-header">
-                                                        <h6 class="mb-0">Usuario del Sistema</h6>
+                                                        <h6 class="mb-0"><strong>Usuario del Sistema</strong></h6>
                                                     </div>
                                                     <div class="d-flex justify-content-around m-5">
                                                         <p class="mb-1"><strong>Usuario:</strong> <span id="resumenUsuario">-</span></p>

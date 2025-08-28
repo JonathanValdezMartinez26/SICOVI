@@ -65,6 +65,18 @@ class Model
         }
     }
 
+    public static function getCatalogoBancos()
+    {
+        $query = "SELECT * FROM CAT_BANCO ORDER BY NOMBRE";
+        try {
+            $db = new Database();
+            $result = $db->queryAll($query);
+            return self::resultado(true, 'Bancos obtenidos.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener los bancos.', null, $e->getMessage());
+        }
+    }
+
     public static function getCatalogoConceptosViaticos()
     {
         $query = "SELECT * FROM CAT_VIATICOS_CONCEPTO ORDER BY NOMBRE";
