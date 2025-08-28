@@ -276,20 +276,16 @@ class CapHum extends Controller
                     })
                 }
                 
-                
-                // Función para agregar correos adicionales
                 const agregarCorreo = () => {
                     const container = $('#correosContainer')
                     const nuevoCorreo = '<div class="input-group mb-2"><input type="email" name="correoEmpresa[]" class="form-control" placeholder="correo@empresa.com"><button type="button" class="btn btn-outline-danger" onclick="eliminarCorreo(this)"><i class="fa fa-minus"></i></div>'
                     container.append(nuevoCorreo)
                 }
                 
-                // Función para eliminar correo
                 const eliminarCorreo = (btn) => {
                     $(btn).closest('.input-group').remove()
                 }
                 
-                // Función para toggle de contraseña
                 const togglePassword = () => {
                     const passwordField = document.getElementById('password')
                     const passwordIcon = document.getElementById('passwordIcon')

@@ -55,6 +55,8 @@ class CapHum extends Model
     // Detalle completo de persona y sus usuarios
     public static function getPersonaDetalle($datos)
     {
+        $id = $datos['id'] ?? 0;
+
         $qryPersona = <<<SQL
             SELECT
                 P.ID,
@@ -73,16 +75,13 @@ class CapHum extends Model
                 P.ESTADO,
                 P.MUNICIPIO,
                 P.COLONIA,
-                P.CONTACTO_EMERGENCIA_NOMBRE,
-                P.CONTACTO_EMERGENCIA_PARENTESCO,
-                P.CONTACTO_EMERGENCIA_TELEFONO,
                 P.CONDICIONES_MEDICAS,
-                P.INFORMACION_ADICIONAL,
+                P.OTROS_DATOS_RELEVANTES,
                 P.ESTATUS,
                 CASE WHEN P.FOTO IS NOT NULL THEN P.ID ELSE NULL END AS FOTO
             FROM PERSONA P
             WHERE P.ID = :id
-            SQL;
+        SQL;
 
         $qryUsuarios = <<<SQL
             SELECT U.ID, U.USUARIO, U.ESTATUS, U.SUCURSAL, S.NOMBRE AS SUCURSAL_NOMBRE
@@ -90,16 +89,47 @@ class CapHum extends Model
             LEFT JOIN SUCURSAL S ON U.SUCURSAL = S.ID
             WHERE U.PERSONA = :id
             ORDER BY U.ID
-            SQL;
+        SQL;
 
-        $params = ['id' => $datos['id'] ?? 0];
+        $qryTelefonos = "SELECT NUMERO AS numero, TIPO AS tipo FROM PERSONA_TELEFONO WHERE PERSONA = :id";
+        $qryEmails = "SELECT DIRECCION AS direccion, TIPO AS tipo FROM PERSONA_EMAIL WHERE PERSONA = :id";
+        $qryNomina = "SELECT * FROM NOMINA WHERE PERSONA = :id";
+        $qryBancos = "SELECT ID_BANCO, NUMERO, TIPO_NUMERO FROM PERSONA_DATOS_BANCARIOS WHERE PERSONA = :id";
+        $qryContactos = "SELECT ID, NOMBRE, PARENTESCO, TELEFONO FROM PERSONA_CONTACTO_EMERGENCIA WHERE PERSONA = :id";
+        $qryTelefonosContacto = "SELECT CONTACTO_ID, TIPO, TELEFONO FROM PERSONA_CONTACTO_TELEFONO WHERE CONTACTO_ID = :contacto_id";
+
+        $params = ['id' => $id];
 
         try {
             $db = new Database();
+
             $persona = $db->queryOne($qryPersona, $params);
             if (!$persona) return self::resultado(false, 'Persona no encontrada.');
+
             $usuarios = $db->queryAll($qryUsuarios, $params);
-            return self::resultado(true, 'Detalle obtenido correctamente.', ['persona' => $persona, 'usuarios' => $usuarios]);
+            $telefonos = $db->queryAll($qryTelefonos, $params);
+            $emails = $db->queryAll($qryEmails, $params);
+            $nomina = $db->queryAll($qryNomina, $params);
+            $bancos = $db->queryAll($qryBancos, $params);
+
+            // Contactos y sus teléfonos
+            $contactos = $db->queryAll($qryContactos, $params);
+            foreach ($contactos as &$c) {
+                $telParams = ['contacto_id' => $c['ID'] ?? $c['id'] ?? 0];
+                $c['telefonos'] = $db->queryAll($qryTelefonosContacto, $telParams);
+            }
+
+            $resultado = [
+                'persona' => $persona,
+                'usuarios' => $usuarios,
+                'telefonos' => $telefonos,
+                'emails' => $emails,
+                'nomina' => $nomina,
+                'bancos' => $bancos,
+                'contactos' => $contactos
+            ];
+
+            return self::resultado(true, 'Detalle obtenido correctamente.', $resultado);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al obtener el detalle de la persona.', null, $e->getMessage());
         }
@@ -163,7 +193,6 @@ class CapHum extends Model
         }
     }
 
-    // Crea la fila en PERSONA y devuelve el id
     public static function crearPersona($datos, $fotoData = null, $db = null)
     {
         if ($fotoData) {
