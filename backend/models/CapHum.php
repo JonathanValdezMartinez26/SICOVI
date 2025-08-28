@@ -111,12 +111,10 @@ class CapHum extends Model
         return $resultado['mensaje'] ?? null;
     }
 
-    // Orquestador: registra persona y datos relacionados en una transacción
     public static function guardarPersona($datos, $fotoData = null)
     {
-        $db = new Database();
-
         try {
+            $db = new Database();
             $db->beginTransaction();
 
             // 1) Crear persona
@@ -152,6 +150,10 @@ class CapHum extends Model
             // 6) Contacto emergencia
             $creaContacto = self::crearContactoEmergencia($personaId, $datos, $db);
             if (empty($creaContacto['success'])) throw new \Exception(self::getErrorMessage($creaContacto) ?? 'Error creando contacto');
+
+            // 7) Registro de usuario principal
+            $creaUsuario = self::crearUsuario($personaId, $datos, $db);
+            if (empty($creaUsuario['success'])) throw new \Exception(self::getErrorMessage($creaUsuario) ?? 'Error creando usuario');
 
             $db->commit();
             return self::resultado(true, 'Registro completado correctamente.');
@@ -343,6 +345,26 @@ class CapHum extends Model
             return self::resultado(true, 'Contacto de emergencia creado');
         } catch (\Exception $e) {
             return self::resultado(false, 'No se pudo registrar el contacto de emergencia', null, $e->getMessage());
+        }
+    }
+
+    public static function crearUsuario($personaId, $datos, $db = null)
+    {
+        $qry = "INSERT INTO USUARIO (PERSONA, SUCURSAL, USUARIO, PASS, PERFIL) VALUES (:persona, :sucursal, :usuario, :pass, :perfil)";
+        $params = [
+            'persona' => $personaId,
+            'sucursal' => $datos['sucursal'] ?? null,
+            'usuario' => $datos['usuario'] ?? null,
+            'pass' => $datos['pass'] ?? null,
+            'perfil' => $datos['perfil'] ?? null
+        ];
+
+        try {
+            if (!$db) $db = new Database();
+            $db->CRUD($qry, $params);
+            return self::resultado(true, 'Usuario creado');
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al crear usuario', null, $e->getMessage());
         }
     }
 

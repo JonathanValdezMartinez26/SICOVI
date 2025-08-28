@@ -410,9 +410,7 @@
                                         <label for="perfil" class="form-label">Perfil de Usuario</label>
                                         <select id="perfil" name="perfil" class="form-select">
                                             <option value="" selected disabled>Seleccione un perfil</option>
-                                            <option value="1">Administrador</option>
-                                            <option value="2">Usuario</option>
-                                            <option value="3">Consulta</option>
+                                            <?= $perfiles ?? '' ?>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>

@@ -77,6 +77,18 @@ class Model
         }
     }
 
+    public static function getPerfiles()
+    {
+        $query = "SELECT * FROM PERFIL ORDER BY NOMBRE";
+        try {
+            $db = new Database();
+            $result = $db->queryAll($query);
+            return self::resultado(true, 'Perfiles obtenidos.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener los perfiles.', null, $e->getMessage());
+        }
+    }
+
     public static function getCatalogoConceptosViaticos()
     {
         $query = "SELECT * FROM CAT_VIATICOS_CONCEPTO ORDER BY NOMBRE";
