@@ -12,9 +12,324 @@ class CapHum extends Controller
         $script = <<<HTML
             <script>
                 const tabla = "#tablaPersonas"
-                let valPersona = null,
-                    modalPersona = null,
-                    wizardPersona = null
+                let valPersona = null
+                let modalPersona = null
+                let wizardPersona = null
+                let modoEdicion = false
+                let datosOriginales = {}
+                let hayCambios = false
+
+                const camposPersona = {
+                    personales: {
+                        nombre: {
+                            elemento: "nombre",
+                            valor: () => $("#nombre").val(),
+                            texto: () => $("#nombre").val(),
+                            validacion: () => $("#nombre").val().trim() !== "",
+                            mensaje: "Ingrese un nombre."
+                        },
+                        apellido1: {
+                            elemento: "apellido1",
+                            valor: () => $("#apellido1").val(),
+                            texto: () => $("#apellido1").val(),
+                            validacion: () => $("#apellido1").val().trim() !== "",
+                            mensaje: "Ingrese un apellido."
+                        },
+                        apellido2: {
+                            elemento: "apellido2",
+                            valor: () => $("#apellido2").val(),
+                            texto: () => $("#apellido2").val(),
+                            validacion: () => true,
+                            mensaje: "Ingrese un apellido."
+                        },
+                        rfc: {
+                            elemento: "rfc",
+                            valor: () => $("#rfc").val(),
+                            texto: () => $("#rfc").val(),
+                            validacion: () => $("#rfc").val().trim() !== "",
+                            mensaje: "Ingrese un RFC."
+                        },
+                        curp: {
+                            elemento: "curp",
+                            valor: () => $("#curp").val(),
+                            texto: () => $("#curp").val(),
+                            validacion: () => $("#curp").val().trim() !== "",
+                            mensaje: "Ingrese un CURP."
+                        },
+                        fechaNacimiento: {
+                            elemento: "fechaNacimiento",
+                            valor: () => getInputFechas("#fechaNacimiento", false, true),
+                            texto: () => $("#fechaNacimiento").val(),
+                            validacion: () => $("#fechaNacimiento").val() !== '',
+                            mensaje: "Ingrese la fecha de nacimiento."
+                        },
+                        sexo: {
+                            elemento: "sexo",
+                            valor: () => $("#sexo option:selected").val(),
+                            texto: () => $("#sexo option:selected").text(),
+                            validacion: () => $("#sexo option:selected").val() !== "",
+                            mensaje: "Seleccione un sexo."
+                        },
+                        estadoCivil: {
+                            elemento: "estadoCivil",
+                            valor: () => $("#estadoCivil option:selected").val(),
+                            texto: () => $("#estadoCivil option:selected").text(),
+                            validacion: () => $("#estadoCivil option:selected").val() !== "",
+                            mensaje: "Seleccione un estado civil."
+                        },
+                        nacionalidad: {
+                            elemento: "nacionalidad",
+                            valor: () => $("#nacionalidad").val(),
+                            texto: () => $("#nacionalidad").val(),
+                            validacion: () => $("#nacionalidad").val().trim() !== "",
+                            mensaje: "Ingrese una nacionalidad."
+                        },
+                        nss: {
+                            elemento: "nss",
+                            valor: () => $("#nss").val(),
+                            texto: () => $("#nss").val(),
+                            validacion: () => $("#nss").val().trim() === "" || ($("#nss").val().trim() !== "" && $("#nss").val().trim().length === 11),
+                            mensaje: "El NSS debe tener 11 dígitos."
+                        },
+                        infonavit: {
+                            elemento: "infonavit",
+                            valor: () => $("#infonavit").is(":checked") ? 1 : 0,
+                            texto: () => $("#infonavit").is(":checked") ? "Sí" : "No",
+                            validacion: () => true,
+                            mensaje: ""
+                        },
+                        calle: {
+                            elemento: "calle",
+                            valor: () => $("#calle").val(),
+                            texto: () => $("#calle").val(),
+                            validacion: () => $("#calle").val().trim() !== "",
+                            mensaje: "Ingrese la calle y el número."
+                        },
+                        codigoPostal: {
+                            elemento: "codigoPostal",
+                            valor: () => $("#codigoPostal").val(),
+                            texto: () => $("#codigoPostal").val(),
+                            validacion: () => $("#codigoPostal").val().trim() !== "" && $("#codigoPostal").val().trim().length === 5,
+                            mensaje: "El CP debe tener 5 dígitos."
+                        },
+                        colonia: {
+                            elemento: "colonia",
+                            valor: () => $("#colonia option:selected").val(),
+                            texto: () => $("#colonia option:selected").text(),
+                            validacion: () => $("#colonia option:selected").val() !== "",
+                            mensaje: "Seleccione una colonia."
+                        },
+                        municipio: {
+                            elemento: "municipio",
+                            valor: () => $("#municipio option:selected").val(),
+                            texto: () => $("#municipio option:selected").text(),
+                            validacion: () => $("#municipio option:selected").val() !== "",
+                            mensaje: "Ingrese un CP."
+                        },
+                        estado: {
+                            elemento: "estado",
+                            valor: () => $("#estado option:selected").val(),
+                            texto: () => $("#estado option:selected").text(),
+                            validacion: () => $("#estado option:selected").val() !== "",
+                            mensaje: "Ingrese un CP."
+                        }
+                    },
+                    contacto: {
+                        telefonoPrincipal: {
+                            elemento: "telefonoPrincipal",
+                            valor: () => $("#telefonoPrincipal").val(),
+                            texto: () => $("#telefonoPrincipal").val(),
+                            validacion: () => $("#telefonoPrincipal").val().trim() !== "",
+                            mensaje: "Ingrese un número de teléfono."
+                        },
+                        telefonoAlterno: {
+                            elemento: "telefonoAlterno",
+                            valor: () => $("#telefonoAlterno").val(),
+                            texto: () => $("#telefonoAlterno").val(),
+                            validacion: () => true,
+                            mensaje: "Ingrese un número de teléfono."
+                        },
+                        correoPrincipal: {
+                            elemento: "correoPrincipal",
+                            valor: () => $("#correoPrincipal").val(),
+                            texto: () => $("#correoPrincipal").val(),
+                            validacion: () => true,
+                            mensaje: "Ingrese un correo electrónico."
+                        },
+                        contactoEmergenciaNombre: {
+                            elemento: "contactoEmergenciaNombre",
+                            valor: () => $("#contactoEmergenciaNombre").val(),
+                            texto: () => $("#contactoEmergenciaNombre").val(),
+                            validacion: () => true,
+                            mensaje: "Ingrese un nombre de contacto de emergencia."
+                        },
+                        contactoEmergenciaParentesco: {
+                            elemento: "contactoEmergenciaParentesco",
+                            valor: () => $("#contactoEmergenciaParentesco").val(),
+                            texto: () => $("#contactoEmergenciaParentesco").val(),
+                            validacion: () => true,
+                            mensaje: "Ingrese un parentesco de contacto de emergencia."
+                        },
+                        contactoEmergenciaTelefono: {
+                            elemento: "contactoEmergenciaTelefono",
+                            valor: () => $("#contactoEmergenciaTelefono").val(),
+                            texto: () => $("#contactoEmergenciaTelefono").val(),
+                            validacion: () => true,
+                            mensaje: "Ingrese un número de teléfono de contacto de emergencia."
+                        },
+                        condicionesMedicas: {
+                            elemento: "condicionesMedicas",
+                            valor: () => $("#condicionesMedicas").val(),
+                            texto: () => $("#condicionesMedicas").val(),
+                            validacion: () => true,
+                            mensaje: "Ingrese las condiciones médicas."
+                        },
+                        informacionAdicional: {
+                            elemento: "informacionAdicional",
+                            valor: () => $("#informacionAdicional").val(),
+                            texto: () => $("#informacionAdicional").val(),
+                            validacion: () => true,
+                            mensaje: "Ingrese información adicional."
+                        }
+                    },
+                    laborales: {
+                        empresa: {
+                            elemento: "empresa",
+                            valor: () => $("#empresa option:selected").val(),
+                            texto: () => $("#empresa option:selected").text(),
+                            validacion: () => $("#empresa option:selected").val() !== "",
+                            mensaje: "Seleccione una empresa."
+                        },
+                        sucursal: {
+                            elemento: "sucursal",
+                            valor: () => $("#sucursal option:selected").val(),
+                            texto: () => $("#sucursal option:selected").text(),
+                            validacion: () => $("#sucursal option:selected").val() !== "",
+                            mensaje: "Seleccione una sucursal."
+                        },
+                        region: {
+                            elemento: "region",
+                            valor: () => $("#region option:selected").val(),
+                            texto: () => $("#region option:selected").text(),
+                            validacion: () => $("#region option:selected").val() !== "",
+                            mensaje: "Seleccione una región."
+                        },
+                        jefeInmediato: {
+                            elemento: "jefeInmediato",
+                            valor: () => $("#jefeInmediato option:selected").val(),
+                            texto: () => $("#jefeInmediato option:selected").text(),
+                            validacion: () => true, //$("#jefeInmediato option:selected").val() !== "",
+                            mensaje: "Seleccione un jefe inmediato."
+                        },
+                        reporta: {
+                            elemento: "reporta",
+                            valor: () => $("#reporta option:selected").val(),
+                            texto: () => $("#reporta option:selected").text(),
+                            validacion: () => true, //$("#reporta option:selected").val() !== "",
+                            mensaje: "Seleccione a quién reportar."
+                        },
+                        puesto: {
+                            elemento: "puesto",
+                            valor: () => $("#puesto option:selected").val(),
+                            texto: () => $("#puesto option:selected").text(),
+                            validacion: () => $("#puesto option:selected").val() !== "",
+                            mensaje: "Seleccione un puesto."
+                        },
+                        correoLaboral: {
+                            elemento: "correoLaboral",
+                            valor: () => {
+                                    const correos = []
+                                    $('input[name="correoEmpresa[]"]').each(function() {
+                                        const valor = $(this).val().trim()
+                                        if (valor) correos.push(valor)
+                                    })
+                                    return correos.join(', ')
+                                },
+                            texto: () => {
+                                const correos = []
+                                $('input[name="correoEmpresa[]"]').each(function() {
+                                    const valor = $(this).val().trim()
+                                    if (valor) correos.push(valor)
+                                })
+                                return correos.join(', ')
+                            },
+                            validacion: () => true,
+                            mensaje: "Ingrese al menos un correo electrónico."
+                        },
+                        usuario: {
+                            elemento: "usuario",
+                            valor: () => $("#usuario").val(),
+                            texto: () => $("#usuario").val(),
+                            validacion: () => $("#usuario").val() !== "",
+                            mensaje: "Ingrese un nombre de usuario."
+                        },
+                        password: {
+                            elemento: "password",
+                            valor: () => $("#password").val(),
+                            texto: () => $("#password").val(),
+                            validacion: () => $("#password").val().length >= 8,
+                            mensaje: "Ingrese una contraseña de al menos 8 caracteres."
+                        },
+                        perfil: {
+                            elemento: "perfil",
+                            valor: () => $("#perfil option:selected").val(),
+                            texto: () => $("#perfil option:selected").text(),
+                            validacion: () => $("#perfil option:selected").val() !== "",
+                            mensaje: "Seleccione un perfil."
+                        }
+                    },
+                    nomina: {
+                        fechaIngreso: {
+                            elemento: "fechaIngreso",
+                            valor: () => getInputFechas("#fechaIngreso", false, true),
+                            texto: () => $("#fechaIngreso").val(),
+                            validacion: () => $("#fechaIngreso").val() !== "",
+                            mensaje: "Seleccione una fecha de ingreso."
+                        },
+                        nomina: {
+                            elemento: "nomina",
+                            valor: () => $("#nomina option:selected").val(),
+                            texto: () => $("#nomina option:selected").text(),
+                            validacion: () => $("#nomina option:selected").val() !== "",
+                            mensaje: "Seleccione una nómina."
+                        },
+                        tipoNomina: {
+                            elemento: "tipoNomina",
+                            valor: () => $("#tipoNomina option:selected").val(),
+                            texto: () => $("#tipoNomina option:selected").text(),
+                            validacion: () => $("#tipoNomina option:selected").val() !== "",
+                            mensaje: "Seleccione un tipo de nómina."
+                        },
+                        numeroNomina: {
+                            elemento: "numeroNomina",
+                            valor: () => $("#numeroNomina").val(),
+                            texto: () => $("#numeroNomina").val(),
+                            validacion: () => $("#numeroNomina").val() !== "",
+                            mensaje: "Ingrese un número de nómina."
+                        },
+                        banco: {
+                            elemento: "banco",
+                            valor: () => $("#banco").val(),
+                            texto: () => $("#banco option:selected").text(),
+                            validacion: () => $("#banco option:selected").val() !== "",
+                            mensaje: "Seleccione un banco."
+                        },
+                        cuentaBancaria: {
+                            elemento: "cuentaBancaria",
+                            valor: () => $("#cuentaBancaria").val(),
+                            texto: () => $("#cuentaBancaria").val(),
+                            validacion: () => $("#cuentaBancaria").val() !== "",
+                            mensaje: "Ingrese una cuenta bancaria válida."
+                        },
+                        tarjeta: {
+                            elemento: "tarjeta",
+                            valor: () => $("#tarjeta").val(),
+                            texto: () => $("#tarjeta").val(),
+                            validacion: () => $("#tarjeta").val().length === 16,
+                            mensaje: "El número de tarjeta debe tener 16 dígitos."
+                        }
+                    }
+                }
 
                 const getFecha = (fecha) => {
                     return fecha ? moment(fecha).format(MOMENT_FRONT) : '-'
@@ -23,6 +338,13 @@ class CapHum extends Controller
                 const getEstatus = (texto, tipo) => {
                     const colorClass = tipo === 'success' ? 'text-bg-success' : 'text-bg-danger'
                     return `<span class="badge \${colorClass}">\${texto}</span>`
+                }
+
+                const getFvMessage = (campo) => {
+                    if (campo.parent().hasClass('input-group'))
+                        return campo.parent().siblings('.fv-message')
+
+                    return campo.siblings('.fv-message')
                 }
                 
                 const initWizard = () => {
@@ -37,7 +359,7 @@ class CapHum extends Controller
                             btn.addEventListener('click', () => {
                                 if (validarPasoActual()) {
                                     wizardPersona.next()
-                                    if (wizardPersona._currentIndex === 3) llenarResumen()
+                                    if (wizardPersona._currentIndex === wizardPersona._steps.length - 2) llenarResumen()
                                 }
                             })
                         })
@@ -57,13 +379,13 @@ class CapHum extends Controller
                     
                     switch(pasoActual) {
                         case 0:
-                            return validarDatosPersonales()
+                            return validarWizard("personales")
                         case 1:
-                            return validarDatosAdicionales()
+                            return validarWizard("contacto")
                         case 2:
-                            return validarDatosEmpresa()
+                            return validarWizard("laborales")
                         case 3:
-                            return validarDatosNomina()
+                            return validarWizard("nomina")
                         case 4:
                             return true
                         default:
@@ -71,192 +393,69 @@ class CapHum extends Controller
                     }
                 }
 
-                const validarDatosPersonales = () => {
+                const validarWizard = (grupo) => {
                     let valido = true
-                    
-                    $('.fv-message').text('')
-                    
-                    const campos = ['nombre', 'apellido1', 'sexo', 'fechaNacimiento', 'rfc', 'curp', 'estadoCivil', 'nacionalidad', 'calle', 'codigoPostal', 'colonia']
-                    
-                    campos.forEach(campo => {
-                        const valor = $(`#\${campo}`).val()
-                        if (!valor || valor.trim() === '') {
-                            let parent = null
-                            if (campo === 'fechaNacimiento') parent = $(`#\${campo}`).parent()
-                            else parent = $(`#\${campo}`)
-                            parent.siblings('.fv-message').text('Este campo es requerido')
-                            valido = false
-                        } else {
-                            if (campo === 'rfc') {
-                                if (valor && valor.length !== 13) {
-                                    $(`#\${campo}`).siblings('.fv-message').text('El RFC debe tener 13 caracteres')
-                                    valido = false
-                                }
-                            } else if (campo === 'curp') {
-                                if (valor && valor.length !== 18) {
-                                    $(`#\${campo}`).siblings('.fv-message').text('La CURP debe tener 18 caracteres')
-                                    valido = false
-                                }
-                            } else if (campo === 'codigoPostal') {
-                                if (valor && valor.length !== 5) {
-                                    $(`#\${campo}`).siblings('.fv-message').text('El código postal debe tener 5 dígitos')
-                                    valido = false
-                                }
-                            }
-                        }
+                    const items = camposPersona[grupo]
+
+                    Object.keys(items).forEach(campoKey => {
+                        const campo = items[campoKey]
+                        const valor = campo.valor()
+                        const campoMensaje = getFvMessage($("#" + campo.elemento))
+                        const validacion = campo.validacion()
+                        valido = valido ? validacion : false
+                        campoMensaje.text(!validacion ? campo.mensaje : "")
                     })
 
-                    // Validaciones opcionales pero con formato específico
-                    const nss = $('#nss').val()
-                    if (nss && nss.length !== 11) {
-                        $('#nss').siblings('.fv-message').text('El NSS debe tener exactamente 11 dígitos')
-                        valido = false
-                    }
+                    if (!valido) showError('Por favor complete todos los campos requeridos')
 
-                    if (!valido) {
-                        showError('Por favor complete todos los campos requeridos')
-                    }
-
-                    return valido
-                }
-
-                const validarDatosEmpresa = () => {
-                    let valido = true
-                    $('.fv-message').text('')
-                    
-                    const campos = ['empresaWizard', 'sucursalWizard', 'puesto', 'usuario', 'password', 'perfil']
-                    
-                    campos.forEach(campo => {
-                        const valor = $(`#\${campo}`).val()
-                        if (!valor || valor.trim() === '') {
-                            $(`#\${campo}`).siblings('.fv-message').text('Este campo es requerido')
-                            valido = false
-                        }
-                    })
-
-                    // Validar al menos un correo empresarial
-                    const correos = $('input[name="correoEmpresa[]"]').filter(function() {
-                        return $(this).val().trim() !== ''
-                    })
-                    
-                    if (correos.length === 0) {
-                        $('#correosContainer .fv-message').first().text('Debe agregar al menos un correo empresarial')
-                        valido = false
-                    }
-
-                    if (!valido) {
-                        showError('Por favor complete todos los campos requeridos del paso empresa')
-                    }
-
-                    return valido
-                }
-
-                const validarDatosNomina = () => {
-                    let valido = true
-                    $('.fv-message').text('')
-
-                    const campos = [ 'numeroNomina', 'nomina', 'tipoNomina', 'banco', 'noTarjeta']
-
-                    campos.forEach(campo => {
-                        const valor = $(`#\${campo}`).val()
-                        if (!valor || valor.trim() === '') {
-                            $(`#\${campo}`).siblings('.fv-message').text('Este campo es requerido')
-                            valido = false
-                        }
-                    })
-
-                    const password = $('#password').val()
-                    if (password && password.length < 6) {
-                        $('#password').siblings('.fv-message').text('La contraseña debe tener al menos 6 caracteres')
-                        valido = false
-                    }
-
-                    if (!valido) {
-                        showError('Por favor complete todos los campos requeridos')
-                    }
-
-                    return valido
-                }
-
-                // Validación para Datos Adicionales (Contacto de emergencia obligatorio)
-                const validarDatosAdicionales = () => {
-                    let valido = true
-                    $('.fv-message').text('')
-
-                    const camposObligatorios = ['contactoTelefonoPrincipal', 'contactoCorreoPrincipal', 'contactoEmergenciaNombre', 'contactoEmergenciaParentesco', 'contactoEmergenciaTelefono']
-                    camposObligatorios.forEach(campo => {
-                        const valor = $("#" + campo).val()
-                        if (!valor || valor.trim() === '') {
-                            $("#" + campo).siblings('.fv-message').text('Este campo es requerido')
-                            valido = false
-                        } else {
-                            if (['contactoTelefonoPrincipal', 'contactoEmergenciaTelefono'].includes(campo)) {
-                                if (valor.length !== 10) {
-                                    $("#" + campo).siblings('.fv-message').text('Este campo debe tener 10 dígitos')
-                                    valido = false
-                                }
-                            }
-                        }
-                    })
-
-                    if (!valido) showError('Por favor complete los campos obligatorios de contacto de emergencia')
                     return valido
                 }
 
                 const llenarResumen = () => {
                     const fotoSrc = $('#fotoPreview').attr('src')
-                    const nombre = $('#nombre').val()
-                    const apellido1 = $('#apellido1').val()
-                    const apellido2 = $('#apellido2').val() || ''
+                    const nombre = camposPersona.personales.nombre.valor()
+                    const apellido1 = camposPersona.personales.apellido1.valor()
+                    const apellido2 = camposPersona.personales.apellido2.valor() || ''
                     const nombreCompleto = nombre + ' ' + apellido1 + ' ' + apellido2
 
-                    console.log($('#nomina option:selected').text());
-                    console.log($('#tipoNomina option:selected').text());
-                    console.log($('#numeroNomina').val());
+                    const capitaliza = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 
                     $('#resumenFoto').attr('src', fotoSrc)
-                    $('#resumenNombre').text(nombreCompleto.trim())
-                    $('#resumenRfc').text($('#rfc').val())
-                    $('#resumenCurp').text($('#curp').val())
-                    $('#resumenFechaNac').text($('#fechaNacimiento').val())
-                    $('#resumenSexo').text($('#sexo option:selected').text())
-                    $('#resumenEstadoCivil').text($('#estadoCivil option:selected').text())
-                    $('#resumenNacionalidad').text($('#nacionalidad').val())
-                    $('#resumenNss').text($('#nss').val() || 'No proporcionado')
-                    $('#resumenCalle').text($('#calle').val())
-                    $('#resumenCodigoPostal').text($('#codigoPostal').val())
-                    $('#resumenColonia').text($('#colonia option:selected').text())
-                    $('#resumenMunicipio').text($('#municipio option:selected').text())
-                    $('#resumenEstado').text($('#estado option:selected').text())
-                    $('#resumenEmpresa').text($('#empresaWizard option:selected').text())
-                    $('#resumenRegion').text($('#regionWizard option:selected').text())
-                    $('#resumenSucursal').text($('#sucursalWizard option:selected').text())
-                    $('#resumenPuesto').text($('#puesto option:selected').text())
-                    $('#resumenJefeInmediato').text($('#jefeInmediato option:selected').text())
-                    $('#resumenReporta').text($('#reporta option:selected').text())
-                    $('#resumenFechaIngreso').text($('#fechaIngreso').val())
-                    $('#resumenNomina').text($('#nomina option:selected').text())
-                    $('#resumenTipoNomina').text($('#tipoNomina option:selected').text())
-                    $('#resumenNumeroNomina').text($('#numeroNomina').val())
-                    $('#resumenBanco').text($('#banco option:selected').text())
-                    $('#resumenCuentaBancaria').text($('#cuentaBancaria').val())
-                    $('#resumenNoTarjeta').text($('#noTarjeta').val())
-                    $('#resumenContactoTelPrincipal').text($('#contactoTelefonoPrincipal').val() || '-')
-                    $('#resumenContactoTelAlterno').text($('#contactoTelefonoAlterno').val() || '-')
-                    $('#resumenContactoCorreo').text($('#contactoCorreoPrincipal').val() || '-')
-                    const correos = []
-                    $('input[name="correoEmpresa[]"]').each(function() {
-                        const valor = $(this).val().trim()
-                        if (valor) correos.push(valor)
+                    $('#resumenNombreCompleto').text(nombreCompleto)
+
+                    Object.keys(camposPersona).forEach(campoKey => {
+                        const grupo = camposPersona[campoKey]
+                        Object.keys(grupo).forEach(campoKey => {
+                            const campo = grupo[campoKey]
+                            $('#resumen' + capitaliza(campoKey)).text(campo.texto() || "-")
+                        })
                     })
-                    $('#resumenCorreosEmpresa').text(correos.join(', '))
-                    $('#resumenUsuario').text($('#usuario').val())
-                    $('#resumenPerfil').text($('#perfil option:selected').text())
-                    $('#resumenContactoEmergenciaNombre').text($('#contactoEmergenciaNombre').val() || '-')
-                    $('#resumenContactoEmergenciaParentesco').text($('#contactoEmergenciaParentesco').val() || '-')
-                    $('#resumenContactoEmergenciaTelefono').text($('#contactoEmergenciaTelefono').val() || '-')
-                    $('#resumenCondicionesMedicas').text($('#condicionesMedicas').val() ? $('#condicionesMedicas').val() : '-')
-                    $('#resumenInformacionAdicional').text($('#informacionAdicional').val() ? $('#informacionAdicional').val() : '-')
+                }
+
+                const guardarPersona = () => {
+                    const formData = new FormData()
+                    Object.keys(camposPersona).forEach(campo => {
+                        const grupo = camposPersona[campo]
+                        Object.keys(grupo).forEach(campoKey => {
+                            const campo = grupo[campoKey]
+                            formData.append(campoKey, campo.valor() || "")
+                        })
+                    })
+                    
+                    const fotoInput = $("#fotoInput")[0]
+                    if (fotoInput.files && fotoInput.files[0]) {
+                        formData.append('foto', fotoInput.files[0])
+                    }
+
+                    consultaServidor("/CapHum/guardarPersona", formData, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        showSuccess(respuesta.mensaje)
+                        $("#modalPersona").modal("hide")
+                        getPersonas(true)
+                    }, {
+                        procesar: false,
+                        tipoContenido: false
+                    })
                 }
 
                 const confirmaEliminar = (mensaje, callback) => {
@@ -285,27 +484,6 @@ class CapHum extends Controller
                 const eliminarCorreo = (btn) => {
                     $(btn).closest('.input-group').remove()
                 }
-                
-                const togglePassword = () => {
-                    const passwordField = document.getElementById('password')
-                    const passwordIcon = document.getElementById('passwordIcon')
-                    
-                    if (passwordField && passwordIcon) {
-                        if (passwordField.type === 'password') {
-                            passwordField.type = 'text'
-                            passwordIcon.classList.remove('fa-eye-slash')
-                            passwordIcon.classList.add('fa-eye')
-                        } else {
-                            passwordField.type = 'password'
-                            passwordIcon.classList.remove('fa-eye')
-                            passwordIcon.classList.add('fa-eye-slash')
-                        }
-                    }
-                }
-                
-                let modoEdicion = false
-                let datosOriginales = {}
-                let hayCambios = false
 
                 const manejarCambiosFoto = (inputId, previewId) => {
                     $(inputId).on('change', function(e) {
@@ -656,82 +834,6 @@ class CapHum extends Controller
                     })
                 }
 
-                const guardarPersona = () => {
-                    if (!validarDatosPersonales() || !validarDatosEmpresa() || !validarDatosNomina()) {
-                        showError('Por favor complete todos los campos requeridos')
-                        return
-                    }
-
-                    const fecha = getInputFechas("#fechaNacimiento", false, true)
-                    const fechaIngreso = getInputFechas("#fechaIngreso", false, true)
-
-                    // Crear FormData para enviar archivos
-                    const formData = new FormData()
-                    formData.append('id', $("#personaId").val())
-                    formData.append('nombre', $("#nombre").val())
-                    formData.append('apellido1', $("#apellido1").val())
-                    formData.append('apellido2', $("#apellido2").val())
-                    formData.append('rfc', $("#rfc").val())
-                    formData.append('curp', $("#curp").val())
-                    formData.append('fechaNacimiento', fecha)
-                    formData.append('sexo', $("#sexo").val())
-                    formData.append('estadoCivil', $("#estadoCivil").val())
-                    formData.append('nacionalidad', $("#nacionalidad").val())
-                    formData.append('nss', $("#nss").val())
-                    formData.append('calle', $("#calle").val())
-                    formData.append('codigoPostal', $("#codigoPostal").val())
-                    formData.append('estado', $("#estado").val())
-                    formData.append('municipio', $("#municipio").val())
-                    formData.append('colonia', $("#colonia").val())
-                    formData.append('contactoEmergenciaNombre', $("#contactoEmergenciaNombre").val())
-                    formData.append('contactoEmergenciaParentesco', $("#contactoEmergenciaParentesco").val())
-                    formData.append('contactoEmergenciaTelefono', $("#contactoEmergenciaTelefono").val())
-                    formData.append('condicionesMedicas', $("#condicionesMedicas").val())
-                    formData.append('informacionAdicional', $("#informacionAdicional").val())
-                    formData.append('usuario', $("#usuario").val())
-                    formData.append('pass', $("#password").val())
-                    formData.append('perfil', $("#perfil").val())
-                    formData.append('empresa', $("#empresaWizard").val())
-                    formData.append('region', $("#regionWizard").val())
-                    formData.append('sucursal', $("#sucursalWizard").val())
-                    formData.append('puesto', $("#puesto").val())
-                    formData.append('nomina', $("#nomina").val())
-                    formData.append('tipoNomina', $("#tipoNomina").val())
-                    formData.append('numeroNomina', $("#numeroNomina").val())
-                    formData.append('jefeInmediato', $("#jefeInmediato").val())
-                    formData.append('reporta', $("#reporta").val())
-                    formData.append('fechaIngreso', fechaIngreso)
-                    formData.append('banco',$('#banco').val())
-                    formData.append('cuentaBancaria',$('#cuentaBancaria').val())
-                    formData.append('noTarjeta', $('#noTarjeta').val())
-                    formData.append('telefonoPrincipal', $('#contactoTelefonoPrincipal').val())
-                    formData.append('telefonoAlterno', $('#contactoTelefonoAlterno').val())
-                    formData.append('correoPrincipal', $('#contactoCorreoPrincipal').val())
-
-                    const correos = []
-                    $('input[name="correoEmpresa[]"]').each(function() {
-                        const valor = $(this).val().trim()
-                        if (valor) correos.push(valor)
-                    })
-                    formData.append('correoLaboral', correos.join(', '))
-                    
-                    // Agregar foto si se seleccionó
-                    const fotoInput = $("#fotoInput")[0]
-                    if (fotoInput.files && fotoInput.files[0]) {
-                        formData.append('foto', fotoInput.files[0])
-                    }
-
-                    consultaServidor("/CapHum/guardarPersona", formData, (respuesta) => {
-                        if (!respuesta.success) return showError(respuesta.mensaje)
-                        showSuccess(respuesta.mensaje)
-                        $("#modalPersona").modal("hide")
-                        getPersonas(true)
-                    }, {
-                        procesar: false,
-                        tipoContenido: false
-                    })
-                }
-
                 const limpiarPersona = () => {
                     $("#personaId").val("")
                     $("#nombre").val("")
@@ -744,9 +846,9 @@ class CapHum extends Controller
                     $("#usuario").val("")
                     $("#password").val("")
                     $("#perfil").val("")
-                    $("#empresaWizard").val("")
-                    $("#regionWizard").val("")
-                    $("#sucursalWizard").val("")
+                    $("#empresa").val("")
+                    $("#region").val("")
+                    $("#sucursal").val("")
                     $("#puesto").val("")
                     $("#nomina").val("")
                     $("#tipoNomina").val("")
@@ -892,7 +994,6 @@ class CapHum extends Controller
                     })
                 }
 
-                // Funciones para consulta SEPOMEX
                 const resetSelectsSepomex = () => {
                     $('#estado, #municipio, #localidad, #colonia').prop('disabled', true).html('<option value="">Seleccione CP primero</option>');
                 }
@@ -958,6 +1059,12 @@ class CapHum extends Controller
                     elemento.disabled = !(opciones.length > 1)
                 }
 
+                const camposNumericos = (campo, largo) => {
+                    let valor = campo.val().replace(/\D/g, '')
+                    if (valor.length > largo) valor = valor.substring(0, largo)
+                    campo.val(valor)
+                }
+
                 $(document).ready(() => {
                     const maxF = moment().subtract(18, 'years').format('YYYY-MM-DD');
                     const minF = moment().subtract(70, 'years').format('YYYY-MM-DD');
@@ -969,7 +1076,6 @@ class CapHum extends Controller
                     
                     window.agregarCorreo = agregarCorreo
                     window.eliminarCorreo = eliminarCorreo
-                    window.togglePassword = togglePassword
                     
                     $("#btnBuscar").click(() => getPersonas())
                     $("#btnNuevaPersona").click(nuevaPersona)
@@ -984,14 +1090,6 @@ class CapHum extends Controller
                     
                     $(document).on('click', '#btnGuardarPersona', guardarPersona)
                     $(document).on('click', '#btnGuardarUsuario', guardarUsuario)
-                    
-                    // Event listener para toggle de contraseña
-                    $(document).on('click', '#togglePassword', togglePassword)
-                    
-                    // También agregar event listener directo cuando el modal se abra
-                    $('#modalPersona').on('shown.bs.modal', function() {
-                        $('#togglePassword').off('click').on('click', togglePassword)
-                    })
                     
                     $("#filtroTabla").on("keyup", function() {
                         const valor = $(this).val().toLowerCase()
@@ -1012,11 +1110,10 @@ class CapHum extends Controller
                             $(this).siblings('.fv-message').text('')
                         }
                     })
-                    
-                    // Event listeners para el nuevo paso de empresa
-                    $('#empresaWizard').on('change', () => {
-                        const empresaId = $('#empresaWizard option:selected').val()
-                        $('#sucursalWizard option').each(function() {
+
+                    $('#empresa').on('change', () => {
+                        const empresaId = $('#empresa option:selected').val()
+                        $('#sucursal option').each(function() {
                             const sucursalEmpresaId = $(this).attr('data-empresa')
                             if (sucursalEmpresaId !== empresaId) {
                                 $(this).hide()
@@ -1027,12 +1124,11 @@ class CapHum extends Controller
                     })
 
 
-                    $('#sucursalWizard').on('change', () => {
-                        const sucursalId = $('#sucursalWizard option:selected').attr('data-region')
-                        if (sucursalId) $('#regionWizard').val(sucursalId)
+                    $('#sucursal').on('change', () => {
+                        const sucursalId = $('#sucursal option:selected').attr('data-region')
+                        if (sucursalId) $('#region').val(sucursalId)
                     })
                     
-                    // Event listener para llenar reporta cuando se selecciona jefe inmediato
                     $('#jefeInmediato').change(function() {
                         const valor = $(this).val()
                         const texto = $(this).find('option:selected').text()
@@ -1042,46 +1138,23 @@ class CapHum extends Controller
                             $('#reporta option[value="' + valor + '"]').prop('selected', true)
                         }
                     })
-                    
-                    // Validación de NSS - solo números y exactamente 11 dígitos si se llena
-                    $('#nss').on('input', function() {
-                        let valor = $(this).val().replace(/\D/g, ''); // Solo números
-                        if (valor.length > 11) valor = valor.substring(0, 11);
-                        $(this).val(valor);
-                        if (valor && valor.length !== 11) $(this).siblings('.fv-message').text('El NSS debe tener exactamente 11 dígitos');
-                        else $(this).siblings('.fv-message').text('')
-                    })
 
                     $('#contactoTelefonoPrincipal, #contactoTelefonoAlterno, #contactoEmergenciaTelefono').on('input', function() {
-                        let valor = $(this).val().replace(/\D/g, ''); // Solo números
-                        if (valor.length > 10) valor = valor.substring(0, 10);
-                        $(this).val(valor);
-                        if (valor && valor.length !== 10) $(this).siblings('.fv-message').text('El número de teléfono debe ser de 10 dígitos');
-                        else $(this).siblings('.fv-message').text('')
+                        camposNumericos($(this), 10)
                     })
                     
-                    // Validación de Código Postal y consulta SEPOMEX
                     $('#codigoPostal').on('input', function() {
-                        let valor = $(this).val().replace(/\D/g, ''); // Solo números
-                        if (valor.length > 5) {
-                            valor = valor.substring(0, 5);
-                        }
-                        $(this).val(valor);
-                        
-                        // Limpiar selects cuando cambie el CP
-                        if (valor.length < 5) {
-                            resetSelectsSepomex();
-                        }
+                        camposNumericos($(this), 5);
+                        if ($(this).val().length < 5) resetSelectsSepomex()
+                        if ($(this).val().length === 5) consultarSepomex($(this).val())
                     })
                     
-                    $('#codigoPostal').on('blur', function() {
-                        const cp = $(this).val();
-                        if (cp && cp.length === 5) {
-                            consultarSepomex(cp);
-                        } else if (cp && cp.length < 5) {
-                            $(this).siblings('.fv-message').text('El código postal debe tener 5 dígitos');
-                            resetSelectsSepomex();
-                        }
+                    $('#cuentaBancaria').on('input', function() {
+                        camposNumericos($(this), 18)
+                    })
+
+                    $('#tarjeta').on('input', function() {
+                        camposNumericos($(this), 18)
                     })
                 })
             </script>

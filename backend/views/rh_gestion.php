@@ -47,8 +47,6 @@
                 </div>
             </div>
             <div class="modal-body">
-                <input type="hidden" id="personaId" name="personaId">
-
                 <!-- Wizard Container -->
                 <div class="bs-stepper wizard-registro-colaborador">
                     <div class="bs-stepper-header">
@@ -175,7 +173,7 @@
                                             </div>
                                         </div>
                                         <div class="row">
-                                            <div class="col-md-4 mt-0">
+                                            <div class="col-md-3 mt-0">
                                                 <label for="estadoCivil" class="form-label">Estado Civil</label>
                                                 <select id="estadoCivil" name="estadoCivil" class="form-select">
                                                     <option value="" selected disabled>Seleccione</option>
@@ -193,10 +191,16 @@
                                                 <input type="text" id="nacionalidad" name="nacionalidad" class="form-control mayusculas" value="MEXICANA" maxlength="50">
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                             </div>
-                                            <div class="col-md-4 mt-0">
+                                            <div class="col-md-3 mt-0">
                                                 <label for="nss" class="form-label">NSS (Número de Seguro Social)</label>
                                                 <input type="text" id="nss" name="nss" class="form-control" maxlength="11" pattern="[0-9]*" placeholder="11 dígitos (opcional)">
                                                 <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                            </div>
+                                            <div class="col-md-2 mt-0 justify-content-center align-items-center d-flex">
+                                                <div class="form-check mb-0">
+                                                    <input class="form-check-input" type="checkbox" id="infonavit" name="infonavit">
+                                                    <label class="form-check-label" for="infonavit"> Infonavit</label>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="row">
@@ -254,17 +258,18 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-md-4 mt-0">
-                                        <label for="contactoTelefonoPrincipal" class="form-label">Numero de teléfono (Principal)</label>
-                                        <input type="text" id="contactoTelefonoPrincipal" name="contactoTelefonoPrincipal" class="form-control" pattern="[0-9]{10}" maxlength="10">
+                                        <label for="telefonoPrincipal" class="form-label">Numero de teléfono (Principal)</label>
+                                        <input type="text" id="telefonoPrincipal" name="telefonoPrincipal" class="form-control" pattern="[0-9]{10}" maxlength="10">
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-4 mt-0">
-                                        <label for="contactoTelefonoAlterno" class="form-label">Numero de teléfono (Alterno)</label>
-                                        <input type="text" id="contactoTelefonoAlterno" name="contactoTelefonoAlterno" class="form-control" pattern="[0-9]{10}" maxlength="10">
+                                        <label for="telefonoAlterno" class="form-label">Numero de teléfono (Alterno)</label>
+                                        <input type="text" id="telefonoAlterno" name="telefonoAlterno" class="form-control" pattern="[0-9]{10}" maxlength="10">
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-4 mt-0">
-                                        <label for="contactoCorreoPrincipal" class="form-label">Correo electrónico</label>
-                                        <input type="email" id="contactoCorreoPrincipal" name="contactoCorreoPrincipal" class="form-control" maxlength="100">
+                                        <label for="correoPrincipal" class="form-label">Correo electrónico</label>
+                                        <input type="email" id="correoPrincipal" name="correoPrincipal" class="form-control" maxlength="100">
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                 </div>
@@ -285,20 +290,16 @@
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                 </div>
-
                                 <div class="row">
                                     <div class="col-12 mt-0">
                                         <label for="condicionesMedicas" class="form-label">Condiciones Médicas (opcional)</label>
                                         <textarea id="condicionesMedicas" name="condicionesMedicas" class="form-control" rows="3" maxlength="1000" placeholder="Alergias, enfermedades crónicas, medicación, etc."></textarea>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                 </div>
-
                                 <div class="row">
                                     <div class="col-12">
                                         <label for="informacionAdicional" class="form-label">Información Adicional (opcional)</label>
                                         <textarea id="informacionAdicional" name="informacionAdicional" class="form-control" rows="3" maxlength="1000" placeholder="Notas adicionales relevantes"></textarea>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                 </div>
                                 <div class="col-12 d-flex justify-content-between mt-4">
@@ -321,24 +322,24 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-md-4 mt-0">
-                                        <label for="empresaWizard" class="form-label">Registro Base</label>
-                                        <select id="empresaWizard" name="empresaWizard" class="form-select">
+                                        <label for="empresa" class="form-label">Registro Base</label>
+                                        <select id="empresa" name="empresa" class="form-select">
                                             <option value="" selected disabled>Seleccione una empresa</option>
                                             <?= $empresas ?? '' ?>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-4 mt-0">
-                                        <label for="sucursalWizard" class="form-label">Oficina Base</label>
-                                        <select id="sucursalWizard" name="sucursalWizard" class="form-select">
+                                        <label for="sucursal" class="form-label">Oficina Base</label>
+                                        <select id="sucursal" name="sucursal" class="form-select">
                                             <option value="" selected disabled>Seleccione una sucursal</option>
                                             <?= $sucursales ?? '' ?>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-4 mt-0">
-                                        <label for="regionWizard" class="form-label">Región</label>
-                                        <select id="regionWizard" name="regionWizard" class="form-select" disabled>
+                                        <label for="region" class="form-label">Región</label>
+                                        <select id="region" name="region" class="form-select" disabled>
                                             <option value="" selected disabled>Seleccione una región</option>
                                             <?= $regiones ?? '' ?>
                                         </select>
@@ -384,6 +385,7 @@
                                                 </button>
                                             </div>
                                         </div>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -392,7 +394,7 @@
                                         <input type="text" id="usuario" name="usuario" class="form-control" maxlength="20" placeholder="Coloca aquí el RFC del colaborador">
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
-                                    <div class="col-md-4 mt-0">
+                                    <div class="col-md-4 mt-0 form-group form-password-toggle">
                                         <label class="form-label" for="password">Contraseña</label>
                                         <div class="input-group input-group-merge">
                                             <input
@@ -402,7 +404,7 @@
                                                 name="password"
                                                 placeholder="Ingresa la contraseña"
                                                 aria-describedby="password" />
-                                            <i class="input-group-text cursor-pointer fa fa-eye-slash z-15" id="passwordIcon" onclick="togglePassword()"></i>
+                                            <i class="input-group-text cursor-pointer fa fa-eye z-5"></i>
                                         </div>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -436,7 +438,10 @@
                                 <div class="row">
                                     <div class="col-md-3 mt-0">
                                         <label for="fechaIngreso" class="form-label">Fecha de ingreso</label>
-                                        <input type="text" id="fechaIngreso" name="fechaIngreso" class="form-control">
+                                        <div class="input-group input-group-merge cursor-pointer">
+                                            <input type="text" id="fechaIngreso" name="fechaIngreso" class="form-control" readonly>
+                                            <i class="input-group-text fa fa-calendar-days"></i>
+                                        </div>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-3 mt-0">
@@ -480,8 +485,8 @@
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-4 mt-0">
-                                        <label for="noTarjeta" class="form-label">No. de tarjeta</label>
-                                        <input type="text" id="noTarjeta" name="noTarjeta" class="form-control" maxlength="16" placeholder="16 dígitos">
+                                        <label for="tarjeta" class="form-label">No. de tarjeta</label>
+                                        <input type="text" id="tarjeta" name="tarjeta" class="form-control" maxlength="16" placeholder="16 dígitos">
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -514,10 +519,10 @@
                                         <div class="card">
                                             <div class="card-body">
                                                 <h6 class="mb-3 mt-3"><strong>Datos Personales</strong></h6>
-                                                <p class="mb-1"><strong>Nombre:</strong> <span id="resumenNombre">-</span></p>
+                                                <p class="mb-1"><strong>Nombre:</strong> <span id="resumenNombreCompleto">-</span></p>
                                                 <p class="mb-1"><strong>RFC:</strong> <span id="resumenRfc">-</span></p>
                                                 <p class="mb-1"><strong>CURP:</strong> <span id="resumenCurp">-</span></p>
-                                                <p class="mb-1"><strong>Fecha Nac.:</strong> <span id="resumenFechaNac">-</span></p>
+                                                <p class="mb-1"><strong>Fecha Nac.:</strong> <span id="resumenFechaNacimiento">-</span></p>
                                                 <p class="mb-1"><strong>Sexo:</strong> <span id="resumenSexo">-</span></p>
                                                 <p class="mb-1"><strong>Estado Civil:</strong> <span id="resumenEstadoCivil">-</span></p>
                                                 <p class="mb-1"><strong>Nacionalidad:</strong> <span id="resumenNacionalidad">-</span></p>
@@ -530,9 +535,9 @@
                                                 <p class="mb-1"><strong>Municipio:</strong> <span id="resumenMunicipio">-</span></p>
                                                 <p class="mb-1"><strong>Estado:</strong> <span id="resumenEstado">-</span></p>
                                                 <h6 class="mb-3 mt-3"><strong>Contacto</strong></h6>
-                                                <p class="mb-1"><strong>Tel. Principal:</strong> <span id="resumenContactoTelPrincipal">-</span></p>
-                                                <p class="mb-1"><strong>Tel. Alterno:</strong> <span id="resumenContactoTelAlterno">-</span></p>
-                                                <p class="mb-1"><strong>Correo:</strong> <span id="resumenContactoCorreo">-</span></p>
+                                                <p class="mb-1"><strong>Tel. Principal:</strong> <span id="resumenTelefonoPrincipal">-</span></p>
+                                                <p class="mb-1"><strong>Tel. Alterno:</strong> <span id="resumenTelefonoAlterno">-</span></p>
+                                                <p class="mb-1"><strong>Correo:</strong> <span id="resumenCorreoPrincipal">-</span></p>
                                             </div>
                                         </div>
                                     </div>
@@ -561,7 +566,7 @@
                                                         <p class="mb-1"><strong># Nómina:</strong> <span id="resumenNumeroNomina">-</span></p>
                                                         <p class="mb-1"><strong>Banco:</strong> <span id="resumenBanco">-</span></p>
                                                         <p class="mb-1"><strong>Cuenta bancaria:</strong> <span id="resumenCuentaBancaria">-</span></p>
-                                                        <p class="mb-0"><strong>No. Tarjeta:</strong> <span id="resumenNoTarjeta">-</span></p>
+                                                        <p class="mb-0"><strong>No. Tarjeta:</strong> <span id="resumenTarjeta">-</span></p>
                                                     </div>
                                                 </div>
                                                 <hr>
