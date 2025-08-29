@@ -484,15 +484,22 @@ class CapHum extends Controller
                 }
 
                 const verPersona = (id) => {
-                    consultaServidor("/CapHum/getPersonaDetalle", {id: id}, (respuesta) => {
+                    consultaServidor("/CapHum/getPersonaDetalle", {id: id}, async (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         
                         const persona = respuesta.datos.persona
+                        const nomina = respuesta.datos.nomina
+                        const empresa = respuesta.datos.empresa
+                        const contactos = respuesta.datos.contactos
+                        const telefonos = respuesta.datos.telefonos
+                        const emails = respuesta.datos.emails
                         const usuarios = respuesta.datos.usuarios
+                        const bancos = respuesta.datos.bancos
 
                         // Resetear modo edición
                         modoEdicion = false
                         hayCambios = false
+
 
                         // Llenar campos del modal de detalle
                         $("#detallePersonaIdHidden").val(persona.ID)
@@ -504,7 +511,60 @@ class CapHum extends Controller
                         $("#detalleCurp").val(persona.CURP)
                         $("#detalleFechaNacimiento").val(persona.FECHA_NACIMIENTO)
                         $("#detalleSexo").val(persona.SEXO)
-                        
+                        $("#detalleEstatus").val(persona.ESTATUS)
+
+                        telefonos.forEach(telefono => {
+                            if (telefono.TIPO === "1") {
+                                $("#detalleTelefonoPrincipal").val(telefono.NUMERO);
+                            } else if (telefono.TIPO === "2") {
+                                $("#detalleTelefonoAlterno").val(telefono.NUMERO);
+                            }
+                        });
+
+                        emails.forEach(email => {
+                            if (email.TIPO === "1") {
+                                $("#detalleEmail").val(email.DIRECCION);
+                            }
+                        });
+
+                        $("#detalleCalle").val(persona.CALLE_NUMERO)
+                        $("#detalleCP").val(persona.CP);
+                        const response = await fetch("https://api.condusef.gob.mx/sepomex/colonias/?cp=" + persona.CP);
+                        const data = await response.json();
+                        if (data?.colonias.length > 0) {
+                            const datosCP = data.colonias.filter(item => item.coloniaId == persona.COLONIA);
+                            const colonia = datosCP[0]?.colonia || "";
+                            const municipio = datosCP[0]?.municipio || "";
+                            const estado = datosCP[0]?.estado || "";
+                            $("#detalleColonia").val(colonia);
+                            $("#detalleMunicipio").val(municipio);
+                            $("#detalleEstado").val(estado);
+                        }
+
+                        $("#detalleEmpresa").val(empresa.EMPRESA_NOMBRE);
+                        $("#detalleRegion").val(empresa.REGION_NOMBRE);
+                        $("#detalleSucursal").val(empresa.SUCURSAL_NOMBRE);
+                        $("#detalleJefeDirecto").val(nomina.JEFE);
+
+                        $("#detalleIngreso").val(nomina.INGRESO);
+                        $("#detalleTipoNomina").val(nomina.TIPO);
+                        $("#detalleNumeroNomina").val(nomina.NUMERO);
+                        bancos.forEach(banco => {
+                            $("#detalleBanco").val(banco.ID_BANCO);
+                            if (banco.TIPO_NUMERO === "1") {
+                                $("#detalleCuenta").val(banco.NUMERO);
+                            } else if (banco.TIPO_NUMERO === "2") {
+                                $("#detalleTarjeta").val(banco.NUMERO);
+                            }
+                        });
+
+                        $("#detalleContactoEmergencia").val(contactos[0]?.NOMBRE || "");
+                        $("#detalleParentescoCE").val(contactos[0]?.PARENTESCO || "");
+                        $("#detalleTelefonoCE").val(contactos[0]?.TELEFONO || "");
+                        $("#detalleCondicionesMedicas").val(persona.CONDICIONES_MEDICAS || "");
+                        $("#detalleInfoAdicional").val(persona.OTROS_DATOS_RELEVANTES || "");
+
+
                         // Deshabilitar todos los campos de entrada
                         $("#detalleNombre, #detalleApellido1, #detalleApellido2, #detalleRfc, #detalleCurp, #detalleFechaNacimiento, #detalleSexo").prop("disabled", true)
                         $("#btnCambiarFotoDetalle").prop("disabled", true)
@@ -512,10 +572,6 @@ class CapHum extends Controller
                         // Restaurar botón de edición
                         $("#btnHabilitarEdicion").removeClass("btn-success").addClass("btn-warning")
                         $("#btnHabilitarEdicion").html('<i class="fa fa-edit">&nbsp;</i>Editar')
-                        
-                        // Mostrar estatus
-                        const estatusBadge = getEstatus(persona.ESTATUS == 1 ? "Activo" : "Inactivo", persona.ESTATUS == 1 ? "success" : "danger")
-                        $("#detalleEstatus").html(estatusBadge)
 
                         // Reutilizar foto de la tabla en lugar de descargarla nuevamente
                         let fotoSrc = "/assets/img/misc/user.svg" // Imagen por defecto

@@ -55,8 +55,6 @@ class CapHum extends Model
     // Detalle completo de persona y sus usuarios
     public static function getPersonaDetalle($datos)
     {
-        $id = $datos['id'] ?? 0;
-
         $qryPersona = <<<SQL
             SELECT
                 P.ID,
@@ -91,14 +89,30 @@ class CapHum extends Model
             ORDER BY U.ID
         SQL;
 
-        $qryTelefonos = "SELECT NUMERO AS numero, TIPO AS tipo FROM PERSONA_TELEFONO WHERE PERSONA = :id";
-        $qryEmails = "SELECT DIRECCION AS direccion, TIPO AS tipo FROM PERSONA_EMAIL WHERE PERSONA = :id";
+        $qryEmpresa = <<<SQL
+            SELECT 
+                s.ID as SUCURSAL_ID,
+                s.NOMBRE as SUCURSAL_NOMBRE,
+                r.ID as REGION_ID,
+                r.NOMBRE as REGION_NOMBRE,
+                e.ID as EMPRESA_ID,
+                e.NOMBRE as EMPRESA_NOMBRE
+            FROM SUCURSAL s
+            JOIN REGION r ON s.REGION = r.ID
+            JOIN EMPRESA e ON r.EMPRESA = e.ID
+            JOIN NOMINA n ON n.SUCURSAL = s.ID
+            WHERE n.PERSONA = :id
+        SQL;
+
         $qryNomina = "SELECT * FROM NOMINA WHERE PERSONA = :id";
         $qryBancos = "SELECT ID_BANCO, NUMERO, TIPO_NUMERO FROM PERSONA_DATOS_BANCARIOS WHERE PERSONA = :id";
+        $qryTelefonos = "SELECT NUMERO, TIPO FROM PERSONA_TELEFONO WHERE PERSONA = :id";
+        $qryEmails = "SELECT DIRECCION, TIPO FROM PERSONA_EMAIL WHERE PERSONA = :id";
         $qryContactos = "SELECT ID, NOMBRE, PARENTESCO, TELEFONO FROM PERSONA_CONTACTO_EMERGENCIA WHERE PERSONA = :id";
-        $qryTelefonosContacto = "SELECT CONTACTO_ID, TIPO, TELEFONO FROM PERSONA_CONTACTO_TELEFONO WHERE CONTACTO_ID = :contacto_id";
 
-        $params = ['id' => $id];
+        $params = [
+            'id' => $datos['id'] ?? 0
+        ];
 
         try {
             $db = new Database();
@@ -106,18 +120,13 @@ class CapHum extends Model
             $persona = $db->queryOne($qryPersona, $params);
             if (!$persona) return self::resultado(false, 'Persona no encontrada.');
 
+            $nomina = $db->queryOne($qryNomina, $params);
+            $empresa = $db->queryOne($qryEmpresa, $params);
+            $bancos = $db->queryAll($qryBancos, $params);
             $usuarios = $db->queryAll($qryUsuarios, $params);
             $telefonos = $db->queryAll($qryTelefonos, $params);
             $emails = $db->queryAll($qryEmails, $params);
-            $nomina = $db->queryAll($qryNomina, $params);
-            $bancos = $db->queryAll($qryBancos, $params);
-
-            // Contactos y sus teléfonos
             $contactos = $db->queryAll($qryContactos, $params);
-            foreach ($contactos as &$c) {
-                $telParams = ['contacto_id' => $c['ID'] ?? $c['id'] ?? 0];
-                $c['telefonos'] = $db->queryAll($qryTelefonosContacto, $telParams);
-            }
 
             $resultado = [
                 'persona' => $persona,
@@ -126,7 +135,8 @@ class CapHum extends Model
                 'emails' => $emails,
                 'nomina' => $nomina,
                 'bancos' => $bancos,
-                'contactos' => $contactos
+                'contactos' => $contactos,
+                'empresa' => $empresa
             ];
 
             return self::resultado(true, 'Detalle obtenido correctamente.', $resultado);
@@ -161,7 +171,9 @@ class CapHum extends Model
             if (!$insTel['success']) throw new \Exception(self::getErrorMessage($insTel) ?? 'Error insertando teléfonos persona');
 
             // 3) Emails persona
-            $emails[] = ['1', $datos['correoPrincipal'] ?? null];
+            $emails = [
+                ['1', $datos['correoPrincipal'] ?? null]
+            ];
             $laborales = explode(',', $datos['correoLaboral'] ?? '');
             foreach ($laborales as $email) {
                 $emails[] = ['4', $email];
@@ -234,16 +246,16 @@ class CapHum extends Model
             'curp' => $datos['curp'] ?? null,
             'fecha_nacimiento' => $datos['fechaNacimiento'] ?? null,
             'sexo' => $datos['sexo'] ?? null,
-            'estado_civil' => $datos['estado_civil'] ?? null,
+            'estado_civil' => $datos['estadoCivil'] ?? null,
             'nacionalidad' => $datos['nacionalidad'] ?? null,
             'nss' => $datos['nss'] ?? null,
-            'calle_numero' => $datos['calle_numero'] ?? null,
-            'cp' => $datos['cp'] ?? null,
+            'calle_numero' => $datos['calle'] ?? null,
+            'cp' => $datos['codigoPostal'] ?? null,
             'estado' => $datos['estado'] ?? null,
             'municipio' => $datos['municipio'] ?? null,
             'colonia' => $datos['colonia'] ?? null,
-            'condiciones_medicas' => $datos['condiciones_medicas'] ?? null,
-            'informacion_adicional' => $datos['informacion_adicional'] ?? null
+            'condiciones_medicas' => $datos['condicionesMedicas'] ?? null,
+            'informacion_adicional' => $datos['informacionAdicional'] ?? null
         ];
 
         $ret = [
@@ -273,9 +285,10 @@ class CapHum extends Model
         try {
             if (!$db) $db = new Database();
             foreach ($telefonos as $telefono) {
-                if (!$telefono || is_array($telefono)) continue;
-                $params = ['persona' => $personaId, 'numero' => $telefono[1], 'tipo' => $telefono[0]];
-                $db->CRUD($qry, $params);
+                if (is_array($telefono) && !empty($telefono[1]) && !is_null($telefono[1])) {
+                    $params = ['persona' => $personaId, 'numero' => $telefono[1], 'tipo' => $telefono[0]];
+                    $db->CRUD($qry, $params);
+                }
             }
 
             return self::resultado(true, "Teléfonos insertados");
@@ -290,9 +303,10 @@ class CapHum extends Model
         try {
             if (!$db) $db = new Database();
             foreach ($emails as $email) {
-                if (!$email || is_array($email)) continue;
-                $params = ['persona' => $personaId, 'direccion' => $email[1], 'tipo' => $email[0]];
-                $db->CRUD($qry, $params);
+                if (is_array($email) && !empty($email[1]) && !is_null($email[1])) {
+                    $params = ['persona' => $personaId, 'direccion' => $email[1], 'tipo' => $email[0]];
+                    $db->CRUD($qry, $params);
+                }
             }
 
             return self::resultado(true, "Emails insertados");

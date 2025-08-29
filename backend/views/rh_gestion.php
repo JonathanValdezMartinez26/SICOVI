@@ -641,122 +641,298 @@
             <div class="modal-header">
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 <div class="text-center w-100">
-                    <h4 class="address-title mb-2">Detalle de Persona</h4>
-                    <p class="address-subtitle">Información personal y usuarios asociados</p>
+                    <h4 class="address-title mb-2">Detalle del colaborador</h4>
                 </div>
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-md-4">
-                        <!-- Sección de foto -->
-                        <div class="card">
-                            <div class="card-body text-center">
-                                <div class="mb-3">
-                                    <img src="/assets/img/misc/user.svg" alt="Foto de usuario" id="detalleFotoPreview" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #ddd;">
-                                </div>
-                                <input type="file" id="detalleFotoInput" accept="image/*" style="display: none;">
-                                <button type="button" id="btnCambiarFotoDetalle" class="btn btn-sm btn-outline-primary" disabled>
-                                    <i class="fa fa-camera">&nbsp;</i>Cambiar Foto
-                                </button>
+                    <div class="col-md-3">
+                        <div class="col-md-2 d-flex flex-column justify-content-center align-items-center mb-10" style="width: 100%;">
+                            <div class="mb-3">
+                                <input type="file" id="fotoInput" accept="image/*" style="display: none;">
+                                <img src="/assets/img/misc/user.svg" alt="Foto de usuario" id="detalleFoto" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #ddd;">
                             </div>
+                            <button type="button" id="btnCambiarFoto" class="btn btn-sm btn-outline-primary">
+                                <i class="fa fa-camera">&nbsp;</i>Cambiar Foto
+                            </button>
+                        </div>
+                        <!-- Nav pills vertical -->
+                        <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                            <button class="nav-link active" id="tab-personales" data-bs-toggle="pill" data-bs-target="#content-personales" type="button" role="tab" aria-controls="content-personales" aria-selected="true">Personales</button>
+                            <button class="nav-link" id="tab-contacto" data-bs-toggle="pill" data-bs-target="#content-contacto" type="button" role="tab" aria-controls="content-contacto" aria-selected="false">Contacto</button>
+                            <button class="nav-link" id="tab-empresa" data-bs-toggle="pill" data-bs-target="#content-empresa" type="button" role="tab" aria-controls="content-empresa" aria-selected="false">Empresa</button>
+                            <button class="nav-link" id="tab-nomina" data-bs-toggle="pill" data-bs-target="#content-nomina" type="button" role="tab" aria-controls="content-nomina" aria-selected="false">Nómina</button>
+                            <button class="nav-link" id="tab-adicionales" data-bs-toggle="pill" data-bs-target="#content-adicionales" type="button" role="tab" aria-controls="content-adicionales" aria-selected="false">Datos Adicionales</button>
+                            <button class="nav-link" id="tab-usuarios" data-bs-toggle="pill" data-bs-target="#content-usuarios" type="button" role="tab" aria-controls="content-usuarios" aria-selected="false">Usuarios Asociados</button>
                         </div>
                     </div>
-                    <div class="col-md-8">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0">Información Personal</h5>
-                                <div>
-                                    <button type="button" id="btnHabilitarEdicion" class="btn btn-warning btn-sm me-2">
-                                        <i class="fa fa-edit">&nbsp;</i>Editar
-                                    </button>
-                                    <button type="button" id="btnInhabilitarPersona" class="btn btn-danger btn-sm">
-                                        <i class="fa fa-ban">&nbsp;</i>Desactivar
-                                    </button>
+                    <div class="col-md-9">
+                        <div class="tab-content" id="v-pills-tabContent">
+                            <!-- Personales -->
+                            <div class="tab-pane fade show active" id="content-personales" role="tabpanel" aria-labelledby="tab-personales">
+                                <div class="d-flex justify-content-end mb-2">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit-tab" id="btnEditTabPersonales" data-tab="personales">Editar</button>
                                 </div>
-                            </div>
-                            <div class="card-body">
                                 <input type="hidden" id="detallePersonaIdHidden">
                                 <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>ID:</strong></label></div>
-                                    <div class="col-8">
+                                    <div class="col-3"><label class="form-label"><strong>ID:</strong></label></div>
+                                    <div class="col-9">
                                         <input type="text" id="detallePersonaId" class="form-control-plaintext" readonly>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>Nombre:</strong></label></div>
-                                    <div class="col-8">
+                                    <div class="col-3"><label class="form-label"><strong>Nombre:</strong></label></div>
+                                    <div class="col-9">
                                         <input type="text" id="detalleNombre" class="form-control mayusculas" maxlength="50" disabled>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>Apellido Paterno:</strong></label></div>
-                                    <div class="col-8">
+                                    <div class="col-3"><label class="form-label"><strong>Apellido Paterno:</strong></label></div>
+                                    <div class="col-9">
                                         <input type="text" id="detalleApellido1" class="form-control mayusculas" maxlength="50" disabled>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>Apellido Materno:</strong></label></div>
-                                    <div class="col-8">
+                                    <div class="col-3"><label class="form-label"><strong>Apellido Materno:</strong></label></div>
+                                    <div class="col-9">
                                         <input type="text" id="detalleApellido2" class="form-control mayusculas" maxlength="50" disabled>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>RFC:</strong></label></div>
-                                    <div class="col-8">
+                                    <div class="col-3"><label class="form-label"><strong>RFC:</strong></label></div>
+                                    <div class="col-9">
                                         <input type="text" id="detalleRfc" class="form-control mayusculas" maxlength="13" disabled>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>CURP:</strong></label></div>
-                                    <div class="col-8">
+                                    <div class="col-3"><label class="form-label"><strong>CURP:</strong></label></div>
+                                    <div class="col-9">
                                         <input type="text" id="detalleCurp" class="form-control mayusculas" maxlength="18" disabled>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>F. Nacimiento:</strong></label></div>
-                                    <div class="col-8">
-                                        <input type="date" id="detalleFechaNacimiento" class="form-control" disabled>
+                                    <div class="col-3"><label class="form-label"><strong>NSS:</strong></label></div>
+                                    <div class="col-9">
+                                        <input type="text" id="detalleNSS" class="form-control" disabled maxlength="11">
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>Sexo:</strong></label></div>
-                                    <div class="col-8">
-                                        <select id="detalleSexo" class="form-select" disabled>
-                                            <option value="M">Masculino</option>
-                                            <option value="F">Femenino</option>
-                                        </select>
+                                    <div class="col-5">
+                                        <div class="col-4"><label class="form-label"><strong>F. Nacimiento:</strong></label></div>
+                                        <div class="col-12">
+                                            <input type="date" id="detalleFechaNacimiento" class="form-control" disabled>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>Estatus:</strong></label></div>
-                                    <div class="col-8">
-                                        <span id="detalleEstatus"></span>
+                                    <div class="col-4">
+                                        <div class="col-3"><label class="form-label"><strong>Sexo:</strong></label></div>
+                                        <div class="col-12">
+                                            <select id="detalleSexo" class="form-select" disabled>
+                                                <option value="M">Masculino</option>
+                                                <option value="F">Femenino</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="col-3"><label class="form-label"><strong>Estatus:</strong></label></div>
+                                        <div class="col-12">
+                                            <select id="detalleEstatus" class="form-select" disabled>
+                                                <option value="1">Activo</option>
+                                                <option value="0">Inactivo</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-12">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Usuarios Asociados</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table id="tablaUsuariosDetalle" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Usuario</th>
-                                            <th>Sucursal</th>
-                                            <th>Estatus</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    </tbody>
-                                </table>
+
+                            <!-- Contacto -->
+                            <div class="tab-pane fade" id="content-contacto" role="tabpanel" aria-labelledby="tab-contacto">
+                                <div class="d-flex justify-content-end mb-2">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit-tab" id="btnEditTabContacto" data-tab="contacto">Editar</button>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Teléfono principal:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleTelefonoPrincipal" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Teléfono alterno:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleTelefonoAlterno" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Email:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleEmail" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-8">
+                                        <div class="col-4"><label class="form-label"><strong>Calle:</strong></label></div>
+                                        <input type="text" id="detalleCalle" class="form-control" disabled placeholder="Calle y número">
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="col-4"><label class="form-label"><strong>CP:</strong></label></div>
+                                        <input type="text" id="detalleCP" class="form-control" disabled placeholder="Código Postal">
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="col-4"><label class="form-label"><strong>Colonia:</strong></label></div>
+                                        <input type="text" id="detalleColonia" class="form-control" disabled placeholder="Colonia">
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="col-4"><label class="form-label"><strong>Municipio:</strong></label></div>
+                                        <input type="text" id="detalleMunicipio" class="form-control" disabled placeholder="Municipio">
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="col-4"><label class="form-label"><strong>Estado:</strong></label></div>
+                                        <input type="text" id="detalleEstado" class="form-control" disabled placeholder="Estado">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Empresa -->
+                            <div class="tab-pane fade" id="content-empresa" role="tabpanel" aria-labelledby="tab-empresa">
+                                <div class="d-flex justify-content-end mb-2">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit-tab" id="btnEditTabEmpresa" data-tab="empresa">Editar</button>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Empresa:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleEmpresa" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Región:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleRegion" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Sucursal:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleSucursal" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Puesto:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detallePuesto" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Jefe Directo:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleJefeDirecto" class="form-control" disabled>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Nómina -->
+                            <div class="tab-pane fade" id="content-nomina" role="tabpanel" aria-labelledby="tab-nomina">
+                                <div class="d-flex justify-content-end mb-2">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit-tab" id="btnEditTabNomina" data-tab="nomina">Editar</button>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Ingreso:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleIngreso" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Nomina:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleNomina" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Tipo:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleTipoNomina" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Numero:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleNumeroNomina" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Banco:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleBanco" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Cuenta:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleCuenta" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Tarjeta:</strong></label></div>
+                                    <div class="col-8">
+                                        <input type="text" id="detalleTarjeta" class="form-control" disabled>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Datos Adicionales -->
+                            <div class="tab-pane fade" id="content-adicionales" role="tabpanel" aria-labelledby="tab-adicionales">
+                                <div class="d-flex justify-content-end mb-2">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit-tab" id="btnEditTabAdicionales" data-tab="adicionales">Editar</button>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <div class="col-6"><label class="form-label"><strong>Contacto de emergencia:</strong></label></div>
+                                        <input type="text" id="detalleContactoEmergencia" class="form-control" disabled>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="col-4"><label class="form-label"><strong>Parentesco:</strong></label></div>
+                                        <input type="text" id="detalleParentescoCE" class="form-control" disabled>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="col-4"><label class="form-label"><strong>Telefono:</strong></label></div>
+                                        <input type="text" id="detalleTelefonoCE" class="form-control" disabled>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Condiciones médicas:</strong></label></div>
+                                    <div class="col-8">
+                                        <textarea id="detalleCondicionesMedicas" class="form-control" rows="2" disabled></textarea>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-4"><label class="form-label"><strong>Información adicional:</strong></label></div>
+                                    <div class="col-8">
+                                        <textarea id="detalleInformacionAdicional" class="form-control" rows="2" disabled></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Usuarios Asociados -->
+                            <div class="tab-pane fade" id="content-usuarios" role="tabpanel" aria-labelledby="tab-usuarios">
+                                <div class="d-flex justify-content-end mb-2">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit-tab" id="btnEditTabUsuarios" data-tab="usuarios">Editar</button>
+                                </div>
+                                <div class="card-header mb-2">
+                                    <h5 class="card-title mb-0">Usuarios Asociados</h5>
+                                </div>
+                                <div class="table-responsive">
+                                    <table id="tablaUsuariosDetalle" class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Usuario</th>
+                                                <th>Sucursal</th>
+                                                <th>Estatus</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -848,3 +1024,188 @@
     </div>
 </div>
 <!-- / Modal para editar usuario -->
+
+<script>
+    // Gestión de edición por pestaña en modalDetallePersona
+    (function() {
+        const tabs = ['personales', 'contacto', 'empresa', 'nomina', 'adicionales', 'usuarios'];
+        const state = {};
+
+        // helper: obtener inputs de una tab
+        function getTabFields(tab) {
+            switch (tab) {
+                case 'personales':
+                    return Array.from(document.querySelectorAll('#content-personales input, #content-personales select'));
+                case 'contacto':
+                    return Array.from(document.querySelectorAll('#content-contacto input, #content-contacto textarea'));
+                case 'empresa':
+                    return Array.from(document.querySelectorAll('#content-empresa input'));
+                case 'nomina':
+                    return Array.from(document.querySelectorAll('#content-nomina input'));
+                case 'adicionales':
+                    return Array.from(document.querySelectorAll('#content-adicionales input, #content-adicionales textarea'));
+                case 'usuarios':
+                    // usuarios es una tabla; no hay campos editables por ahora
+                    return [];
+            }
+            return [];
+        }
+
+        function snapshot(tab) {
+            const fields = getTabFields(tab);
+            return fields.map(f => ({
+                id: f.id,
+                value: f.value,
+                disabled: f.disabled
+            }));
+        }
+
+        function restore(tab, snap) {
+            if (!snap) return;
+            snap.forEach(s => {
+                const el = document.getElementById(s.id);
+                if (el) el.value = s.value;
+            });
+        }
+
+        function setDisabled(tab, disabled) {
+            getTabFields(tab).forEach(f => {
+                f.disabled = disabled;
+            });
+        }
+
+        function hasChanges(tab, snap) {
+            if (!snap) return false;
+            return getTabFields(tab).some(f => {
+                const s = snap.find(x => x.id === f.id);
+                return s && s.value !== f.value;
+            });
+        }
+
+        // Inicializar estado por tab
+        tabs.forEach(t => {
+            state[t] = {
+                mode: 'view',
+                snap: null
+            };
+        });
+
+        // Botones editar
+        document.querySelectorAll('.btn-edit-tab').forEach(btn => {
+            const tab = btn.dataset.tab;
+            btn.addEventListener('click', function(e) {
+                const s = state[tab];
+                if (s.mode === 'view') {
+                    // entrar en edición
+                    s.snap = snapshot(tab);
+                    s.mode = 'edit';
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-primary');
+                    btn.textContent = 'Cancelar';
+                    setDisabled(tab, false);
+                } else if (s.mode === 'edit') {
+                    // cancelar edición (si no hay cambios) o pedir confirmación
+                    if (hasChanges(tab, s.snap)) {
+                        // cambiar a estado 'pending-save'
+                        s.mode = 'pending';
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-success');
+                        btn.textContent = 'Guardar';
+                    } else {
+                        // revertir y volver a view
+                        restore(tab, s.snap);
+                        s.mode = 'view';
+                        s.snap = null;
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-outline-primary');
+                        btn.textContent = 'Editar';
+                        setDisabled(tab, true);
+                    }
+                } else if (s.mode === 'pending') {
+                    // Simulación de guardado: aplicar y volver a view
+                    // aquí deberías disparar la llamada AJAX real; por ahora solo resetear estado
+                    s.mode = 'view';
+                    s.snap = null;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-primary');
+                    btn.textContent = 'Editar';
+                    setDisabled(tab, true);
+                }
+            });
+        });
+
+        // Detectar cambios en inputs para cada tab y actualizar texto del botón
+        tabs.forEach(tab => {
+            getTabFields(tab).forEach(f => {
+                f.addEventListener('input', () => {
+                    const s = state[tab];
+                    const btn = document.querySelector('.btn-edit-tab[data-tab="' + tab + '"]');
+                    if (!s) return;
+                    if (s.mode === 'edit') {
+                        if (hasChanges(tab, s.snap)) {
+                            // mostrar guardar
+                            s.mode = 'pending';
+                            btn.classList.remove('btn-primary');
+                            btn.classList.add('btn-success');
+                            btn.textContent = 'Guardar';
+                        } else {
+                            // volver a cancelar
+                            s.mode = 'edit';
+                            btn.classList.remove('btn-success');
+                            btn.classList.add('btn-primary');
+                            btn.textContent = 'Cancelar';
+                        }
+                    } else if (s.mode === 'pending') {
+                        if (!hasChanges(tab, s.snap)) {
+                            s.mode = 'edit';
+                            btn.classList.remove('btn-success');
+                            btn.classList.add('btn-primary');
+                            btn.textContent = 'Cancelar';
+                        }
+                    }
+                });
+            });
+        });
+
+        // Al cambiar de tab: si hay edición pendiente en la tab actual, revertir cambios
+        const pillButtons = document.querySelectorAll('#v-pills-tab button[data-bs-toggle="pill"]');
+        pillButtons.forEach(btn => {
+            btn.addEventListener('show.bs.tab', function(e) {
+                // obtener la tab que se está ocultando
+                const prev = document.querySelector('#v-pills-tab button.active');
+                if (prev) {
+                    const prevTab = prev.id.replace('tab-', '');
+                    const s = state[prevTab];
+                    if (s && s.mode !== 'view') {
+                        // revertir cambios no guardados
+                        restore(prevTab, s.snap);
+                        setDisabled(prevTab, true);
+                        s.mode = 'view';
+                        s.snap = null;
+                        const prevBtn = document.querySelector('.btn-edit-tab[data-tab="' + prevTab + '"]');
+                        if (prevBtn) {
+                            prevBtn.className = 'btn btn-sm btn-outline-primary btn-edit-tab';
+                            prevBtn.textContent = 'Editar';
+                        }
+                    }
+                }
+            });
+        });
+
+        // Al abrir el modal, deshabilitar todos los campos
+        const modal = document.getElementById('modalDetallePersona');
+        if (modal) {
+            modal.addEventListener('show.bs.modal', function() {
+                tabs.forEach(t => setDisabled(t, true));
+                // reset botones
+                document.querySelectorAll('.btn-edit-tab').forEach(b => {
+                    b.className = 'btn btn-sm btn-outline-primary btn-edit-tab';
+                    b.textContent = 'Editar';
+                });
+                // take initial snapshots
+                tabs.forEach(t => state[t].snap = snapshot(t));
+            });
+        }
+
+    })();
+</script>
