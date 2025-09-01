@@ -1149,13 +1149,7 @@ class Viaticos extends Controller
         HTML;
 
         $catSucursales = ViaticosDAO::getCatalogoSucursales();
-        $sucursales = '';
-        if ($catSucursales['success']) {
-            foreach ($catSucursales['datos'] as $sucursal) {
-                $seleccion = $_SESSION['sucursal_id'] == $sucursal['ID'] ? 'selected' : '';
-                $sucursales .= "<option value='{$sucursal['ID']}' $seleccion>{$sucursal['NOMBRE']}</option>";
-            }
-        }
+        if ($catSucursales['success']) $optionsSucursales = self::getOptionsSucursales($catSucursales['datos']);
 
         $catConceptos = ViaticosDAO::getCatalogoConceptosViaticos();
         $conceptos = '<option></option>';
@@ -1169,7 +1163,7 @@ class Viaticos extends Controller
 
         self::set("titulo", "Solicitud de Viáticos y Gastos");
         self::set("script", $script);
-        self::set("sucursales", $sucursales);
+        self::set("sucursales", $optionsSucursales['sucursales']);
         self::set("conceptos", $conceptos);
         self::set("activas", $activas['datos']['ACTIVAS'] ?? 0);
         self::render("viaticos_solicitud");

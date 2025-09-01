@@ -43,17 +43,11 @@ class Model
     {
         $query = <<<SQL
             SELECT
-                SUCURSAL.ID AS ID
-                , SUCURSAL.NOMBRE AS NOMBRE
-                , REGION.ID AS REGION_ID
-                , REGION.NOMBRE AS REGION_NOMBRE
-                , EMPRESA.ID AS EMPRESA_ID
-                , EMPRESA.NOMBRE AS EMPRESA_NOMBRE
+                *
             FROM
-                SUCURSAL
-                LEFT JOIN REGION ON REGION.ID = SUCURSAL.REGION
-                LEFT JOIN EMPRESA ON EMPRESA.ID = REGION.EMPRESA
-            ORDER BY NOMBRE
+                SUCURSALES_REGIONES
+            ORDER BY
+                EMPRESA, REGION_NOMBRE, SUCURSAL_NOMBRE
         SQL;
 
         try {
@@ -110,6 +104,31 @@ class Model
             return self::resultado(true, 'Métodos de entrega obtenidos.', $result);
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al obtener los métodos de entrega.', null, $e->getMessage());
+        }
+    }
+
+    public static function getPersonalSucursal($datos)
+    {
+        $query = <<<SQL
+            SELECT
+                PERSONA,
+                GET_NOMBRE_PERSONA(PERSONA) AS NOMBRE
+            FROM
+                NOMINA
+            WHERE
+                SUCURSAL = :sucursalId
+        SQL;
+
+        $params = [
+            'sucursalId' => $datos['sucursal']
+        ];
+
+        try {
+            $db = new Database();
+            $result = $db->queryAll($query, $params);
+            return self::resultado(true, 'Personal de la sucursal obtenidos.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener el personal de la sucursal.', null, $e->getMessage());
         }
     }
 }

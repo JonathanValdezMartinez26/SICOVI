@@ -1065,6 +1065,30 @@ class CapHum extends Controller
                     campo.val(valor)
                 }
 
+                const getPersonalSucursal = (sucursal) => {
+                    const parametros = {
+                        sucursal
+                    }
+
+                    consultaServidor("/CapHum/getPersonalSucursal", parametros, (respuesta) => {
+                        if (!respuesta.success) {
+                            return showError(respuesta.mensaje)
+                        }
+
+                        const personal = respuesta.datos
+                        let  opciones = "<option value='' selected disabled>Seleccione un jefe</option>"
+                        opciones += personal.map((miembro) => {
+                            return "<option value='" + miembro.ID + "'>" + miembro.NOMBRE + "</option>"
+                        }).join("")
+
+                        $("#jefeInmediato").html(opciones)
+                        $("#jefeInmediato").prop("disabled", false)
+
+                        $("#reporta").html(opciones)
+                        $("#reporta").prop("disabled", false)
+                    })
+                }
+
                 $(document).ready(() => {
                     const maxF = moment().subtract(18, 'years').format('YYYY-MM-DD');
                     const minF = moment().subtract(70, 'years').format('YYYY-MM-DD');
@@ -1113,22 +1137,40 @@ class CapHum extends Controller
 
                     $('#empresa').on('change', () => {
                         const empresaId = $('#empresa option:selected').val()
+
+                        $('#region').prop('disabled', !empresaId)
+                        $('#region').val('')
+                        $('#region option').each(function() {
+                            const regionEmpresaId = $(this).attr('data-empresa')
+                            if (regionEmpresaId !== empresaId) $(this).hide()
+                            else $(this).show()
+                        })
+
+                        $('#sucursal').prop('disabled', true)
+                        $('#sucursal').val('')
+                    })
+
+
+                    $('#region').on('change', () => {
+                        const empresaId = $('#empresa option:selected').val()
+                        const regionId = $('#region option:selected').val()
+                        
+                        $('#sucursal').prop('disabled', !regionId)
+                        $('#sucursal').val('')
                         $('#sucursal option').each(function() {
                             const sucursalEmpresaId = $(this).attr('data-empresa')
-                            if (sucursalEmpresaId !== empresaId) {
-                                $(this).hide()
-                            } else {
-                                $(this).show()
-                            }
+                            const sucursalRegionId = $(this).attr('data-region')
+                            
+                            if (sucursalRegionId !== regionId || sucursalEmpresaId !== empresaId) $(this).hide()
+                            else $(this).show()
                         })
                     })
 
-
-                    $('#sucursal').on('change', () => {
-                        const sucursalId = $('#sucursal option:selected').attr('data-region')
-                        if (sucursalId) $('#region').val(sucursalId)
+                    $("#sucursal").on("change", () => {
+                        const sucursalId = $("#sucursal option:selected").val()
+                        getPersonalSucursal(sucursalId)
                     })
-                    
+
                     $('#jefeInmediato').change(function() {
                         const valor = $(this).val()
                         const texto = $(this).find('option:selected').text()
@@ -1173,9 +1215,9 @@ class CapHum extends Controller
         $this->set('titulo', 'Gestión Capital Humano | ' . CONFIGURACION['EMPRESA']);
         $this->set('script', $script);
         $this->set('css', '<link rel="stylesheet" href="/assets/css/wizard-rh.css">');
-        $this->set("regiones", $optionsSucursales['regiones']);
-        $this->set("sucursales", $optionsSucursales['sucursales']);
         $this->set("empresas", $optionsSucursales['empresas']);
+        $this->set("sucursales", $optionsSucursales['sucursales']);
+        $this->set("regiones", $optionsSucursales['regiones']);
         $this->set("bancos", $bancos);
         $this->set("perfiles", $perfiles);
         $this->render('rh_gestion');
@@ -1191,6 +1233,12 @@ class CapHum extends Controller
     {
         $detalle = CapHumDAO::getPersonaDetalle($_POST);
         $this->respuestaJSON($detalle);
+    }
+
+    public function getPersonalSucursal()
+    {
+        $personal = CapHumDAO::getPersonalSucursal($_POST);
+        $this->respuestaJSON($personal);
     }
 
     public function guardarPersona()

@@ -85,15 +85,15 @@ class Controller
         $empTmp = [];
 
         foreach ($catSucursales as $sucursal) {
-            $sucursales .= "<option value='{$sucursal['ID']}' data-region='{$sucursal['REGION_ID']}' data-empresa='{$sucursal['EMPRESA_ID']}'>{$sucursal['NOMBRE']}</option>";
+            $sucursales .= "<option value='{$sucursal['SUCURSAL']}' data-region='{$sucursal['REGION']}' data-empresa='{$sucursal['EMPRESA']}'>{$sucursal['SUCURSAL_NOMBRE']}</option>";
 
-            if (!in_array($sucursal['REGION_ID'], $rgnTmp)) {
-                $rgnTmp[] = $sucursal['REGION_ID'];
-                $regiones .= "<option value='{$sucursal['REGION_ID']}' data-empresa='{$sucursal['EMPRESA_ID']}'>{$sucursal['REGION_NOMBRE']}</option>";
+            if (!in_array($sucursal['REGION'] . $sucursal['EMPRESA'], $rgnTmp)) {
+                $rgnTmp[] = $sucursal['REGION'] . $sucursal['EMPRESA'];
+                $regiones .= "<option value='{$sucursal['REGION']}' data-empresa='{$sucursal['EMPRESA']}'>{$sucursal['REGION_NOMBRE']}</option>";
 
-                if (!in_array($sucursal['EMPRESA_ID'], $empTmp)) {
-                    $empTmp[] = $sucursal['EMPRESA_ID'];
-                    $empresas .= "<option value='{$sucursal['EMPRESA_ID']}'>{$sucursal['EMPRESA_NOMBRE']}</option>";
+                if (!in_array($sucursal['EMPRESA'], $empTmp)) {
+                    $empTmp[] = $sucursal['EMPRESA'];
+                    $empresas .= "<option value='{$sucursal['EMPRESA']}'>{$sucursal['EMPRESA']}</option>";
                 }
             }
         }
