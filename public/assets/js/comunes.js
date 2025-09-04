@@ -425,3 +425,62 @@ const resetValidacion = (validador, reset) => {
 $(document).on("input", ".mayusculas", function () {
     $(this).val($(this).val().toUpperCase())
 })
+
+/*
+ * Función para los selectores de empresa, region y sucursal
+ */
+const setSelectEmpresaRegionSucursal = (
+    empresa,
+    region,
+    sucursal,
+    { empChange = null, regChange = null, sucChange = null } = {}
+) => {
+    const selEmpresa = $(empresa)
+    const selRegion = $(region)
+    const selSucursal = $(sucursal)
+
+    const getID = (elemento, tipo) => {
+        return elemento && elemento.length > 0 ? $(elemento[0]).attr(`data-${tipo}`) : null
+    }
+
+    selEmpresa.on("change", function () {
+        const empresaId = $(this).find("option:selected").val()
+
+        selRegion.prop("disabled", !empresaId)
+        selRegion.val("")
+        selRegion.find("option").each(function () {
+            const regionEmpresaId = $(this).attr("data-empresa")
+            if (regionEmpresaId !== empresaId) $(this).hide()
+            else $(this).show()
+        })
+
+        selSucursal.prop("disabled", true)
+        selSucursal.val("")
+
+        if (empChange) empChange(empresaId)
+    })
+
+    selRegion.on("change", function () {
+        const empresaId = $(this).find("option:selected").attr("data-empresa")
+        const regionId = $(this).find("option:selected").val()
+
+        selSucursal.prop("disabled", !regionId)
+        selSucursal.val("")
+        selSucursal.find("option").each(function () {
+            const sucursalRegionId = $(this).attr("data-region")
+            const sucursalEmpresaId = $(this).attr("data-empresa")
+            if (sucursalRegionId !== regionId || sucursalEmpresaId !== empresaId) $(this).hide()
+            else $(this).show()
+        })
+
+        if (regChange) regChange(empresaId, regionId)
+    })
+
+    selSucursal.on("change", function () {
+        const empresaId = $(this).find("option:selected").attr("data-empresa")
+        const regionId = $(this).find("option:selected").attr("data-region")
+        const sucursalId = $(this).find("option:selected").val()
+
+        if (sucChange) sucChange(empresaId, regionId, sucursalId)
+    })
+}

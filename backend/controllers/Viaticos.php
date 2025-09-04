@@ -312,6 +312,8 @@ class Viaticos extends Controller
                         desde: fechas.inicio,
                         hasta: fechas.fin,
                         monto: numeral($("#montoVG").val()).value(),
+                        empresa: $("#sucursalEntrega option:selected").attr("data-empresa"), //$("#empresa").val(),
+                        region: $("#sucursalEntrega option:selected").attr("data-region"), //$("#region").val(),
                         sucursal: $("#sucursalEntrega").val(),
                     }
 
@@ -741,7 +743,7 @@ class Viaticos extends Controller
                             $("#verFechaEntrega").val(moment(informacion.ENTREGA_FECHA).format(MOMENT_FRONT_HORA))
                             $("#verMontoEntregado").val(numeral(informacion.ENTREGA_MONTO).format(NUMERAL_MONEDA))
                             $("#verMetodoEntrega").val(informacion.METODO_ENTREGA)
-                            $("#verSucursalEntrega").val(informacion.ENTREGA_SUCURSAL)
+                            $("#verSucursalEntrega").val(informacion.ENTREGA_SUCURSAL_NOMBRE)
                         } else {
                             $("#verEntregadoIcono").addClass("fa fa-hourglass-start text-warning")
                             $("#verEntregadoPor").val("Pendiente de entrega")
@@ -1143,6 +1145,13 @@ class Viaticos extends Controller
                     $("#btnFinalizarComprobacion").on("click", finalizarComprobacion)
                     $("#actualizarConcepto").on("click", actualizaConceptoSolicitud)
                     
+                    // recorrer las sucursales par a mostrar solo las que coinciden con la empresa de usuario
+                    const empresaUsuario = "{$_SESSION['empresa_id']}"
+                    $("#sucursalEntrega option").each((_, option) => {
+                        const empresa = $(option).attr("data-empresa")
+                        if (empresa !== empresaUsuario) $(option).hide()
+                    });
+
                     getSolicitudes()
                 })
             </script>
@@ -1509,7 +1518,7 @@ class Viaticos extends Controller
                         }
                         
                         $("#verSolicitante").val(informacion.USUARIO_NOMBRE)
-                        $("#verSucursal").val(informacion.ENTREGA_SUCURSAL)
+                        $("#verSucursal").val(informacion.ENTREGA_SUCURSAL_NOMBRE)
                         $("#verTipoSol").val(informacion.TIPO_NOMBRE)
                         $("#verSolicitudId").val(informacion.ID)
                         $("#verFechaSol").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
@@ -1717,6 +1726,8 @@ class Viaticos extends Controller
                     const fechas = getInputFechas("#fechasSolicitudes", true)
 
                     const parametros = {
+                        empresa: $_SESSION[empresa_id],
+                        region: $_SESSION[region_id],
                         sucursal: $_SESSION[sucursal_id],
                         fechaI: fechas.inicio,
                         fechaF: fechas.fin
@@ -1790,7 +1801,7 @@ class Viaticos extends Controller
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         const informacion = respuesta.datos.informacion
                         $("#verSolicitante").val(informacion.USUARIO_NOMBRE)
-                        $("#verSucursal").val(informacion.ENTREGA_SUCURSAL)
+                        $("#verSucursal").val(informacion.ENTREGA_SUCURSAL_NOMBRE)
                         $("#verFechaReg").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
                         $("#verSolicitudId").val(informacion.ID)
                         $("#verTipoSolId").val(informacion.TIPO_ID)
@@ -2604,6 +2615,8 @@ class Viaticos extends Controller
                             usuario: $_SESSION[usuario_id],
                             solicitudId,
                             observaciones: $("#observacionesAjuste").val().trim(),
+                            empresa: $("#verSucursal option:selected").attr("data-empresa"), //$("#verEmpresa").val(),
+                            region: $("#verSucursal option:selected").attr("data-region"), //$("#verRegion").val(),
                             sucursal: $("#verSucursal").val(),
                         }
 

@@ -82,25 +82,22 @@ class CapHum extends Model
         SQL;
 
         $qryUsuarios = <<<SQL
-            SELECT U.ID, U.USUARIO, U.ESTATUS, U.SUCURSAL, S.NOMBRE AS SUCURSAL_NOMBRE
+            SELECT U.ID, U.USUARIO, U.ESTATUS, SR.SUCURSAL, SR.SUCURSAL_NOMBRE
             FROM USUARIO U
-            LEFT JOIN SUCURSAL S ON U.SUCURSAL = S.ID
+            LEFT JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = U.EMPRESA AND SR.REGION = U.REGION AND SR.SUCURSAL = U.SUCURSAL
             WHERE U.PERSONA = :id
             ORDER BY U.ID
         SQL;
 
         $qryEmpresa = <<<SQL
             SELECT 
-                s.ID as SUCURSAL_ID,
-                s.NOMBRE as SUCURSAL_NOMBRE,
-                r.ID as REGION_ID,
-                r.NOMBRE as REGION_NOMBRE,
-                e.ID as EMPRESA_ID,
-                e.NOMBRE as EMPRESA_NOMBRE
-            FROM SUCURSAL s
-            JOIN REGION r ON s.REGION = r.ID
-            JOIN EMPRESA e ON r.EMPRESA = e.ID
-            JOIN NOMINA n ON n.SUCURSAL = s.ID
+                SR.EMPRESA,
+                SR.REGION,
+                SR.REGION_NOMBRE,
+                SR.SUCURSAL,
+                SR.SUCURSAL_NOMBRE,
+            FROM NOMINA n
+            JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = n.EMPRESA AND SR.REGION = n.REGION AND SR.SUCURSAL = n.SUCURSAL
             WHERE n.PERSONA = :id
         SQL;
 
@@ -319,17 +316,19 @@ class CapHum extends Model
     {
         $qry = <<<SQL
             INSERT INTO NOMINA (
-                PERSONA, SUCURSAL, JEFE, PUESTO, INGRESO, NOMINA, TIPO, NUMERO
+                PERSONA, EMPRESA, REGION, SUCURSAL, JEFE, PUESTO, INGRESO, NOMINA, TIPO, NUMERO
             )
             VALUES (
-                :persona, :sucursal, :jefe, :puesto, TO_DATE(:fecha_ingreso, 'YYYY-MM-DD'), :nomina, :tipo, :numero
+                :persona, :empresa, :region, :sucursal, :jefe, :puesto, TO_DATE(:fecha_ingreso, 'YYYY-MM-DD'), :nomina, :tipo, :numero
             )
             SQL;
 
         $params = [
             'persona' => $personaId,
+            'empresa' => $nomina['empresa'] ?? null,
+            'region' => $nomina['region'] ?? null,
             'sucursal' => $nomina['sucursal'] ?? null,
-            'jefe' => 2, //$nomina['jefeInmediato'] ?? -1,
+            'jefe' => $nomina['jefeInmediato'] ?? -1,
             'puesto' => $nomina['puesto'] ?? null,
             'fecha_ingreso' => $nomina['fechaIngreso'] ?? null,
             'nomina' => $nomina['nomina'] ?? null,
@@ -393,9 +392,11 @@ class CapHum extends Model
 
     public static function crearUsuario($personaId, $datos, $db = null)
     {
-        $qry = "INSERT INTO USUARIO (PERSONA, SUCURSAL, USUARIO, PASS, PERFIL) VALUES (:persona, :sucursal, :usuario, :pass, :perfil)";
+        $qry = "INSERT INTO USUARIO (PERSONA, EMPRESA, REGION, SUCURSAL, USUARIO, PASS, PERFIL) VALUES (:persona, :empresa, :region, :sucursal, :usuario, :pass, :perfil)";
         $params = [
             'persona' => $personaId,
+            'empresa' => $datos['empresa'] ?? null,
+            'region' => $datos['region'] ?? null,
             'sucursal' => $datos['sucursal'] ?? null,
             'usuario' => $datos['usuario'] ?? null,
             'pass' => $datos['pass'] ?? null,
@@ -439,14 +440,12 @@ class CapHum extends Model
                 U.USUARIO,
                 U.PERFIL,
                 U.ESTATUS,
-                R.EMPRESA,
-                S.REGION,
-                U.SUCURSAL
+                SR.EMPRESA,
+                SR.REGION,
+                SR.SUCURSAL
             FROM
                 USUARIO U
-                LEFT JOIN SUCURSAL S ON U.SUCURSAL = S.ID
-                LEFT JOIN REGION R ON S.REGION = R.ID
-                LEFT JOIN EMPRESA E ON R.EMPRESA = E.ID
+                LEFT JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = U.EMPRESA AND SR.REGION = U.REGION AND SR.SUCURSAL = U.SUCURSAL
             WHERE
                 U.ID = :id
             SQL;
@@ -469,8 +468,9 @@ class CapHum extends Model
         $persona = $datos['persona'] ?? '';
         $usuario = $datos['usuario'] ?? '';
         $pass = $datos['pass'] ?? '';
-        $sucursal = $datos['sucursal'] ?? '';
         $empresa = $datos['empresa'] ?? '';
+        $region = $datos['region'] ?? '';
+        $sucursal = $datos['sucursal'] ?? '';
         $perfil = $datos['perfil'] ?? '';
         $estatus = $datos['estatus'] ?? 1;
 
@@ -482,13 +482,14 @@ class CapHum extends Model
                 $qry = <<<SQL
                     UPDATE USUARIO SET
                         USUARIO = :usuario,
-                        SUCURSAL = :sucursal,
                         EMPRESA = :empresa,
+                        REGION = :region,
+                        SUCURSAL = :sucursal,
                         PERFIL = :perfil,
                         ESTATUS = :estatus
                     SQL;
 
-                $params = ['usuario' => $usuario, 'sucursal' => $sucursal, 'empresa' => $empresa, 'perfil' => $perfil, 'estatus' => $estatus];
+                $params = ['usuario' => $usuario, 'empresa' => $empresa, 'region' => $region, 'sucursal' => $sucursal, 'perfil' => $perfil, 'estatus' => $estatus];
                 if (!empty($pass)) {
                     $qry .= ", PASS = :pass";
                     $params['pass'] = password_hash($pass, PASSWORD_DEFAULT);
@@ -503,11 +504,11 @@ class CapHum extends Model
                 $usuarioId = $nextIdResult['NEXT_ID'];
 
                 $qry = <<<SQL
-                    INSERT INTO USUARIO (ID, PERSONA, USUARIO, PASS, SUCURSAL, EMPRESA, PERFIL, ESTATUS)
-                    VALUES (:id, :persona, :usuario, :pass, :sucursal, :empresa, :perfil, :estatus)
+                    INSERT INTO USUARIO (ID, PERSONA, USUARIO, PASS, EMPRESA, REGION, SUCURSAL, PERFIL, ESTATUS)
+                    VALUES (:id, :persona, :usuario, :pass, :empresa, :region, :sucursal, :perfil, :estatus)
                     SQL;
 
-                $params = ['id' => $usuarioId, 'persona' => $persona, 'usuario' => $usuario, 'pass' => password_hash($pass, PASSWORD_DEFAULT), 'sucursal' => $sucursal, 'empresa' => $empresa, 'perfil' => $perfil, 'estatus' => $estatus];
+                $params = ['id' => $usuarioId, 'persona' => $persona, 'usuario' => $usuario, 'pass' => password_hash($pass, PASSWORD_DEFAULT), 'sucursal' => $sucursal, 'empresa' => $empresa, 'region' => $region, 'perfil' => $perfil, 'estatus' => $estatus];
                 $db->CRUD($qry, $params);
                 $mensaje = 'Usuario creado correctamente.';
             }

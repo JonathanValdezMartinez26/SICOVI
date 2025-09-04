@@ -108,7 +108,8 @@ class Viaticos extends Model
                 , VO.OBSERVACION AS AUTORIZACION_OBSERVACION
                 , V.ENTREGA_USUARIO
                 , GET_NOMBRE_USUARIO(V.ENTREGA_USUARIO) AS ENTREGA_NOMBRE
-                , S.NOMBRE AS ENTREGA_SUCURSAL
+                , SR.SUCURSAL AS ENTREGA_SUCURSAL
+                , SR.SUCURSAL_NOMBRE AS ENTREGA_SUCURSAL_NOMBRE
                 , V.ENTREGA_METODO
                 , TO_CHAR(V.ENTREGA_FECHA, 'YYYY-MM-DD HH24:SS:MM') AS ENTREGA_FECHA
                 , CASE
@@ -123,13 +124,15 @@ class Viaticos extends Model
                 , V.DIFERENCIA_MONTO
                 , V.DIFERENCIA_USUARIO
                 , GET_NOMBRE_USUARIO(V.DIFERENCIA_USUARIO) AS DIFERENCIA_NOMBRE
-                , V.DIFERENCIA_SUCURSAL
+                , SR2.SUCURSAL AS DIFERENCIA_SUCURSAL
+                , SR2.SUCURSAL_NOMBRE AS DIFERENCIA_SUCURSAL_NOMBRE
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN CAT_VIATICOS_METODO_ENTREGA CMEV ON CMEV.ID = V.ENTREGA_METODO
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
-                LEFT JOIN SUCURSAL S ON S.ID = V.SUCURSAL
+                LEFT JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = U.EMPRESA AND SR.REGION = U.REGION AND SR.SUCURSAL = U.SUCURSAL
+                LEFT JOIN SUCURSALES_REGIONES SR2 ON SR2.EMPRESA = V.DIFERENCIA_EMPRESA AND SR2.REGION = V.DIFERENCIA_REGION AND SR2.SUCURSAL = V.DIFERENCIA_SUCURSAL
                 LEFT JOIN VIATICOS_OBSERVACIONES VO ON VO.ID = V.AUTORIZACION_OBSERVACION
             WHERE
                 V.ID = :solicitudId
@@ -241,8 +244,8 @@ class Viaticos extends Model
     public static function registraSolicitud_VG($datos, $comprobantes = null)
     {
         $qryV = <<<SQL
-            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, ESTATUS, DESDE, HASTA, MONTO, COMPROBACION_LIMITE, COMPROBACION_MONTO, SUCURSAL)
-            VALUES (:tipo, :usuario, :proyecto, :estatus, TO_DATE(:desde, 'YYYY-MM-DD'), TO_DATE(:hasta, 'YYYY-MM-DD'), :monto, TO_DATE(:limite, 'YYYY-MM-DD'), :comprobacion, :sucursal)
+            INSERT INTO VIATICOS (TIPO, USUARIO, PROYECTO, ESTATUS, DESDE, HASTA, MONTO, COMPROBACION_LIMITE, COMPROBACION_MONTO, EMPRESA, REGION, SUCURSAL)
+            VALUES (:tipo, :usuario, :proyecto, :estatus, TO_DATE(:desde, 'YYYY-MM-DD'), TO_DATE(:hasta, 'YYYY-MM-DD'), :monto, TO_DATE(:limite, 'YYYY-MM-DD'), :comprobacion, :empresa, :region, :sucursal)
             RETURNING ID INTO :id
         SQL;
 
@@ -257,6 +260,8 @@ class Viaticos extends Model
             'estatus' => $datos['tipo'] == 1 ? 1 : 4,
             'limite' => $datos['fechaLimite'],
             'comprobacion' => $datos['comprobado'],
+            'empresa' => $datos['empresa'],
+            'region' => $datos['region'],
         ];
 
         $retV = [
@@ -922,12 +927,16 @@ class Viaticos extends Model
             WHERE
                 (V.TIPO = 1 AND CEV.NOMBRE = 'AUTORIZADA') OR (V.TIPO = 2 AND CEV.NOMBRE = 'COMPROBADA')
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
+                AND V.EMPRESA = :empresa
+                AND V.REGION = :region
                 AND U.SUCURSAL = :sucursal
             ORDER BY
                 ID DESC
         SQL;
 
         $params = [
+            'empresa' => $datos['empresa'],
+            'region' => $datos['region'],
             'sucursal' => $datos['sucursal'],
             'fechaI' => $datos['fechaI'],
             'fechaF' => $datos['fechaF']
@@ -1257,6 +1266,8 @@ class Viaticos extends Model
                 DIFERENCIA_MONTO = COMPROBACION_MONTO - NVL(ENTREGA_MONTO, 0)   
                 , DIFERENCIA_FECHA = SYSDATE
                 , DIFERENCIA_USUARIO = :usuario
+                , DIFERENCIA_EMPRESA = :empresa
+                , DIFERENCIA_REGION = :region
                 , DIFERENCIA_SUCURSAL = :sucursal
                 , DIFERENCIA_OBSERVACION = :observaciones
                 , ESTATUS = (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'FINALIZADA')
@@ -1267,6 +1278,8 @@ class Viaticos extends Model
         $val = [
             'id' => $datos['solicitudId'],
             'usuario' => $datos['usuario'],
+            'empresa' => $datos['empresa'],
+            'region' => $datos['region'],
             'sucursal' => $datos['sucursal'],
             'observaciones' => null
         ];

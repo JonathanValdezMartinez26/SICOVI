@@ -200,19 +200,19 @@ class CapHum extends Controller
                             validacion: () => $("#empresa option:selected").val() !== "",
                             mensaje: "Seleccione una empresa."
                         },
-                        sucursal: {
-                            elemento: "sucursal",
-                            valor: () => $("#sucursal option:selected").val(),
-                            texto: () => $("#sucursal option:selected").text(),
-                            validacion: () => $("#sucursal option:selected").val() !== "",
-                            mensaje: "Seleccione una sucursal."
-                        },
                         region: {
                             elemento: "region",
                             valor: () => $("#region option:selected").val(),
                             texto: () => $("#region option:selected").text(),
                             validacion: () => $("#region option:selected").val() !== "",
                             mensaje: "Seleccione una región."
+                        },
+                        sucursal: {
+                            elemento: "sucursal",
+                            valor: () => $("#sucursal option:selected").val(),
+                            texto: () => $("#sucursal option:selected").text(),
+                            validacion: () => $("#sucursal option:selected").val() !== "",
+                            mensaje: "Seleccione una sucursal."
                         },
                         jefeInmediato: {
                             elemento: "jefeInmediato",
@@ -1065,8 +1065,10 @@ class CapHum extends Controller
                     campo.val(valor)
                 }
 
-                const getPersonalSucursal = (sucursal) => {
+                const getPersonalSucursal = (empresa, region, sucursal) => {
                     const parametros = {
+                        empresa,
+                        region,
                         sucursal
                     }
 
@@ -1135,41 +1137,7 @@ class CapHum extends Controller
                         }
                     })
 
-                    $('#empresa').on('change', () => {
-                        const empresaId = $('#empresa option:selected').val()
-
-                        $('#region').prop('disabled', !empresaId)
-                        $('#region').val('')
-                        $('#region option').each(function() {
-                            const regionEmpresaId = $(this).attr('data-empresa')
-                            if (regionEmpresaId !== empresaId) $(this).hide()
-                            else $(this).show()
-                        })
-
-                        $('#sucursal').prop('disabled', true)
-                        $('#sucursal').val('')
-                    })
-
-
-                    $('#region').on('change', () => {
-                        const empresaId = $('#empresa option:selected').val()
-                        const regionId = $('#region option:selected').val()
-                        
-                        $('#sucursal').prop('disabled', !regionId)
-                        $('#sucursal').val('')
-                        $('#sucursal option').each(function() {
-                            const sucursalEmpresaId = $(this).attr('data-empresa')
-                            const sucursalRegionId = $(this).attr('data-region')
-                            
-                            if (sucursalRegionId !== regionId || sucursalEmpresaId !== empresaId) $(this).hide()
-                            else $(this).show()
-                        })
-                    })
-
-                    $("#sucursal").on("change", () => {
-                        const sucursalId = $("#sucursal option:selected").val()
-                        getPersonalSucursal(sucursalId)
-                    })
+                    setSelectEmpresaRegionSucursal("#empresa", "#region", "#sucursal", { sucChange: getPersonalSucursal })
 
                     $('#jefeInmediato').change(function() {
                         const valor = $(this).val()

@@ -93,7 +93,7 @@ class Controller
 
                 if (!in_array($sucursal['EMPRESA'], $empTmp)) {
                     $empTmp[] = $sucursal['EMPRESA'];
-                    $empresas .= "<option value='{$sucursal['EMPRESA']}'>{$sucursal['EMPRESA']}</option>";
+                    $empresas .= "<option value='{$sucursal['EMPRESA']}'>{$sucursal['EMPRESA_NOMBRE']}</option>";
                 }
             }
         }

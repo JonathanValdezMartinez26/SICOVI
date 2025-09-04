@@ -116,10 +116,14 @@ class Model
             FROM
                 NOMINA
             WHERE
-                SUCURSAL = :sucursalId
+                EMPRESA = :empresaId
+                AND REGION = :regionId
+                AND SUCURSAL = :sucursalId
         SQL;
 
         $params = [
+            'empresaId' => $datos['empresa'],
+            'regionId' => $datos['region'],
             'sucursalId' => $datos['sucursal']
         ];
 
