@@ -264,19 +264,25 @@
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>
                     <div class="form-group col-4">
-                        <label for="montoComprobante" class="form-label">Monto del comprobante</label>
-                        <div class="input-group input-group-merge">
-                            <i class="input-group-text fa fa-dollar-sign"></i>
-                            <input type="text" id="montoComprobante" name="montoComprobante" class="form-control" placeholder="0.00">
-                        </div>
-                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                    </div>
-                    <div class="form-group col-4">
                         <label for="conceptoComprobante" class="form-label">Concepto</label>
                         <select id="conceptoComprobante" name="conceptoComprobante" class="form-select">
                             <?= $conceptos ?>
                         </select>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                    </div>
+                    <div class="form-group col-4">
+                        <div class="form-group" style="display: none;" id="divNoches">
+                            <label for="nochesComprobante" class="form-label">Noches</label>
+                            <input type="text" id="nochesComprobante" name="nochesComprobante" class="form-control" value="1" min="0">
+                            <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                        </div>
+                        <label for="montoComprobante" class="form-label">Monto del comprobante</label>
+                        <div class="input-group input-group-merge">
+                            <i class="input-group-text fa fa-dollar-sign"></i>
+                            <input type="text" id="montoComprobante" name="montoComprobante" class="form-control" placeholder="0.00" disabled>
+                        </div>
+                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+
                     </div>
                     <div class="form-group col-12 text-center">
                         <label for="conceptoComprobante" class="form-label">Descripción</label>

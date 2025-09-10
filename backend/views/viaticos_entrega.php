@@ -10,6 +10,10 @@
                 <button id="btnBuscarSolicitudes" class="btn btn-outline-primary">Actualizar</button>
             </div>
         </div>
+        <div class="col-4 d-flex align-self-end justify-content-end">
+            <button type="button" id="btnReimprimir" class="btn btn-info"><i class="fa fa-print">&nbsp;</i>Re imprimir comprobante</button>
+            <input type="hidden" id="solActivas" value="<?= $activas; ?>">
+        </div>
     </div>
     <div class="card-datatable table-responsive">
         <table id="historialSolicitudes" class="dt-responsive table border-top">
@@ -116,3 +120,31 @@
     </div>
 </div>
 <!-- / Modal para ver solicitud -->
+
+<!-- Modal para reimprimir un comprobante -->
+<div class="modal fade" id="modalReimprimir" tabindex="-1" aria-hidden="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center w-100">
+                    <h4 class="address-title mb-2">Re imprimir comprobante de entrega</h4>
+                    <p class="address-subtitle"></p>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <label for="solicitudReimprimir" class="form-label">Solicitud a re imprimir</label>
+                        <input type="text" id="solicitudReimprimir" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancelarReimprimir" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
+                <button type="button" id="btnReimprimirAjuste" class="btn btn-primary">Re imprimir</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- / Modal para reimprimir un comprobante -->

@@ -85,7 +85,21 @@ class Model
 
     public static function getCatalogoConceptosViaticos()
     {
-        $query = "SELECT * FROM CAT_VIATICOS_CONCEPTO ORDER BY NOMBRE";
+        $query = <<<SQL
+            SELECT
+                VMM.EMPRESA,
+                VMM.REGION,
+                VMM.SUCURSAL,
+                C.ID,
+                C.NOMBRE,
+                C.DESCRIPCION AS DESCRIPCION,
+                VMM.MONTO_MAXIMO
+            FROM 
+                CAT_VIATICOS_CONCEPTO C
+                JOIN CAT_VIATICOS_MONTO_MAXIMO VMM ON C.ID = VMM.CONCEPTO
+            ORDER BY 
+                C.ID
+        SQL;
         try {
             $db = new Database();
             $result = $db->queryAll($query);

@@ -17,7 +17,8 @@ class Viaticos extends Controller
                 let valSolicitud = null,
                     valComprobante = null,
                     valConcepto = null,
-                    modalConceptos = null
+                    modalConceptos = null,
+                    montoMaximoComprobante = 0
 
                 const getSolicitudes = (persistirVista = false) => {
                     const fechas = getInputFechas("#fechasSolicitudes", true)
@@ -239,15 +240,6 @@ class Viaticos extends Controller
                             greaterThan: {
                                 min: 1,
                                 message: "El monto debe ser mayor a 0"
-                            }
-                        },
-                        conceptoComprobante: {
-                            callback: {
-                                callback: (input) => {
-                                    const concepto = $("#conceptoComprobante").select2("val")
-                                    return concepto === null || concepto === "" ? false : true
-                                },
-                                message: "Debe seleccionar un concepto"
                             }
                         },
                         observacionesComprobante: {
@@ -1109,13 +1101,41 @@ class Viaticos extends Controller
                     })
                     $("#btnBuscarSolicitudes").on("click", getSolicitudes)
                     $("#tipoSolicitud").on("change", changeTipoSolicitud)
-                    $("#conceptoComprobante").select2({
-                        dropdownParent: $("#modalAgregarComprobante"),
-                        placeholder: "Seleccione un concepto"
-                    })
                     $("#conceptoComprobante").on("change", () => {
+                        $("#montoComprobante").attr("disabled", false)
                         const concepto = $("#conceptoComprobante").find("option:selected")
-                        $("#descripcionComprobante").text(concepto.attr("lbl-desc") || "")
+                        const conceptoId = concepto.val()
+                        const montoMaximo = numeral(concepto.attr("data-monto") || 0).value()
+                        
+                        $("#descripcionComprobante").text(concepto.attr("data-descripcion") || "")
+                        $("#montoComprobante").val("")
+                        
+                        montoMaximoComprobante = montoMaximo
+                        
+                        if (conceptoId == "2") {
+                            $("#divNoches").show()
+                            $("#nochesComprobante").val(1)
+                        } else {
+                            $("#divNoches").hide()
+                            $("#nochesComprobante").val(1)
+                        }
+                    })
+                    $("#nochesComprobante").on("input", () => {
+                        if ($("#conceptoComprobante").val() != "2") return
+                        const noches = numeral($("#nochesComprobante").val()).value() || 0
+                        const montoMaximo = numeral($("#conceptoComprobante").find("option:selected").attr("data-monto") || 0).value()
+                        const montoMaximoTotal = montoMaximo * noches
+                        montoMaximoComprobante = montoMaximoTotal
+                    })
+                    $("#montoComprobante").on("keyup", () => {
+                        const monto = numeral($("#montoComprobante").val()).value() || 0
+
+                        if (montoMaximoComprobante > 0 && monto > montoMaximoComprobante) {
+                            $("#montoComprobante").val(numeral(montoMaximoComprobante).format(NUMERAL_DECIMAL))
+                            showWarning("El monto excede el máximo permitido:" + numeral(montoMaximoComprobante).format(NUMERAL_MONEDA)).then(() => {
+                                $("#montoComprobante").focus()
+                            })
+                        }
                     })
                     $("#btnTomarFoto").on("click", () => {
                         $("#modalAgregarComprobante").modal("hide")
@@ -1144,7 +1164,6 @@ class Viaticos extends Controller
                     })
                     $("#btnFinalizarComprobacion").on("click", finalizarComprobacion)
                     $("#actualizarConcepto").on("click", actualizaConceptoSolicitud)
-                    
                     // recorrer las sucursales par a mostrar solo las que coinciden con la empresa de usuario
                     const empresaUsuario = "{$_SESSION['empresa_id']}"
                     $("#sucursalEntrega option").each((_, option) => {
@@ -1161,10 +1180,12 @@ class Viaticos extends Controller
         if ($catSucursales['success']) $optionsSucursales = self::getOptionsSucursales($catSucursales['datos']);
 
         $catConceptos = ViaticosDAO::getCatalogoConceptosViaticos();
-        $conceptos = '<option></option>';
+        $conceptos = '<option value="" disabled selected>Seleccione una opción</option>';
         if ($catConceptos['success']) {
             foreach ($catConceptos['datos'] as $concepto) {
-                $conceptos .= "<option value='{$concepto['ID']}' lbl-desc='{$concepto['DESCRIPCION']}'>{$concepto['NOMBRE']}</option>";
+                if ($concepto['EMPRESA'] == $_SESSION['empresa_id'] && $concepto['SUCURSAL'] == $_SESSION['sucursal_id']) {
+                    $conceptos .= "<option value='{$concepto['ID']}' data-descripcion='{$concepto['DESCRIPCION']}' data-monto='{$concepto['MONTO_MAXIMO']}'>{$concepto['NOMBRE']}</option>";
+                }
             }
         }
 
@@ -1853,10 +1874,46 @@ class Viaticos extends Controller
                     })
                 }
 
+                const reimprimirComprobanteAjuste = () => {
+                    const solicitudId = $("#solicitudReimprimir").val().trim()
+                    if (!solicitudId) return showError("Ingrese el número de la solicitud.")
+
+                    const formData = new FormData()
+                    formData.append("solicitudId", solicitudId)
+                    $("#modalReimprimir").modal("hide")
+                    mostrarArchivoDescargado(
+                        "/viaticos/getComprobanteEntrega",
+                        formData,
+                        {
+                            titulo: "Comprobante de entrega"
+                        }
+                    )
+                }
+
+                const keypress_solicitudReimprimir = (event) => {
+                    const charCode = event.which ? event.which : event.keyCode
+                    if (charCode === 13) {
+                        event.preventDefault()
+                        reimprimirComprobanteAjuste()
+                        return
+                    }
+
+                    if (charCode > 31 && (charCode < 48 || charCode > 57) && charCode !== 46) {
+                        event.preventDefault()
+                    }
+                }
+
                 $(document).ready(() => {
                     setInputFechas("#fechasSolicitudes", { rango:true, iniD: -30 })
                     setInputMoneda("#montoEntrega")
                     $("#btnBuscarSolicitudes").on("click", getSolicitudes)
+                    $("#btnReimprimir").on("click", () => $("#modalReimprimir").modal("show"))
+                    $("#solicitudReimprimir").on("keypress", keypress_solicitudReimprimir)
+                    $("#btnReimprimirAjuste").on("click", reimprimirComprobanteAjuste)
+                    $("#modalReimprimir").on("shown.bs.modal", () => {
+                        $("#solicitudReimprimir").val("").trigger("focus")
+                    })
+
                     setValidacionEntrega()
                     configuraTabla(tabla)
                     getSolicitudes()
@@ -2572,6 +2629,22 @@ class Viaticos extends Controller
                     })
                 }
 
+                const reimprimirComprobanteAjuste = () => {
+                    const solicitudId = $("#solicitudReimprimir").val().trim()
+                    if (!solicitudId) return showError("Ingrese el número de la solicitud.")
+
+                    const formData = new FormData()
+                    formData.append("solicitudId", solicitudId)
+                    $("#modalReimprimir").modal("hide")
+                    mostrarArchivoDescargado(
+                        "/viaticos/getComprobanteAjuste",
+                        formData,
+                        {
+                            titulo: "Comprobante de ajuste"
+                        }
+                    )
+                }
+
                 const verDetalles = (id) => {
                     consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId: id }, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
@@ -2586,6 +2659,12 @@ class Viaticos extends Controller
                         
                         const diferencia = numeral(informacion.COMPROBACION_MONTO)
                         .subtract(informacion.ENTREGA_MONTO || 0)
+
+                        const empresaUsuario = "{$_SESSION['empresa_id']}"
+                        $("#verSucursal option").each((_, option) => {
+                            const empresa = $(option).attr("data-empresa")
+                            if (empresa !== empresaUsuario) $(option).hide()
+                        });
                         
                         $("#verMontoDiferencia").val(diferencia.format(NUMERAL_MONEDA))
                         if (diferencia.value() < 0) {
@@ -2615,8 +2694,8 @@ class Viaticos extends Controller
                             usuario: $_SESSION[usuario_id],
                             solicitudId,
                             observaciones: $("#observacionesAjuste").val().trim(),
-                            empresa: $("#verSucursal option:selected").attr("data-empresa"), //$("#verEmpresa").val(),
-                            region: $("#verSucursal option:selected").attr("data-region"), //$("#verRegion").val(),
+                            empresa: $("#verSucursal option:selected").attr("data-empresa"),
+                            region: $("#verSucursal option:selected").attr("data-region"),
                             sucursal: $("#verSucursal").val(),
                         }
 
@@ -2639,28 +2718,43 @@ class Viaticos extends Controller
                         })
                     })
                 }
+
+                const keypress_solicitudReimprimir = (event) => {
+                    const charCode = event.which ? event.which : event.keyCode
+                    if (charCode === 13) {
+                        event.preventDefault()
+                        reimprimirComprobanteAjuste()
+                        return
+                    }
+
+                    if (charCode > 31 && (charCode < 48 || charCode > 57) && charCode !== 46) {
+                        event.preventDefault()
+                    }
+                }
                 
                 $(document).ready(() => {
                     setInputFechas("#fechasSolicitudes", { rango: true, iniD: -30 })
                     $("#btnBuscarSolicitudes").on("click", getSolicitudes)
                     $("#ajustar").on("click", registrarAjuste)
+                    $("#btnReimprimir").on("click", () => $("#modalReimprimir").modal("show"))
+                    $("#solicitudReimprimir").on("keypress", keypress_solicitudReimprimir)
+                    $("#btnReimprimirAjuste").on("click", reimprimirComprobanteAjuste)
+                    $("#modalReimprimir").on("shown.bs.modal", () => {
+                        $("#solicitudReimprimir").val("").trigger("focus")
+                    })
                     configuraTabla(tabla)
+
                     getSolicitudes()
                 })
             </script>
         HTML;
 
         $catSucursales = ViaticosDAO::getCatalogoSucursales();
-        $sucursales = '';
-        if ($catSucursales['success']) {
-            foreach ($catSucursales['datos'] as $sucursal) {
-                $seleccion = $_SESSION['sucursal_id'] == $sucursal['ID'] ? 'selected' : '';
-                $sucursales .= "<option value='{$sucursal['ID']}' $seleccion>{$sucursal['NOMBRE']}</option>";
-            }
-        }
+        if ($catSucursales['success']) $optionsSucursales = self::getOptionsSucursales($catSucursales['datos']);
+
 
         self::set("titulo", "Ajustes de viáticos");
-        self::set("sucursales", $sucursales);
+        self::set("sucursales", $optionsSucursales['sucursales']);
         self::set("script", $script);
         self::render("viaticos_ajustes");
     }

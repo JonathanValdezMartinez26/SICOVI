@@ -108,6 +108,10 @@ class Viaticos extends Model
                 , VO.OBSERVACION AS AUTORIZACION_OBSERVACION
                 , V.ENTREGA_USUARIO
                 , GET_NOMBRE_USUARIO(V.ENTREGA_USUARIO) AS ENTREGA_NOMBRE
+                , SR.EMPRESA AS ENTREGA_EMPRESA
+                , SR.EMPRESA_NOMBRE AS ENTREGA_EMPRESA_NOMBRE
+                , SR.REGION AS ENTREGA_REGION
+                , SR.REGION_NOMBRE AS ENTREGA_REGION_NOMBRE
                 , SR.SUCURSAL AS ENTREGA_SUCURSAL
                 , SR.SUCURSAL_NOMBRE AS ENTREGA_SUCURSAL_NOMBRE
                 , V.ENTREGA_METODO
@@ -124,6 +128,10 @@ class Viaticos extends Model
                 , V.DIFERENCIA_MONTO
                 , V.DIFERENCIA_USUARIO
                 , GET_NOMBRE_USUARIO(V.DIFERENCIA_USUARIO) AS DIFERENCIA_NOMBRE
+                , SR2.EMPRESA AS DIFERENCIA_EMPRESA
+                , SR2.EMPRESA_NOMBRE AS DIFERENCIA_EMPRESA_NOMBRE
+                , SR2.REGION AS DIFERENCIA_REGION
+                , SR2.REGION_NOMBRE AS DIFERENCIA_REGION_NOMBRE
                 , SR2.SUCURSAL AS DIFERENCIA_SUCURSAL
                 , SR2.SUCURSAL_NOMBRE AS DIFERENCIA_SUCURSAL_NOMBRE
             FROM
@@ -1045,6 +1053,8 @@ class Viaticos extends Model
                 LEFT JOIN CAT_VIATICOS_METODO_ENTREGA CMEV ON CMEV.ID = V.ENTREGA_METODO
             WHERE
                 V.ID = :id
+                AND V.ENTREGA_MONTO IS NOT NULL
+                AND V.ENTREGA_FECHA IS NOT NULL
         SQL;
 
         $val = [
@@ -1317,6 +1327,7 @@ class Viaticos extends Model
                 VIATICOS V
             WHERE
                 V.ID = :solicitudId
+                AND V.DIFERENCIA_MONTO IS NOT NULL
         SQL;
 
         $val = [

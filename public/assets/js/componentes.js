@@ -70,8 +70,13 @@ const mostrarArchivoDescargado = (
         method: metodo,
         body: parametros
     })
-        .then((response) => {
+        .then(async (response) => {
             if (!response.ok) throw new Error("Error al obtener el comprobante")
+            const contentType = response.headers.get("Content-Type")
+            if (contentType.includes("application/json")) {
+                const data = await response.json()
+                throw new Error(data.mensaje || "Error al obtener el comprobante")
+            }
             return response.blob()
         })
         .then((blob) => {
