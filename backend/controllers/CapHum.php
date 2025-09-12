@@ -165,16 +165,26 @@ class CapHum extends Controller
                         },
                         contactoEmergenciaParentesco: {
                             elemento: "contactoEmergenciaParentesco",
-                            valor: () => $("#contactoEmergenciaParentesco").val(),
-                            texto: () => $("#contactoEmergenciaParentesco").val(),
-                            validacion: () => true,
+                            valor: () => $("#contactoEmergenciaParentesco option:selected").val(),
+                            texto: () => $("#contactoEmergenciaParentesco option:selected").text(),
+                            validacion: () => {
+                                if ($("#contactoEmergenciaNombre").val().trim() !== "") {
+                                    return $("#contactoEmergenciaParentesco option:selected").val() !== "";
+                                }
+                                return true;
+                            },
                             mensaje: "Ingrese un parentesco de contacto de emergencia."
                         },
                         contactoEmergenciaTelefono: {
                             elemento: "contactoEmergenciaTelefono",
                             valor: () => $("#contactoEmergenciaTelefono").val(),
                             texto: () => $("#contactoEmergenciaTelefono").val(),
-                            validacion: () => true,
+                            validacion: () => {
+                                if ($("#contactoEmergenciaNombre").val().trim() !== "") {
+                                    return $("#contactoEmergenciaTelefono").val().trim() !== "";
+                                }
+                                return true;
+                            },
                             mensaje: "Ingrese un número de teléfono de contacto de emergencia."
                         },
                         condicionesMedicas: {
@@ -286,12 +296,12 @@ class CapHum extends Controller
                             validacion: () => $("#fechaIngreso").val() !== "",
                             mensaje: "Seleccione una fecha de ingreso."
                         },
-                        nomina: {
-                            elemento: "nomina",
-                            valor: () => $("#nomina option:selected").val(),
-                            texto: () => $("#nomina option:selected").text(),
-                            validacion: () => $("#nomina option:selected").val() !== "",
-                            mensaje: "Seleccione una nómina."
+                        proveedor: {
+                            elemento: "proveedor",
+                            valor: () => $("#proveedor option:selected").val(),
+                            texto: () => $("#proveedor option:selected").text(),
+                            validacion: () => $("#proveedor option:selected").val() !== "",
+                            mensaje: "Seleccione un proveedor."
                         },
                         tipoNomina: {
                             elemento: "tipoNomina",
@@ -687,6 +697,8 @@ class CapHum extends Controller
                         $("#detalleApellido2").val(persona.APELLIDO_2 || "")
                         $("#detalleRfc").val(persona.RFC)
                         $("#detalleCurp").val(persona.CURP)
+                        $("#detalleNSS").val(persona.NSS)
+                        $("#detalleInfonavit").prop("checked", persona.INFONAVIT == 1)
                         $("#detalleFechaNacimiento").val(persona.FECHA_NACIMIENTO)
                         $("#detalleSexo").val(persona.SEXO)
                         $("#detalleEstatus").val(persona.ESTATUS)
@@ -722,13 +734,15 @@ class CapHum extends Controller
                         $("#detalleEmpresa").val(empresa.EMPRESA_NOMBRE);
                         $("#detalleRegion").val(empresa.REGION_NOMBRE);
                         $("#detalleSucursal").val(empresa.SUCURSAL_NOMBRE);
-                        $("#detalleJefeDirecto").val(nomina.JEFE);
+                        $("#detallePuesto").val(nomina.PUESTO_NOMBRE);
+                        $("#detalleJefeDirecto").val(nomina.JEFE_NOMBRE);
 
-                        $("#detalleIngreso").val(nomina.INGRESO);
-                        $("#detalleTipoNomina").val(nomina.TIPO);
-                        $("#detalleNumeroNomina").val(nomina.NUMERO);
+                        $("#detalleProveedor").val(nomina.PROVEEDOR_NOMBRE);
+                        $("#detalleIngreso").val(moment(nomina.INGRESO).format(MOMENT_FRONT));
+                        $("#detalleTipoNomina").val(nomina.TIPO_NOMINA);
+                        $("#detalleNumeroNomina").val(nomina.NUMERO_NOMINA);
                         bancos.forEach(banco => {
-                            $("#detalleBanco").val(banco.ID_BANCO);
+                            $("#detalleBanco").val(banco.NOMBRE);
                             if (banco.TIPO_NUMERO === "1") {
                                 $("#detalleCuenta").val(banco.NUMERO);
                             } else if (banco.TIPO_NUMERO === "2") {
@@ -1080,7 +1094,7 @@ class CapHum extends Controller
                         const personal = respuesta.datos
                         let  opciones = "<option value='' selected disabled>Seleccione un jefe</option>"
                         opciones += personal.map((miembro) => {
-                            return "<option value='" + miembro.ID + "'>" + miembro.NOMBRE + "</option>"
+                            return "<option value='" + miembro.PERSONA + "'>" + miembro.NOMBRE + "</option>"
                         }).join("")
 
                         $("#jefeInmediato").html(opciones)
@@ -1089,6 +1103,11 @@ class CapHum extends Controller
                         $("#reporta").html(opciones)
                         $("#reporta").prop("disabled", false)
                     })
+                }
+
+                const bloqueaJefe = () => {
+                    $("#jefeInmediato").prop("disabled", true).html('<option value="" selected disabled>Seleccione un jefe</option>')
+                    $("#reporta").prop("disabled", true).html('<option value="" selected disabled>Seleccione a quien reporta</option>')
                 }
 
                 $(document).ready(() => {
@@ -1137,7 +1156,7 @@ class CapHum extends Controller
                         }
                     })
 
-                    setSelectEmpresaRegionSucursal("#empresa", "#region", "#sucursal", { sucChange: getPersonalSucursal })
+                    setSelectEmpresaRegionSucursal("#empresa", "#region", "#sucursal", { empChange: bloqueaJefe, regChange: bloqueaJefe, sucChange: getPersonalSucursal })
 
                     $('#jefeInmediato').change(function() {
                         const valor = $(this).val()
@@ -1180,9 +1199,21 @@ class CapHum extends Controller
         $catPerfiles = CapHumDAO::getPerfiles();
         if ($catPerfiles['success']) $perfiles = self::getOptions($catPerfiles['datos'], 'ID', 'NOMBRE');
 
+        $catParentescos = CapHumDAO::getCatalogoParentescos();
+        if ($catParentescos['success']) $parentescos = self::getOptions($catParentescos['datos'], 'ID_PARENTESCO', 'DESCRIPCION');
+
+        $catPuestos = CapHumDAO::getCatalogoPuestos();
+        if ($catPuestos['success']) $puestos = self::getOptions($catPuestos['datos'], 'ID_PUESTO', 'DESCRIPCION');
+
+        $catProveedores = CapHumDAO::getCatalogoNominaProveedores();
+        if ($catProveedores['success']) $proveedores = self::getOptions($catProveedores['datos'], 'ID_PROVEEDOR', 'NOMBRE_PROVEEDOR');
+
         $this->set('titulo', 'Gestión Capital Humano | ' . CONFIGURACION['EMPRESA']);
         $this->set('script', $script);
         $this->set('css', '<link rel="stylesheet" href="/assets/css/wizard-rh.css">');
+        $this->set("parentescos", $parentescos);
+        $this->set("puestos", $puestos);
+        $this->set("proveedores", $proveedores);
         $this->set("empresas", $optionsSucursales['empresas']);
         $this->set("sucursales", $optionsSucursales['sucursales']);
         $this->set("regiones", $optionsSucursales['regiones']);

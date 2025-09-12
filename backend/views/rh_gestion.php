@@ -281,7 +281,10 @@
                                     </div>
                                     <div class="col-md-4 mt-0">
                                         <label for="contactoEmergenciaParentesco" class="form-label">Parentesco</label>
-                                        <input type="text" id="contactoEmergenciaParentesco" name="contactoEmergenciaParentesco" class="form-control" maxlength="50">
+                                        <select id="contactoEmergenciaParentesco" name="contactoEmergenciaParentesco" class="form-select">
+                                            <option value="" selected disabled>Seleccione un parentesco</option>
+                                            <?= $parentescos ?>
+                                        </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-4 mt-0">
@@ -325,7 +328,7 @@
                                         <label for="empresa" class="form-label">Registro Base</label>
                                         <select id="empresa" name="empresa" class="form-select">
                                             <option value="" selected disabled>Seleccione una empresa</option>
-                                            <?= $empresas ?? '' ?>
+                                            <?= $empresas ?>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -333,7 +336,7 @@
                                         <label for="region" class="form-label">Región</label>
                                         <select id="region" name="region" class="form-select" disabled>
                                             <option value="" selected disabled>Seleccione una región</option>
-                                            <?= $regiones ?? '' ?>
+                                            <?= $regiones ?>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -341,7 +344,7 @@
                                         <label for="sucursal" class="form-label">Oficina Base</label>
                                         <select id="sucursal" name="sucursal" class="form-select" disabled>
                                             <option value="" selected disabled>Seleccione una sucursal</option>
-                                            <?= $sucursales ?? '' ?>
+                                            <?= $sucursales ?>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -349,7 +352,6 @@
                                         <label for="jefeInmediato" class="form-label">Jefe Inmediato</label>
                                         <select id="jefeInmediato" name="jefeInmediato" class="form-select" disabled>
                                             <option value="" selected disabled>Seleccione un jefe</option>
-                                            <!-- Se cargará vía AJAX -->
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -357,7 +359,6 @@
                                         <label for="reporta" class="form-label">Reporta a</label>
                                         <select id="reporta" name="reporta" class="form-select" disabled>
                                             <option value="" selected disabled>Seleccione a quien reporta</option>
-                                            <!-- Se cargará vía AJAX -->
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -365,13 +366,7 @@
                                         <label for="puesto" class="form-label">Puesto</label>
                                         <select id="puesto" name="puesto" class="form-select">
                                             <option value="" selected disabled>Seleccione un puesto</option>
-                                            <option value="1">Gerente General</option>
-                                            <option value="2">Gerente de Área</option>
-                                            <option value="3">Supervisor</option>
-                                            <option value="4">Coordinador</option>
-                                            <option value="5">Analista</option>
-                                            <option value="6">Asistente</option>
-                                            <option value="7">Auxiliar</option>
+                                            <?= $puestos ?>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -445,12 +440,10 @@
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-3 mt-0">
-                                        <label for="nomina" class="form-label">Nómina</label>
-                                        <select id="nomina" name="nomina" class="form-select">
-                                            <option value="" disabled>Seleccione tipo</option>
-                                            <option value="1">Ejecutivos</option>
-                                            <option value="2">Empleados</option>
-                                            <option value="3">Operarios</option>
+                                        <label for="proveedor" class="form-label">Proveedor</label>
+                                        <select id="proveedor" name="proveedor" class="form-select">
+                                            <option value="" disabled>Seleccione el proveedor</option>
+                                            <?= $proveedores ?>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -475,7 +468,7 @@
                                         <label for="banco" class="form-label">Banco</label>
                                         <select id="banco" name="banco" class="form-select">
                                             <option value="" selected disabled>Seleccione un banco</option>
-                                            <?= $bancos ?? '' ?>
+                                            <?= $bancos ?>
                                         </select>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
@@ -527,6 +520,7 @@
                                                 <p class="mb-1"><strong>Estado Civil:</strong> <span id="resumenEstadoCivil">-</span></p>
                                                 <p class="mb-1"><strong>Nacionalidad:</strong> <span id="resumenNacionalidad">-</span></p>
                                                 <p class="mb-1"><strong>NSS:</strong> <span id="resumenNss">-</span></p>
+                                                <p class="mb-1"><strong>Infonavit:</strong> <span id="resumenInfonavit">-</span></p>
 
                                                 <h6 class="mb-3 mt-3"><strong>Domicilio</strong></h6>
                                                 <p class="mb-1"><strong>Calle:</strong> <span id="resumenCalle">-</span></p>
@@ -561,7 +555,7 @@
                                                     </div>
                                                     <div class="col-md-6">
                                                         <p class="mb-1"><strong>Fecha de Ingreso:</strong> <span id="resumenFechaIngreso">-</span></p>
-                                                        <p class="mb-1"><strong>Nómina:</strong> <span id="resumenNomina">-</span></p>
+                                                        <p class="mb-1"><strong>Proveedor:</strong> <span id="resumenProveedor">-</span></p>
                                                         <p class="mb-1"><strong>Tipo Nómina:</strong> <span id="resumenTipoNomina">-</span></p>
                                                         <p class="mb-1"><strong># Nómina:</strong> <span id="resumenNumeroNomina">-</span></p>
                                                         <p class="mb-1"><strong>Banco:</strong> <span id="resumenBanco">-</span></p>
@@ -716,9 +710,18 @@
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <div class="col-3"><label class="form-label"><strong>NSS:</strong></label></div>
                                     <div class="col-9">
-                                        <input type="text" id="detalleNSS" class="form-control" disabled maxlength="11">
+                                        <div class="col-3"><label class="form-label"><strong>NSS:</strong></label></div>
+                                        <div class="col-9">
+                                            <input type="text" id="detalleNSS" class="form-control" disabled maxlength="11">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-3">
+                                        <div class="col-3"><label class="form-label"><strong>Infonavit:</strong></label></div>
+                                        <div class="col-9">
+                                            <input class="form-check-input" type="checkbox" id="detalleInfonavit" disabled>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
@@ -845,9 +848,9 @@
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <div class="col-4"><label class="form-label"><strong>Nomina:</strong></label></div>
+                                    <div class="col-4"><label class="form-label"><strong>Proveedor:</strong></label></div>
                                     <div class="col-8">
-                                        <input type="text" id="detalleNomina" class="form-control" disabled>
+                                        <input type="text" id="detalleProveedor" class="form-control" disabled>
                                     </div>
                                 </div>
                                 <div class="row mb-3">

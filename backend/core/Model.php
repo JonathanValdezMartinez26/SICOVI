@@ -149,4 +149,40 @@ class Model
             return self::resultado(false, 'Error al obtener el personal de la sucursal.', null, $e->getMessage());
         }
     }
+
+    public static function getCatalogoParentescos()
+    {
+        $query = "SELECT * FROM CAT_PARENTESCO_EMERGENCIA ORDER BY ID_PARENTESCO";
+        try {
+            $db = new Database();
+            $result = $db->queryAll($query);
+            return self::resultado(true, 'Parentescos obtenidos.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener los parentescos.', null, $e->getMessage());
+        }
+    }
+
+    public static function getCatalogoPuestos()
+    {
+        $query = "SELECT * FROM CAT_PUESTOS ORDER BY DESCRIPCION";
+        try {
+            $db = new Database();
+            $result = $db->queryAll($query);
+            return self::resultado(true, 'Puestos obtenidos.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener los puestos.', null, $e->getMessage());
+        }
+    }
+
+    public static function getCatalogoNominaProveedores()
+    {
+        $query = "SELECT * FROM CAT_NOMINAS_PROVEEDOR ORDER BY NOMBRE_PROVEEDOR";
+        try {
+            $db = new Database();
+            $result = $db->queryAll($query);
+            return self::resultado(true, 'Proveedores de nómina obtenidos.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener los proveedores de nómina.', null, $e->getMessage());
+        }
+    }
 }

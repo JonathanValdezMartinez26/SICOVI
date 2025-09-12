@@ -68,6 +68,7 @@ class CapHum extends Model
                 P.ESTADO_CIVIL,
                 P.NACIONALIDAD,
                 P.NSS,
+                P.INFONAVIT,
                 P.CALLE_NUMERO,
                 P.CP,
                 P.ESTADO,
@@ -92,20 +93,38 @@ class CapHum extends Model
         $qryEmpresa = <<<SQL
             SELECT 
                 SR.EMPRESA,
+                SR.EMPRESA_NOMBRE,
                 SR.REGION,
                 SR.REGION_NOMBRE,
                 SR.SUCURSAL,
-                SR.SUCURSAL_NOMBRE,
+                SR.SUCURSAL_NOMBRE
             FROM NOMINA n
             JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = n.EMPRESA AND SR.REGION = n.REGION AND SR.SUCURSAL = n.SUCURSAL
             WHERE n.PERSONA = :id
         SQL;
 
-        $qryNomina = "SELECT * FROM NOMINA WHERE PERSONA = :id";
-        $qryBancos = "SELECT ID_BANCO, NUMERO, TIPO_NUMERO FROM PERSONA_DATOS_BANCARIOS WHERE PERSONA = :id";
+        $qryNomina = <<<SQL
+            SELECT
+                TO_CHAR(N.INGRESO, 'YYYY-MM-DD') AS INGRESO,
+                N.TIPO AS TIPO_NOMINA,
+                N.NUMERO AS NUMERO_NOMINA,
+                N.JEFE AS JEFE,
+                GET_NOMBRE_PERSONA(N.JEFE) AS JEFE_NOMBRE,
+                CNP.ID_PROVEEDOR AS PROVEEDOR,
+                CNP.NOMBRE_PROVEEDOR AS PROVEEDOR_NOMBRE,
+                CP.ID_PUESTO AS PUESTO,
+                CP.DESCRIPCION AS PUESTO_NOMBRE
+            FROM
+                NOMINA N
+                JOIN CAT_NOMINAS_PROVEEDOR CNP ON CNP.ID_PROVEEDOR = N.PROVEEDOR
+                JOIN CAT_PUESTOS CP ON CP.ID_PUESTO = N.PUESTO
+            WHERE
+                N.PERSONA = :id
+        SQL;
+        $qryBancos = "SELECT ID_BANCO, CB.NOMBRE, NUMERO, TIPO_NUMERO FROM PERSONA_DATOS_BANCARIOS PDB JOIN CAT_BANCO CB ON CB.ID = PDB.ID_BANCO WHERE PERSONA = :id";
         $qryTelefonos = "SELECT NUMERO, TIPO FROM PERSONA_TELEFONO WHERE PERSONA = :id";
         $qryEmails = "SELECT DIRECCION, TIPO FROM PERSONA_EMAIL WHERE PERSONA = :id";
-        $qryContactos = "SELECT ID, NOMBRE, PARENTESCO, TELEFONO FROM PERSONA_CONTACTO_EMERGENCIA WHERE PERSONA = :id";
+        $qryContactos = "SELECT PCE.ID, PCE.NOMBRE, PCE.TELEFONO, CP.DESCRIPCION AS PARENTESCO FROM PERSONA_CONTACTO_EMERGENCIA PCE JOIN CAT_PARENTESCO_EMERGENCIA CP ON CP.ID_PARENTESCO = PCE.PARENTESCO WHERE PCE.PERSONA = :id";
 
         $params = [
             'id' => $datos['id'] ?? 0
@@ -222,13 +241,13 @@ class CapHum extends Model
         $qry = <<<SQL
             INSERT INTO PERSONA (
                 NOMBRE, APELLIDO_1, APELLIDO_2, RFC, CURP, FECHA_NACIMIENTO,
-                SEXO, ESTADO_CIVIL, NACIONALIDAD, NSS, CALLE_NUMERO, CP,
+                SEXO, ESTADO_CIVIL, NACIONALIDAD, NSS, INFONAVIT, CALLE_NUMERO, CP,
                 ESTADO, MUNICIPIO, COLONIA,
                 CONDICIONES_MEDICAS, OTROS_DATOS_RELEVANTES{$qryFoto['col']}
             )
             VALUES (
                 :nombre, :apellido1, :apellido2, :rfc, :curp, TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'),
-                :sexo, :estado_civil, :nacionalidad, :nss, :calle_numero, :cp,
+                :sexo, :estado_civil, :nacionalidad, :nss, :infonavit, :calle_numero, :cp,
                 :estado, :municipio, :colonia,
                 :condiciones_medicas, :informacion_adicional{$qryFoto['val']}
             )
@@ -246,6 +265,7 @@ class CapHum extends Model
             'estado_civil' => $datos['estadoCivil'] ?? null,
             'nacionalidad' => $datos['nacionalidad'] ?? null,
             'nss' => $datos['nss'] ?? null,
+            'infonavit' => $datos['infonavit'] ?? null,
             'calle_numero' => $datos['calle'] ?? null,
             'cp' => $datos['codigoPostal'] ?? null,
             'estado' => $datos['estado'] ?? null,
@@ -316,10 +336,10 @@ class CapHum extends Model
     {
         $qry = <<<SQL
             INSERT INTO NOMINA (
-                PERSONA, EMPRESA, REGION, SUCURSAL, JEFE, PUESTO, INGRESO, NOMINA, TIPO, NUMERO
+                PERSONA, EMPRESA, REGION, SUCURSAL, JEFE, PUESTO, INGRESO, PROVEEDOR, TIPO, NUMERO
             )
             VALUES (
-                :persona, :empresa, :region, :sucursal, :jefe, :puesto, TO_DATE(:fecha_ingreso, 'YYYY-MM-DD'), :nomina, :tipo, :numero
+                :persona, :empresa, :region, :sucursal, :jefe, :puesto, TO_DATE(:fecha_ingreso, 'YYYY-MM-DD'), :proveedor, :tipo, :numero
             )
             SQL;
 
@@ -331,7 +351,7 @@ class CapHum extends Model
             'jefe' => $nomina['jefeInmediato'] ?? -1,
             'puesto' => $nomina['puesto'] ?? null,
             'fecha_ingreso' => $nomina['fechaIngreso'] ?? null,
-            'nomina' => $nomina['nomina'] ?? null,
+            'proveedor' => $nomina['proveedor'] ?? null,
             'tipo' => $nomina['tipoNomina'] ?? null,
             'numero' => $nomina['numeroNomina'] ?? null
         ];
@@ -399,7 +419,7 @@ class CapHum extends Model
             'region' => $datos['region'] ?? null,
             'sucursal' => $datos['sucursal'] ?? null,
             'usuario' => $datos['usuario'] ?? null,
-            'pass' => $datos['pass'] ?? null,
+            'pass' => $datos['password'] ?? null,
             'perfil' => $datos['perfil'] ?? null
         ];
 
