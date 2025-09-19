@@ -8,6 +8,12 @@ use Error;
 
 class CapHum extends Model
 {
+    private static function getErrorMessage($resultado)
+    {
+        if ($resultado['error']) return $resultado['error'];
+        return $resultado['mensaje'] ?? null;
+    }
+
     // Lista personas con filtro opcional
     public static function getPersonas($datos)
     {
@@ -159,12 +165,6 @@ class CapHum extends Model
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al obtener el detalle de la persona.', null, $e->getMessage());
         }
-    }
-
-    private static function getErrorMessage($resultado)
-    {
-        if ($resultado['error']) return $resultado['error'];
-        return $resultado['mensaje'] ?? null;
     }
 
     public static function guardarPersona($datos, $fotoData = null)

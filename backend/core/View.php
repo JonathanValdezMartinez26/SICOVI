@@ -52,17 +52,17 @@ function getMenu()
                 [
                     'label' => 'Gestión CH',
                     'url' => '/CapHum/GestionCapHum',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26, 27, 28]
                 ],
                 [
                     'label' => 'Formatos MCM',
                     'url' => '/CapHum/FormatosMCM',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26, 27, 28]
                 ],
                 [
                     'label' => 'Formatos Cultiva',
                     'url' => '/CapHum/FormatosCultiva',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26, 27, 28]
                 ]
             ]
         ],
