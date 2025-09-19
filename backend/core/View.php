@@ -12,7 +12,7 @@ function getMenu()
                 [
                     'label' => 'Mis Solicitudes',
                     'url' => '/Viaticos/Solicitud',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26]
                 ]
             ]
         ],
@@ -22,7 +22,7 @@ function getMenu()
                 [
                     'label' => 'Pendientes',
                     'url' => '/Viaticos/Autorizacion',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26]
                 ],
             ]
         ],
@@ -32,17 +32,17 @@ function getMenu()
                 [
                     'label' => '1. Entrega de Viáticos',
                     'url' => '/Viaticos/Entrega',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26]
                 ],
                 [
                     'label' => '2. Comprobación',
                     'url' => '/Viaticos/Validacion',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26]
                 ],
                 [
                     'label' => '3. Ajustes',
                     'url' => '/Viaticos/Ajustes',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26]
                 ]
             ]
         ],
@@ -72,7 +72,7 @@ function getMenu()
                 [
                     'label' => 'Resumen Tesorería',
                     'url' => 'app-viaticos-dashboard.html',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26]
                 ]
             ]
         ],
@@ -82,17 +82,17 @@ function getMenu()
                 [
                     'label' => 'Usuarios',
                     'url' => '/usuarios/existentes/',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26]
                 ],
                 [
                     'label' => 'Empresas',
                     'url' => '/empresas/existentes/',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26]
                 ],
                 [
                     'label' => 'Sucursales',
                     'url' => '/sucursales/existentes/',
-                    'permisos' => ['25', '26']
+                    'permisos' => [25, 26]
                 ]
             ]
         ]
