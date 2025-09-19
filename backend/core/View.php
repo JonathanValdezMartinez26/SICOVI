@@ -12,7 +12,7 @@ function getMenu()
                 [
                     'label' => 'Mis Solicitudes',
                     'url' => '/Viaticos/Solicitud',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
                 ]
             ]
         ],
@@ -22,7 +22,7 @@ function getMenu()
                 [
                     'label' => 'Pendientes',
                     'url' => '/Viaticos/Autorizacion',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
                 ],
             ]
         ],
@@ -32,17 +32,17 @@ function getMenu()
                 [
                     'label' => '1. Entrega de Viáticos',
                     'url' => '/Viaticos/Entrega',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
                 ],
                 [
                     'label' => '2. Comprobación',
                     'url' => '/Viaticos/Validacion',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
                 ],
                 [
                     'label' => '3. Ajustes',
                     'url' => '/Viaticos/Ajustes',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
                 ]
             ]
         ],
@@ -52,7 +52,17 @@ function getMenu()
                 [
                     'label' => 'Gestión CH',
                     'url' => '/CapHum/GestionCapHum',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
+                ],
+                [
+                    'label' => 'Formatos MCM',
+                    'url' => '/CapHum/FormatosMCM',
+                    'permisos' => ['25', '26']
+                ],
+                [
+                    'label' => 'Formatos Cultiva',
+                    'url' => '/CapHum/FormatosCultiva',
+                    'permisos' => ['25', '26']
                 ]
             ]
         ],
@@ -62,7 +72,7 @@ function getMenu()
                 [
                     'label' => 'Resumen Tesorería',
                     'url' => 'app-viaticos-dashboard.html',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
                 ]
             ]
         ],
@@ -72,17 +82,17 @@ function getMenu()
                 [
                     'label' => 'Usuarios',
                     'url' => '/usuarios/existentes/',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
                 ],
                 [
                     'label' => 'Empresas',
                     'url' => '/empresas/existentes/',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
                 ],
                 [
                     'label' => 'Sucursales',
                     'url' => '/sucursales/existentes/',
-                    'permisos' => ['1', '2']
+                    'permisos' => ['25', '26']
                 ]
             ]
         ]

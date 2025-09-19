@@ -8,15 +8,17 @@ class Database
 {
     private $db;
 
-    function __construct($servidor_ = null, $puerto_ = null, $esquema_ = null, $usuario_ = null, $password_ = null)
+    function __construct($dbEspecifica = null)
     {
-        $servidor = $servidor_ ?? CONFIGURACION['SERVIDOR'];
-        $puerto = $puerto_ ?? CONFIGURACION['PUERTO'];
-        $esquema = $esquema_ ?? CONFIGURACION['ESQUEMA'];
+        $dbEspecifica = $dbEspecifica ? strtoupper("_$dbEspecifica") : '';
+
+        $servidor = CONFIGURACION["SERVIDOR$dbEspecifica"];
+        $puerto = CONFIGURACION["PUERTO$dbEspecifica"];
+        $esquema = CONFIGURACION["ESQUEMA$dbEspecifica"];
 
         $cadena = "oci:dbname=//$servidor:$puerto/$esquema;charset=UTF8";
-        $usuario = $usuario_ ?? CONFIGURACION['USUARIO'];
-        $password = $password_ ?? CONFIGURACION['PASSWORD'];
+        $usuario = CONFIGURACION["USUARIO$dbEspecifica"];
+        $password = CONFIGURACION["PASSWORD$dbEspecifica"];
 
         try {
             $this->db = new PDO($cadena, $usuario, $password);
