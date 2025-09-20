@@ -360,6 +360,7 @@ class CapHum extends Controller
                 const initWizard = () => {
                     const wizardElement = document.querySelector('.wizard-registro-colaborador')
                     if (wizardElement) {
+                        // Inicializar con linear: true por defecto (para registro)
                         wizardPersona = new Stepper(wizardElement, { linear: true, animation: true })
                         
                         const nextButtons = wizardElement.querySelectorAll('.btn-next')
@@ -367,9 +368,17 @@ class CapHum extends Controller
 
                         nextButtons.forEach(btn => {
                             btn.addEventListener('click', () => {
-                                if (validarPasoActual()) {
+                                // En modo registro (nuevo) validar pasos, en visualización/edición navegar libre
+                                const esNuevoRegistro = $("#personaIdHidden").val() === ""
+                                
+                                if (esNuevoRegistro) {
+                                    if (validarPasoActual()) {
+                                        wizardPersona.next()
+                                        if (wizardPersona._currentIndex === wizardPersona._steps.length - 2) llenarResumen()
+                                    }
+                                } else {
+                                    // En modo visualización/edición, navegar libremente
                                     wizardPersona.next()
-                                    if (wizardPersona._currentIndex === wizardPersona._steps.length - 2) llenarResumen()
                                 }
                             })
                         })
@@ -377,6 +386,19 @@ class CapHum extends Controller
                         prevButtons.forEach(btn => {
                             btn.addEventListener('click', () => {
                                 wizardPersona.previous()
+                            })
+                        })
+
+                        // Agregar navegación directa por pasos en visualización/edición
+                        const stepHeaders = wizardElement.querySelectorAll('.bs-stepper-header .step')
+                        stepHeaders.forEach((step, index) => {
+                            step.addEventListener('click', () => {
+                                const esNuevoRegistro = $("#personaIdHidden").val() === ""
+                                
+                                // Solo permitir navegación directa en modo visualización/edición
+                                if (!esNuevoRegistro) {
+                                    wizardPersona.to(index + 1)
+                                }
                             })
                         })
                     }
@@ -439,6 +461,49 @@ class CapHum extends Controller
                             const campo = grupo[campoKey]
                             $('#resumen' + capitaliza(campoKey)).text(campo.texto() || "-")
                         })
+                    })
+                }
+
+                const guardarCambiosPersona = () => {
+                    if (!verificarCambios()) {
+                        showError("No se han detectado cambios para guardar")
+                        return
+                    }
+
+                    const formData = new FormData()
+                    formData.append('id', $("#personaIdHidden").val())
+                    
+                    // Recopilar todos los campos del formulario
+                    Object.keys(camposPersona).forEach(campo => {
+                        const grupo = camposPersona[campo]
+                        Object.keys(grupo).forEach(campoKey => {
+                            const campo = grupo[campoKey]
+                            formData.append(campoKey, campo.valor() || "")
+                        })
+                    })
+                    
+                    // Agregar foto si se cambió
+                    const fotoInput = $("#fotoInput")[0]
+                    if (fotoInput.files && fotoInput.files[0]) {
+                        formData.append('foto', fotoInput.files[0])
+                    }
+
+                    consultaServidor("/CapHum/guardarPersona", formData, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        showSuccess(respuesta.mensaje)
+                        
+                        // Volver a modo visualización
+                        modoEdicion = false
+                        hayCambios = false
+                        datosOriginales = obtenerDatosFormulario()
+                        bloquearCamposModal(true)
+                        actualizarBotonesModal()
+                        
+                        // Actualizar tabla
+                        getPersonas(true)
+                    }, {
+                        procesar: false,
+                        tipoContenido: false
                     })
                 }
 
@@ -515,34 +580,77 @@ class CapHum extends Controller
                 const verificarCambios = () => {
                     if (!modoEdicion) return false
 
-                    const datosActuales = {
-                        nombre: $("#detalleNombre").val(),
-                        apellido1: $("#detalleApellido1").val(),
-                        apellido2: $("#detalleApellido2").val(),
-                        rfc: $("#detalleRfc").val(),
-                        curp: $("#detalleCurp").val(),
-                        fechaNacimiento: $("#detalleFechaNacimiento").val(),
-                        sexo: $("#detalleSexo").val()
-                    }
-
-                    for (const campo in datosActuales) {
-                        if (datosActuales[campo] !== datosOriginales[campo]) {
-                            return true
+                    let hayCambiosDetectados = false
+                    const formActual = $('#modalPersona')
+                    
+                    // Verificar todos los campos del formulario
+                    formActual.find('input, select, textarea').each(function() {
+                        const elemento = $(this)
+                        const id = elemento.attr('id')
+                        
+                        if (id && datosOriginales && datosOriginales.hasOwnProperty(id)) {
+                            const valorActual = elemento.attr('type') === 'checkbox' ? 
+                                elemento.is(':checked') : elemento.val()
+                            const valorOriginal = datosOriginales[id]
+                            
+                            if (valorActual !== valorOriginal) {
+                                hayCambiosDetectados = true
+                                return false // Salir del each
+                            }
                         }
-                    }
-                    return false
+                    })
+                    
+                    return hayCambiosDetectados || hayCambios
                 }
 
-                const actualizarBotonEdicion = () => {
-                    const tieneModificaciones = verificarCambios() || hayCambios
-                    const boton = $("#btnHabilitarEdicion")
+                const configurarWizardParaModo = (esNuevoRegistro) => {
+                    const stepConfirmacion = document.getElementById('stepConfirmacion')
+                    const contentConfirmacion = document.getElementById('confirmacion')
                     
-                    if (tieneModificaciones) {
-                        boton.removeClass("btn-warning").addClass("btn-success")
-                        boton.html('<i class="fa fa-save">&nbsp;</i>Guardar')
+                    if (esNuevoRegistro) {
+                        // Modo registro: mostrar confirmación
+                        if (stepConfirmacion) stepConfirmacion.style.display = ''
+                        if (contentConfirmacion) contentConfirmacion.style.display = ''
                     } else {
-                        boton.removeClass("btn-success").addClass("btn-warning")
-                        boton.html('<i class="fa fa-times">&nbsp;</i>Cancelar')
+                        // Modo visualización/edición: ocultar confirmación
+                        if (stepConfirmacion) stepConfirmacion.style.display = 'none'
+                        if (contentConfirmacion) contentConfirmacion.style.display = 'none'
+                    }
+                    
+                    // Reinicializar wizard si es necesario
+                    if (wizardPersona) {
+                        // Forzar actualización del stepper
+                        wizardPersona._updateStepperStructure && wizardPersona._updateStepperStructure()
+                    }
+                }
+
+                const actualizarBotonesModal = () => {
+                    const tieneModificaciones = verificarCambios()
+                    const btnGuardar = $("#btnGuardarCambiosPersona")
+                    const btnEditar = $("#btnEditarPersona")
+                    const btnCancelar = $("#btnCancelarGuardarPersona")
+                    const esNuevoRegistro = $("#personaIdHidden").val() === ""
+                    
+                    if (esNuevoRegistro) {
+                        // Modo registro: solo mostrar cancelar
+                        btnEditar.hide()
+                        btnGuardar.hide()
+                        btnCancelar.text("Cancelar").show()
+                    } else if (!modoEdicion) {
+                        // Modo visualización: mostrar editar y cerrar
+                        btnEditar.show().text("Editar")
+                        btnGuardar.hide()
+                        btnCancelar.text("Cerrar").show()
+                    } else {
+                        // Modo edición: mostrar cancelar y guardar (si hay cambios)
+                        btnEditar.hide()
+                        btnCancelar.text("Cancelar").show()
+                        
+                        if (tieneModificaciones) {
+                            btnGuardar.show().text("Guardar Cambios")
+                        } else {
+                            btnGuardar.hide()
+                        }
                     }
                 }
 
@@ -662,13 +770,30 @@ class CapHum extends Controller
 
                 const nuevaPersona = () => {
                     limpiarPersona()
-                    $("#modalPersona").modal("show")
-                    $("#tituloModalPersona").text("Registrar nuevo colaborador")
-                    $("#personaId").val("")
                     
+                    // Configurar modal para modo registro
+                    modoEdicion = false // En registro iniciamos en modo visualización hasta que el usuario empiece a llenar datos
+                    $("#tituloModalPersona").text("Registrar nuevo colaborador")
+                    $(".address-subtitle").text("Complete los siguientes pasos para el registro")
+                    $("#personaId").val("")
+                    $("#personaIdHidden").val("")
+                    
+                    // Configurar wizard para mostrar confirmación
+                    configurarWizardParaModo(true)
+                    
+                    // Configurar botones para modo registro
+                    actualizarBotonesModal()
+                    
+                    // Habilitar todos los campos para registro
+                    bloquearCamposModal(false)
+                    
+                    // Ir al primer step del wizard
                     if (wizardPersona) {
                         wizardPersona.to(1)
                     }
+                    
+                    // Mostrar modal
+                    modalPersona.show()
                 }
 
                 const verPersona = (id) => {
@@ -684,92 +809,110 @@ class CapHum extends Controller
                         const usuarios = respuesta.datos.usuarios
                         const bancos = respuesta.datos.bancos
 
-                        // Resetear modo edición
+                        // Configurar modal para modo visualización
                         modoEdicion = false
-                        hayCambios = false
+                        $("#tituloModalPersona").text("Detalles del colaborador")
+                        $(".address-subtitle").text("Información completa del colaborador")
+                        $("#personaIdHidden").val(persona.ID)
 
+                        configurarWizardParaModo(false)
+                        actualizarBotonesModal()
 
-                        // Llenar campos del modal de detalle
-                        $("#detallePersonaIdHidden").val(persona.ID)
-                        $("#detallePersonaId").val(persona.ID)
-                        $("#detalleNombre").val(persona.NOMBRE)
-                        $("#detalleApellido1").val(persona.APELLIDO_1)
-                        $("#detalleApellido2").val(persona.APELLIDO_2 || "")
-                        $("#detalleRfc").val(persona.RFC)
-                        $("#detalleCurp").val(persona.CURP)
-                        $("#detalleNSS").val(persona.NSS)
-                        $("#detalleInfonavit").prop("checked", persona.INFONAVIT == 1)
-                        $("#detalleFechaNacimiento").val(persona.FECHA_NACIMIENTO)
-                        $("#detalleSexo").val(persona.SEXO)
-                        $("#detalleEstatus").val(persona.ESTATUS)
-
+                        $("#personaId").val(persona.ID)
+                        $("#nombre").val(persona.NOMBRE)
+                        $("#apellido1").val(persona.APELLIDO_1)
+                        $("#apellido2").val(persona.APELLIDO_2 || "")
+                        $("#rfc").val(persona.RFC)
+                        $("#curp").val(persona.CURP)
+                        $("#estadoCivil").val(persona.ESTADO_CIVIL)
+                        $("#nss").val(persona.NSS)
+                        $("#infonavit").prop("checked", persona.INFONAVIT == 1)
+                        $("#fechaNacimiento").val(moment(persona.FECHA_NACIMIENTO).format(MOMENT_FRONT))
+                        $("#sexo").val(persona.SEXO)
+                        $("#calle").val(persona.CALLE_NUMERO)
+                        $("#codigoPostal").val(persona.CP);
+                        $("#codigoPostal").trigger("blur"); // Para cargar colonias
+                        setTimeout(() => {
+                            $("#colonia").val(persona.COLONIA)
+                            $("#colonia").attr("disabled", "disabled")
+                            $("#municipio").val(persona.MUNICIPIO)
+                            $("#estado").val(persona.ESTADO)
+                        }, 500)
+                        
                         telefonos.forEach(telefono => {
                             if (telefono.TIPO === "1") {
-                                $("#detalleTelefonoPrincipal").val(telefono.NUMERO);
+                                $("#telefonoPrincipal").val(telefono.NUMERO);
                             } else if (telefono.TIPO === "2") {
-                                $("#detalleTelefonoAlterno").val(telefono.NUMERO);
+                                $("#telefonoAlterno").val(telefono.NUMERO);
                             }
                         });
-
                         emails.forEach(email => {
                             if (email.TIPO === "1") {
-                                $("#detalleEmail").val(email.DIRECCION);
+                                $("#correoPrincipal").val(email.DIRECCION);
+                            }
+                        });
+                        $("#contactoEmergenciaNombre").val(contactos[0]?.NOMBRE || "");
+                        $("#contactoEmergenciaParentesco").val(contactos[0]?.PARENTESCO || "");
+                        $("#contactoEmergenciaTelefono").val(contactos[0]?.TELEFONO || "");
+                        $("#condicionesMedicas").val(persona.CONDICIONES_MEDICAS || "");
+                        $("#informacionAdicional").val(persona.OTROS_DATOS_RELEVANTES || "");
+
+                        // Cargar datos de empresa
+                        $("#empresa").val(empresa.EMPRESA);
+                        $("#empresa").trigger("change")
+
+                        $("#region").val(empresa.REGION);
+                        $("#region").trigger("change");
+
+                        $("#sucursal").val(empresa.SUCURSAL);
+                        $("#sucursal").trigger("change");
+
+                        setTimeout(() => {
+                            $("#jefeInmediato").val(nomina.JEFE);
+                            $("#jefeInmediato").attr("disabled", "disabled");
+                            $("#reporta").val(usuarios[0].AUTORIZADOR);
+                            $("#reporta").attr("disabled", "disabled");
+                        }, 1000);
+                        
+                        $("#puesto").val(nomina.PUESTO);
+                        emails.forEach(email => {
+                            if (email.TIPO === "4") {
+                                // el input tiene el name "correoEmpresa[]"
+                                if ($("#correosContainer").children().length === 1 && $("#correosContainer").children().first().find('input').val() === "") {
+                                    // Si solo hay un input vacío, reutilizarlo
+                                    $("#correosContainer").children().first().find('input').val(email.DIRECCION);
+                                    return;
+                                    
+                                }
+
+                                const nuevoCorreo = $("#correosContainer").children().first().clone();
+                                nuevoCorreo.find('input').val(email.DIRECCION);
+                                $("#correosContainer").append(nuevoCorreo);
                             }
                         });
 
-                        $("#detalleCalle").val(persona.CALLE_NUMERO)
-                        $("#detalleCP").val(persona.CP);
-                        const response = await fetch("https://api.condusef.gob.mx/sepomex/colonias/?cp=" + persona.CP);
-                        const data = await response.json();
-                        if (data?.colonias.length > 0) {
-                            const datosCP = data.colonias.filter(item => item.coloniaId == persona.COLONIA);
-                            const colonia = datosCP[0]?.colonia || "";
-                            const municipio = datosCP[0]?.municipio || "";
-                            const estado = datosCP[0]?.estado || "";
-                            $("#detalleColonia").val(colonia);
-                            $("#detalleMunicipio").val(municipio);
-                            $("#detalleEstado").val(estado);
-                        }
 
-                        $("#detalleEmpresa").val(empresa.EMPRESA_NOMBRE);
-                        $("#detalleRegion").val(empresa.REGION_NOMBRE);
-                        $("#detalleSucursal").val(empresa.SUCURSAL_NOMBRE);
-                        $("#detallePuesto").val(nomina.PUESTO_NOMBRE);
-                        $("#detalleJefeDirecto").val(nomina.JEFE_NOMBRE);
-
-                        $("#detalleProveedor").val(nomina.PROVEEDOR_NOMBRE);
-                        $("#detalleIngreso").val(moment(nomina.INGRESO).format(MOMENT_FRONT));
-                        $("#detalleTipoNomina").val(nomina.TIPO_NOMINA);
-                        $("#detalleNumeroNomina").val(nomina.NUMERO_NOMINA);
+                        $("#fechaIngreso").val(moment(nomina.INGRESO).format(MOMENT_FRONT));
+                        $("#proveedor").val(nomina.PROVEEDOR);
+                        $("#tipoNomina").val(nomina.TIPO_NOMINA);
+                        $("#numeroNomina").val(nomina.NUMERO_NOMINA);
+                        
+                        // Cargar datos bancarios
                         bancos.forEach(banco => {
-                            $("#detalleBanco").val(banco.NOMBRE);
+                            $("#banco").val(banco.ID_BANCO);
                             if (banco.TIPO_NUMERO === "1") {
-                                $("#detalleCuenta").val(banco.NUMERO);
+                                $("#cuentaBancaria").val(banco.NUMERO);
                             } else if (banco.TIPO_NUMERO === "2") {
-                                $("#detalleTarjeta").val(banco.NUMERO);
+                                $("#tarjeta").val(banco.NUMERO);
                             }
                         });
 
-                        $("#detalleContactoEmergencia").val(contactos[0]?.NOMBRE || "");
-                        $("#detalleParentescoCE").val(contactos[0]?.PARENTESCO || "");
-                        $("#detalleTelefonoCE").val(contactos[0]?.TELEFONO || "");
-                        $("#detalleCondicionesMedicas").val(persona.CONDICIONES_MEDICAS || "");
-                        $("#detalleInfoAdicional").val(persona.OTROS_DATOS_RELEVANTES || "");
+                        $("#usuario").val(usuarios[0]?.USUARIO || "");
+                        $("#perfil").val(usuarios[0]?.PERFIL || "");
 
-
-                        // Deshabilitar todos los campos de entrada
-                        $("#detalleNombre, #detalleApellido1, #detalleApellido2, #detalleRfc, #detalleCurp, #detalleFechaNacimiento, #detalleSexo").prop("disabled", true)
-                        $("#btnCambiarFotoDetalle").prop("disabled", true)
-                        
-                        // Restaurar botón de edición
-                        $("#btnHabilitarEdicion").removeClass("btn-success").addClass("btn-warning")
-                        $("#btnHabilitarEdicion").html('<i class="fa fa-edit">&nbsp;</i>Editar')
-
-                        // Reutilizar foto de la tabla en lugar de descargarla nuevamente
-                        let fotoSrc = "/assets/img/misc/user.svg" // Imagen por defecto
-                        
+                        // Configurar imagen de perfil
+                        let fotoSrc = "/assets/img/misc/user.svg"
                         try {
-                            // Buscar directamente en el DOM de la tabla visible
                             const filaEncontrada = $(tabla + ' tbody tr').filter(function() {
                                 const idCelda = $(this).find('td').eq(1).text().trim()
                                 return idCelda == persona.ID
@@ -781,60 +924,107 @@ class CapHum extends Controller
                                     const srcTabla = imgTabla.attr('src')
                                     if (srcTabla && srcTabla !== "/assets/img/misc/user.svg") {
                                         fotoSrc = srcTabla
-                                        console.log('Foto encontrada en tabla:', fotoSrc)
                                     }
                                 }
-                            } else {
-                                console.log('No se encontró la fila para ID:', persona.ID)
                             }
                         } catch (error) {
                             console.log('Error al buscar foto en tabla:', error)
                         }
                         
-                        // Si no se encuentra la imagen en la tabla y hay foto, usar el endpoint como respaldo
                         if (fotoSrc === "/assets/img/misc/user.svg" && persona.FOTO) {
                             fotoSrc = "/CapHum/getFotoPersona?personaId=" + persona.ID
-                            console.log('Usando endpoint como respaldo:', fotoSrc)
                         }
                         
-                        console.log('Foto final asignada:', fotoSrc)
-                        $("#detalleFoto").attr("src", fotoSrc)
+                        $("#fotoPreview").attr("src", fotoSrc)
 
-                        // Llenar tabla de usuarios
-                        $("#tablaUsuariosDetalle tbody").empty()
-                        if (usuarios.length === 0) {
-                            $("#tablaUsuariosDetalle tbody").append('<tr><td colspan="5" class="text-center">No hay usuarios asociados</td></tr>')
-                        } else {
-                            usuarios.forEach(usuario => {
-                                // Crear acciones según la cantidad de usuarios
-                                let acciones = [{
-                                    texto: "Editar",
-                                    icono: "fa-edit",
-                                    funcion: "editarUsuario(" + usuario.ID + ")"
-                                },{
-                                    texto: usuario.ESTATUS == 1 ? "Desactivar" : "Activar",
-                                    icono: usuario.ESTATUS == 1 ? "fa-ban" : "fa-check",
-                                    funcion: "cambiarEstatusUsuario(" + usuario.ID + ")",
-                                    clase: usuario.ESTATUS == 1 ? "text-warning" : "text-success"
-                                }]
-                                
-                                // Solo agregar eliminar si hay más de un usuario
-                                if (usuarios.length > 1) {
-                                    acciones.push({
-                                        texto: "Eliminar",
-                                        icono: "fa-trash",
-                                        funcion: "eliminarUsuario(" + usuario.ID + ")",
-                                        clase: "text-danger"
-                                    })
-                                }
-                                
-                                const menuAccs = menuAcciones(acciones)
-                                const estatusBadge = getEstatus(usuario.ESTATUS == 1 ? "Activo" : "Inactivo", usuario.ESTATUS == 1 ? "success" : "danger")
-                                $("#tablaUsuariosDetalle tbody").append("<tr><td>" + usuario.ID + "</td><td>" + usuario.USUARIO + "</td><td>" + (usuario.SUCURSAL_NOMBRE || 'N/A') + "</td><td>" + estatusBadge + "</td><td>" + menuAccs + "</td></tr>")
-                            })
+                        // Bloquear todos los campos para modo visualización
+                        bloquearCamposModal(true)
+                        
+                        // Ir al primer step del wizard
+                        wizardPersona.to(1)
+                        
+                        // Mostrar el modal
+                        modalPersona.show()
+                    })
+                }
+
+                // Función para bloquear/desbloquear campos del modal
+                const bloquearCamposModal = (bloquear) => {
+                    const campos = $('#modalPersona input, #modalPersona select, #modalPersona textarea')
+                    campos.prop('disabled', bloquear)
+                    if (bloquear) {
+                        $('#btnCambiarFoto').hide()
+                    } else {
+                        $('#btnCambiarFoto').show()
+                    }
+                }
+
+                // Función para alternar entre modo visualización y edición
+                const toggleModoEdicion = () => {
+                    const esNuevoRegistro = $("#personaIdHidden").val() === ""
+                    
+                    if (esNuevoRegistro) return // No aplicar en modo registro
+                    
+                    if (!modoEdicion) {
+                        // Activar modo edición
+                        modoEdicion = true
+                        hayCambios = false
+                        
+                        // Guardar estado original para poder cancelar
+                        datosOriginales = obtenerDatosFormulario()
+                        
+                        // Habilitar campos
+                        bloquearCamposModal(false)
+                        
+                        // Agregar listeners para detectar cambios
+                        $('#modalPersona input, #modalPersona select, #modalPersona textarea').on('input change', () => {
+                            setTimeout(actualizarBotonesModal, 10) // Pequeño delay para que se actualice el valor
+                        })
+                        
+                    } else {
+                        // Cancelar edición
+                        modoEdicion = false
+                        hayCambios = false
+                        
+                        // Bloquear campos
+                        bloquearCamposModal(true)
+                        
+                        // Restaurar datos originales
+                        if (datosOriginales) {
+                            restaurarDatosFormulario(datosOriginales)
                         }
+                        
+                        // Remover listeners
+                        $('#modalPersona input, #modalPersona select, #modalPersona textarea').off('input change')
+                    }
+                    
+                    // Actualizar botones
+                    actualizarBotonesModal()
+                }
 
-                        $("#modalDetallePersona").modal("show")
+                // Función para obtener todos los datos del formulario
+                const obtenerDatosFormulario = () => {
+                    const datos = {}
+                    $('#modalPersona input, #modalPersona select, #modalPersona textarea').each(function() {
+                        const elemento = $(this)
+                        if (elemento.attr('type') === 'checkbox') {
+                            datos[elemento.attr('id')] = elemento.is(':checked')
+                        } else {
+                            datos[elemento.attr('id')] = elemento.val()
+                        }
+                    })
+                    return datos
+                }
+
+                // Función para restaurar datos del formulario
+                const restaurarDatosFormulario = (datos) => {
+                    Object.keys(datos).forEach(id => {
+                        const elemento = $('#' + id)
+                        if (elemento.attr('type') === 'checkbox') {
+                            elemento.prop('checked', datos[id])
+                        } else {
+                            elemento.val(datos[id])
+                        }
                     })
                 }
 
@@ -888,7 +1078,7 @@ class CapHum extends Controller
                         consultaServidor("/CapHum/eliminarPersona", {id: id}, (respuesta) => {
                             if (!respuesta.success) return showError(respuesta.mensaje)
                             showSuccess(respuesta.mensaje)
-                            $("#modalDetallePersona").modal("hide")
+                            modalPersona.hide()
                             getPersonas(true)
                         })
                     })
@@ -1119,6 +1309,9 @@ class CapHum extends Controller
                     initWizard()
                     getPersonas()
                     
+                    // Inicializar modal de persona
+                    modalPersona = new bootstrap.Modal(document.getElementById('modalPersona'))
+                    
                     window.agregarCorreo = agregarCorreo
                     window.eliminarCorreo = eliminarCorreo
                     
@@ -1129,6 +1322,35 @@ class CapHum extends Controller
                     $("#btnCambiarFoto").click(() => $("#fotoInput").click())
                     $("#btnCambiarFotoDetalle").click(() => $("#detalleFotoInput").click())
                     $("#btnCambiarFotoResumen").click(() => $("#resumenFotoInput").click())
+                    
+                    // Event listeners para el modal unificado
+                    $("#btnEditarPersona").click(toggleModoEdicion)
+                    $("#btnCancelarGuardarPersona").click(function() {
+                        const esNuevoRegistro = $("#personaIdHidden").val() === ""
+                        
+                        if (esNuevoRegistro) {
+                            // En modo registro, cancelar cierra el modal
+                            modalPersona.hide()
+                        } else if (modoEdicion) {
+                            // En modo edición, cancelar vuelve a modo visualización
+                            toggleModoEdicion()
+                        } else {
+                            // En modo visualización, cerrar el modal
+                            modalPersona.hide()
+                        }
+                    })
+                    
+                    $("#btnGuardarCambiosPersona").click(function() {
+                        const esNuevoRegistro = $("#personaIdHidden").val() === ""
+                        
+                        if (esNuevoRegistro) {
+                            // En modo registro, usar la función de registro
+                            guardarPersona()
+                        } else {
+                            // En modo edición, guardar cambios específicos
+                            guardarCambiosPersona()
+                        }
+                    })
 
                     manejarCambiosFoto("#fotoInput", "#fotoPreview")
                     manejarCambiosFoto("#detalleFotoInput", "#detalleFotoPreview")
@@ -1172,7 +1394,7 @@ class CapHum extends Controller
                         camposNumericos($(this), 10)
                     })
                     
-                    $('#codigoPostal').on('input', function() {
+                    $('#codigoPostal').on('input, blur', function() {
                         camposNumericos($(this), 5);
                         if ($(this).val().length < 5) resetSelectsSepomex()
                         if ($(this).val().length === 5) consultarSepomex($(this).val())
