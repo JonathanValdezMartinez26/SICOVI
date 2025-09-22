@@ -228,7 +228,7 @@ class CapHum extends Controller
                             elemento: "jefeInmediato",
                             valor: () => $("#jefeInmediato option:selected").val(),
                             texto: () => $("#jefeInmediato option:selected").text(),
-                            validacion: () => true, //$("#jefeInmediato option:selected").val() !== "",
+                            validacion: () => $("#jefeInmediato option:selected").val() !== "",
                             mensaje: "Seleccione un jefe inmediato."
                         },
                         reporta: {
