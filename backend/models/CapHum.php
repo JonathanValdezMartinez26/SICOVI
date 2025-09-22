@@ -207,8 +207,10 @@ class CapHum extends Model
             if (empty($insBanco['success'])) throw new \Exception(self::getErrorMessage($insBanco) ?? 'Error datos bancarios');
 
             // 6) Contacto emergencia
-            $creaContacto = self::crearContactoEmergencia($personaId, $datos, $db);
-            if (empty($creaContacto['success'])) throw new \Exception(self::getErrorMessage($creaContacto) ?? 'Error creando contacto');
+            if ($datos['contactoEmergenciaNombre'] && $datos['contactoEmergenciaTelefono'] && $datos['contactoEmergenciaParentesco']) {
+                $creaContacto = self::crearContactoEmergencia($personaId, $datos, $db);
+                if (empty($creaContacto['success'])) throw new \Exception(self::getErrorMessage($creaContacto) ?? 'Error creando contacto');
+            }
 
             // 7) Registro de usuario principal
             $creaUsuario = self::crearUsuario($personaId, $datos, $db);
@@ -384,8 +386,8 @@ class CapHum extends Model
 
         try {
             if (!$db) $db = new Database();
-            $db->CRUD($qry, $paramsTarjeta);
-            $db->CRUD($qry, $paramsCuenta);
+            if ($paramsTarjeta['numero']) $db->CRUD($qry, $paramsTarjeta);
+            if ($paramsCuenta['numero']) $db->CRUD($qry, $paramsCuenta);
             return self::resultado(true, 'Datos bancarios registrados correctamente');
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al registrar datos bancarios', null, $e->getMessage());
@@ -413,7 +415,7 @@ class CapHum extends Model
 
     public static function crearUsuario($personaId, $datos, $db = null)
     {
-        $qry = "INSERT INTO USUARIO (PERSONA, EMPRESA, REGION, SUCURSAL, USUARIO, PASS, PERFIL) VALUES (:persona, :empresa, :region, :sucursal, :usuario, :pass, :perfil)";
+        $qry = "INSERT INTO USUARIO (PERSONA, EMPRESA, REGION, SUCURSAL, USUARIO, PASS, PERFIL, AUTORIZADOR) VALUES (:persona, :empresa, :region, :sucursal, :usuario, :pass, :perfil, :autorizador)";
         $params = [
             'persona' => $personaId,
             'empresa' => $datos['empresa'] ?? null,
@@ -421,7 +423,8 @@ class CapHum extends Model
             'sucursal' => $datos['sucursal'] ?? null,
             'usuario' => $datos['usuario'] ?? null,
             'pass' => $datos['password'] ?? null,
-            'perfil' => $datos['perfil'] ?? null
+            'perfil' => $datos['perfil'] ?? null,
+            'autorizador' => $datos['reporta'] ?? 0
         ];
 
         try {

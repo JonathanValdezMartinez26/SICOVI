@@ -109,7 +109,7 @@
 
                     <div class="bs-stepper-content">
                         <form onSubmit="return false">
-                            <input type="hidden" id="personaId" name="personaId">
+                            <input type="hidden" id="personaIdHidden" name="personaIdHidden">
                             <!-- Datos Personales -->
                             <div id="datos-personales" class="content">
                                 <div class="content-header mb-4">

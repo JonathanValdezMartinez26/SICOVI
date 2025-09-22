@@ -253,7 +253,7 @@ class CapHum extends Controller
                                         const valor = $(this).val().trim()
                                         if (valor) correos.push(valor)
                                     })
-                                    return correos.join(', ')
+                                    return correos.join(',')
                                 },
                             texto: () => {
                                 const correos = []
@@ -368,7 +368,6 @@ class CapHum extends Controller
 
                         nextButtons.forEach(btn => {
                             btn.addEventListener('click', () => {
-                                // En modo registro (nuevo) validar pasos, en visualización/edición navegar libre
                                 const esNuevoRegistro = $("#personaIdHidden").val() === ""
                                 
                                 if (esNuevoRegistro) {
@@ -377,7 +376,7 @@ class CapHum extends Controller
                                         if (wizardPersona._currentIndex === wizardPersona._steps.length - 2) llenarResumen()
                                     }
                                 } else {
-                                    // En modo visualización/edición, navegar libremente
+                                    if (wizardPersona._steps[wizardPersona._currentIndex + 2].id === "stepConfirmacion") btn.disabled = true
                                     wizardPersona.next()
                                 }
                             })
@@ -385,6 +384,7 @@ class CapHum extends Controller
 
                         prevButtons.forEach(btn => {
                             btn.addEventListener('click', () => {
+                                nextButtons.forEach(btn => btn.disabled = false)
                                 wizardPersona.previous()
                             })
                         })
