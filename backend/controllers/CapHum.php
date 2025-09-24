@@ -488,7 +488,7 @@ class CapHum extends Controller
                         formData.append('foto', fotoInput.files[0])
                     }
 
-                    consultaServidor("/CapHum/guardarPersona", formData, (respuesta) => {
+                    consultaServidor("/CapHum/actualizarPersona", formData, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         showSuccess(respuesta.mensaje)
                         
@@ -910,6 +910,9 @@ class CapHum extends Controller
                         $("#usuario").val(usuarios[0]?.USUARIO || "");
                         $("#perfil").val(usuarios[0]?.PERFIL || "");
 
+                        // Mostrar ID de usuario arriba de la foto
+                        $("#usuarioIdDisplay").text(persona?.ID || "-");
+
                         // Configurar imagen de perfil
                         let fotoSrc = "/assets/img/misc/user.svg"
                         try {
@@ -1067,6 +1070,7 @@ class CapHum extends Controller
                     $("#contactoEmergenciaTelefono").val("")
                     $("#condicionesMedicas").val("")
                     $("#informacionAdicional").val("")
+                    $("#usuarioIdDisplay").text("-")
                     $('.fv-message').text('')
                 }
 
@@ -1495,6 +1499,48 @@ class CapHum extends Controller
         }
 
         $resultado = CapHumDAO::guardarPersona($_POST, $fotoData);
+
+        // Cerrar el recurso de la foto si se abrió
+        if ($fotoData && is_resource($fotoData['foto'])) {
+            fclose($fotoData['foto']);
+        }
+
+        $this->respuestaJSON($resultado);
+    }
+
+    public function actualizarPersona()
+    {
+        $fotoData = null;
+        if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
+            if ($_FILES['foto']['size'] > 5 * 1024 * 1024) {
+                return $this->respuestaJSON([
+                    'success' => false,
+                    'mensaje' => 'La foto excede el tamaño máximo permitido de 5 MB.'
+                ]);
+            }
+
+            // Validar que sea una imagen
+            $tipoArchivo = $_FILES['foto']['type'];
+            if (!in_array($tipoArchivo, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                return $this->respuestaJSON([
+                    'success' => false,
+                    'mensaje' => 'Solo se permiten archivos de imagen (JPEG, PNG, GIF).'
+                ]);
+            }
+
+            try {
+                $fotoData = [
+                    'foto' => fopen($_FILES['foto']['tmp_name'], 'rb'),
+                ];
+            } catch (\Exception $e) {
+                return $this->respuestaJSON([
+                    'success' => false,
+                    'mensaje' => 'Error al procesar la foto: ' . $e->getMessage()
+                ]);
+            }
+        }
+
+        $resultado = CapHumDAO::actualizarPersona($_POST, $fotoData);
 
         // Cerrar el recurso de la foto si se abrió
         if ($fotoData && is_resource($fotoData['foto'])) {

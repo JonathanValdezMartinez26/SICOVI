@@ -118,6 +118,10 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-md-2 d-flex flex-column justify-content-center align-items-center">
+                                        <div class="mb-2">
+                                            <small class="text-muted">ID Usuario</small>
+                                            <div id="usuarioIdDisplay" class="fw-bold text-center" style="font-size: 0.9rem; color: #666;">-</div>
+                                        </div>
                                         <div class="mb-3">
                                             <input type="file" id="fotoInput" accept="image/*" style="display: none;">
                                             <img src="/assets/img/misc/user.svg" alt="Foto de usuario" id="fotoPreview" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #ddd;">
