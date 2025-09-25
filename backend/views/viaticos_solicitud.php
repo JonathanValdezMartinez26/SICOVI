@@ -131,8 +131,8 @@
                                 <tfoot>
                                     <tr>
                                         <td colspan="4" class="text-center">
-                                            <button type="button" class="btn btn-success btn-sm btnAgregarConcepto">
-                                                <i class="fa fa-plus">&nbsp;</i>Agregar
+                                            <button type="button" class="btn btn-success btn-sm btnAgregarConcepto" id="btnAgregarConcepto">
+                                                <i class=" fa fa-plus">&nbsp;</i>Agregar
                                             </button>
                                         </td>
                                     </tr>

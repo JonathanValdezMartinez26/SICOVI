@@ -72,10 +72,12 @@ class Viaticos extends Controller
                             const entregado = numeral(solicitud.ENTREGA_MONTO || 0).value()
                             const comprobado = numeral(solicitud.COMPROBACION_MONTO || 0).value()
                             const ajuste = numeral(solicitud.DIFERENCIA_MONTO || 0).value()
-                            
+
+                            const empresaSpan = "<span><strong style='color:" + (solicitud.EMPRESA == 1 ? "red" : "#4C1013") + "'>" + solicitud.EMPRESA_NOMBRE + "</strong> - " + solicitud.ID + "</span>"
+
                             return [
                                 null,
-                                solicitud.ID,
+                                empresaSpan,
                                 solicitud.TIPO_NOMBRE,
                                 solicitud.PROYECTO,
                                 getFechas(solicitud.REGISTRO, solicitud.DESDE, solicitud.HASTA),
@@ -145,7 +147,7 @@ class Viaticos extends Controller
                     if (estatus == catEstatus_VG.autorizada) estatus = "SOLICITUD AUTORIZADA<br>(PENDIENTE DE ENTREGA<br>POR TESORERÍA)"
                     if (estatus == catEstatus_VG.entregada) estatus = "ENTREGADA<br>(POR TESORERÍA)<br>(PENDIENTE DE COMPROBACIÓN)"
                     if (estatus == catEstatus_VG.comprobada) estatus = "COMPROBANTES REGISTRADOS<br>(PENDIENTE DE AUTORIZACIÓN)"
-                    if (estatus == catEstatus_VG.aceptada) estatus = "ACEPTADA<br>(COMPROBANTES AUTORIZADOS<br>POR EL JEFE)<br>(PENDIENTE DE VALIDACIÓN POR TESORERÍA)"
+                    if (estatus == catEstatus_VG.aceptada) estatus = "ACEPTADA<br>(COMPROBANTES AUTORIZADOS<br>POR EL JEFE)<br>(PENDIENTE DE VALIDACIÓN POR RECURSOS MATERIALES)"
                     if (estatus == catEstatus_VG.validada) estatus = "COMPROBANTES VALIDADOS<br>(POR TESORERÍA)"
 
                     return "<div class='d-flex flex-column align-items-center justify-content-center'>" +
@@ -518,7 +520,15 @@ class Viaticos extends Controller
 
                 const addComprobanteGastos = (parametros) => {
                     comprobantesGastos.push(parametros)
-                    $("#montoVG").val(numeral($("#montoVG").val()).add(parametros.total).format(NUMERAL_DECIMAL))
+                    const monto = numeral($("#montoVG").val()).add(parametros.total).value()
+
+                    if (monto > 15000) {
+                        showWarning("El monto total de comprobación no puede exceder los $15,000.00, si requiere un monto mayor, por favor contacte o se acerque a Tesorería.").then(() => {
+                            comprobantesGastos.pop()
+                        })
+                        return
+                    }
+                    $("#montoVG").val(numeral(monto).format(NUMERAL_DECIMAL))
 
                     const fila = $("<tr></tr>")
                     fila.append("<td>" + parametros.conceptoNombre + "</td>")
@@ -949,7 +959,7 @@ class Viaticos extends Controller
                     const visibles = $("#conceptoViaticos option").filter(function () {
                         return $(this).css("display") !== "none"
                     })
-                    if (visibles.length === 1) tabla.hide()
+                    if (visibles.length === 1) $("#btnAgregarConcepto").hide()
 
                     $("#modalAgregarConcepto").modal("hide")
                     resetValidacion(valConcepto, true)
@@ -964,6 +974,7 @@ class Viaticos extends Controller
 
                     fila.remove()
                     conceptosViaticos.splice(indice,1)
+                    $("#btnAgregarConcepto").show()
                     $("#montoVG").val(numeral($("#montoVG").val()).subtract(monto).format(NUMERAL_DECIMAL))
                 }
 
@@ -1083,8 +1094,10 @@ class Viaticos extends Controller
                 }
 
                 $(document).ready(() => {
+                    fechaInicio = calcularFechaPago()
+
                     setInputFechas("#fechasSolicitudes", { rango: true, iniD: -30 })
-                    setInputFechas("#fechasNuevaSolicitud", { rango: true, minD: 0, maxD: 30, enModal: true })
+                    setInputFechas("#fechasNuevaSolicitud", { rango: true, minF: fechaInicio, maxD: 30, enModal: true })
                     setInputFechas("#fechaComprobante", { enModal: true })
                     setInputMoneda("#montoVG, #montoConcepto, #montoComprobante")
 
@@ -1455,10 +1468,12 @@ class Viaticos extends Controller
                                     funcion: "verSolicitud(" + solicitud.ID + ")"
                                 }
                             ])
+
+                            const empresaSpan = "<span><strong style='color:" + (solicitud.EMPRESA == 1 ? "red" : "#4C1013") + "'>" + solicitud.EMPRESA_NOMBRE + "</strong> - " + solicitud.ID + "</span>"
                             
                             return [
                                 null,
-                                solicitud.ID,
+                                empresaSpan,
                                 getGeneral(solicitud.TIPO_NOMBRE, solicitud.USUARIO_NOMBRE, solicitud.PROYECTO),
                                 getFechas(solicitud.FECHA_REGISTRO, solicitud.DESDE, solicitud.HASTA),
                                 numeral(solicitud.MONTO).format(NUMERAL_MONEDA),
@@ -1526,8 +1541,8 @@ class Viaticos extends Controller
                             $("#verTitulo").text("Autorización de solicitud de viáticos")
                             $("#btnVerListado").attr("data-bs-target", "#modalVerConceptos")
                             $("#btnVerListado").html("<i class='far fa-eye'>&nbsp;</i>Conceptos")
-                            $("#montoAutorizado").attr("disabled", false)
-                            $("#montoAutorizado").val("")
+                            $("#montoAutorizado").attr("disabled", true)
+                            $("#montoAutorizado").val(numeral(informacion.MONTO).value())
                             $("#autorizar").attr("tipo", tipos.solicitud)
                             $("#rechazar").show()
                             $("#tbodyConceptos").empty()
@@ -1765,9 +1780,11 @@ class Viaticos extends Controller
                                 }
                             ])
                             
+                            const empresaSpan = "<span><strong style='color:" + (solicitud.EMPRESA == 1 ? "red" : "#4C1013") + "'>" + solicitud.EMPRESA_NOMBRE + "</strong> - " + solicitud.ID + "</span>"
+
                             return [
                                 null,
-                                solicitud.ID,
+                                empresaSpan,
                                 solicitud.TIPO_NOMBRE,
                                 solicitud.USUARIO_NOMBRE,
                                 moment(solicitud.AUTORIZACION_FECHA).format(MOMENT_FRONT),
@@ -2221,9 +2238,12 @@ class Viaticos extends Controller
                                     funcion: "verComprobantes(" + index + ")"
                                 }
                             ])
+
+                            const empresaSpan = "<span><strong style='color:" + (comprobacion.EMPRESA == 1 ? "red" : "#4C1013") + "'>" + comprobacion.EMPRESA_NOMBRE + "</strong> - " + comprobacion.ID + "</span>"
+
                             return [
                                 null,
-                                comprobacion.ID,
+                                empresaSpan,
                                 comprobacion.TIPO_NOMBRE,
                                 moment(comprobacion.REGISTRO).format(MOMENT_FRONT),
                                 comprobacion.PROYECTO,
@@ -2262,6 +2282,8 @@ class Viaticos extends Controller
                     $("#fechaSolicitud").val(moment(comprobacion.REGISTRO).format(MOMENT_FRONT_HORA))
                     $("#fechaLimite").val(moment(comprobacion.COMPROBACION_LIMITE).format(MOMENT_FRONT))
                     $("#proyecto").val(comprobacion.PROYECTO)
+                    $("#proyectoInicio").val(moment(comprobacion.DESDE).format(MOMENT_FRONT))
+                    $("#proyectoFin").val(moment(comprobacion.HASTA).format(MOMENT_FRONT))
                     $("#tipo").val(comprobacion.TIPO_NOMBRE)
                     $("#montoSolicitud").val(numeral(comprobacion.ENTREGA_MONTO).format(NUMERAL_MONEDA))
                     $("#montoComprobado").val(numeral(comprobacion.COMPROBACION_MONTO).format(NUMERAL_MONEDA))
@@ -2616,9 +2638,11 @@ class Viaticos extends Controller
                             const diferencia = numeral(solicitud.DIFERENCIA)
                             const dif = diferencia.value() < 0 ? "down text-danger" : "up text-success"
 
+                            const empresaSpan = "<span><strong style='color:" + (solicitud.EMPRESA == 1 ? "red" : "#4C1013") + "'>" + solicitud.EMPRESA_NOMBRE + "</strong> - " + solicitud.ID + "</span>"
+                            
                             return [
                                 null,
-                                solicitud.ID,
+                                empresaSpan,
                                 solicitud.USUARIO_NOMBRE,
                                 "<i class='fa-solid fa-arrow-trend-" + dif + "'>&nbsp;</i>" + diferencia.format(NUMERAL_MONEDA),
                                 acciones

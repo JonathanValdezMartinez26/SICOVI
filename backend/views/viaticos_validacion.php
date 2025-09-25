@@ -52,11 +52,19 @@
                             <label class="form-label">Fecha limite</label>
                             <input type="text" id="fechaLimite" class="form-control" disabled>
                         </div>
-                        <div class="col-5">
+                        <div class="col-6">
                             <label class="form-label">Proyecto</label>
                             <input type="text" id="proyecto" class="form-control" disabled>
                         </div>
                         <div class="col-3">
+                            <label class="form-label">Inicio del proyecto</label>
+                            <input type="text" id="proyectoInicio" class="form-control" disabled>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label">Fin del proyecto</label>
+                            <input type="text" id="proyectoFin" class="form-control" disabled>
+                        </div>
+                        <div class="col-2">
                             <label class="form-label">Tipo</label>
                             <input type="text" id="tipo" class="form-control" disabled>
                         </div>

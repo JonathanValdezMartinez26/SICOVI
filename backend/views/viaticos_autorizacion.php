@@ -85,7 +85,7 @@
                         <label class="form-label">Monto Autorizado</label>
                         <div class="input-group input-group-merge">
                             <i class="input-group-text fa fa-dollar-sign"></i>
-                            <input type="text" id="montoAutorizado" name="montoAutorizado" class="form-control" placeholder="0.00">
+                            <input type="text" id="montoAutorizado" name="montoAutorizado" class="form-control" placeholder="0.00" disabled>
                         </div>
                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                     </div>

@@ -55,9 +55,12 @@ class Viaticos extends Model
                 , CEV.ID AS ESTATUS_ID
                 , CEV.NOMBRE AS ESTATUS_NOMBRE
                 , CEV.CLASE_FRONT AS ESTATUS_COLOR
+                , V.EMPRESA
+                , E.NOMBRE AS EMPRESA_NOMBRE
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
+                LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
             WHERE
                 USUARIO = :usuario
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
@@ -230,6 +233,8 @@ class Viaticos extends Model
                 LEFT JOIN CAT_VIATICOS_CONCEPTO CCV ON CCV.ID = VC.CONCEPTO
             WHERE
                 VC.VIATICOS = :solicitudId
+            ORDER BY
+                VC.ID
         SQL;
 
         $val = [
@@ -824,10 +829,13 @@ class Viaticos extends Model
                 , V.ESTATUS AS ESTATUS_ID
                 , CEV.NOMBRE AS ESTATUS_NOMBRE
                 , V.AUTORIZACION_MONTO
+                , V.EMPRESA
+                , E.NOMBRE AS EMPRESA_NOMBRE
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
+                LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
             WHERE
                 ((V.TIPO = 1 AND CEV.NOMBRE IN ('SOLICITADA', 'AUTORIZADA', 'COMPROBADA', 'RECHAZADA')) OR (V.TIPO = 2 AND CEV.NOMBRE IN ('COMPROBADA', 'RECHAZADA')))
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
@@ -928,10 +936,13 @@ class Viaticos extends Model
                 , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
                 , TO_CHAR(V.AUTORIZACION_FECHA, 'YYYY-MM-DD') AS AUTORIZACION_FECHA
                 , V.AUTORIZACION_MONTO
+                , V.EMPRESA
+                , E.NOMBRE AS EMPRESA_NOMBRE
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
+                LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
             WHERE
                 (V.TIPO = 1 AND CEV.NOMBRE = 'AUTORIZADA') OR (V.TIPO = 2 AND CEV.NOMBRE = 'COMPROBADA')
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
@@ -1098,6 +1109,8 @@ class Viaticos extends Model
                 , GET_NOMBRE_USUARIO(V.USUARIO) AS SOLICITANTE_NOMBRE
                 , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD HH24:MM:SS') AS REGISTRO
                 , V.PROYECTO
+                , TO_CHAR(V.DESDE, 'YYYY-MM-DD') AS DESDE
+                , TO_CHAR(V.HASTA, 'YYYY-MM-DD') AS HASTA
                 , V.ENTREGA_MONTO
                 , TO_CHAR(V.COMPROBACION_LIMITE, 'YYYY-MM-DD') AS COMPROBACION_LIMITE
                 , V.COMPROBACION_MONTO
@@ -1106,10 +1119,13 @@ class Viaticos extends Model
                 , C.RECHAZADOS
                 , C.ACEPTADOS
                 , C.TOTAL - C.ACEPTADOS AS PENDIENTES
+                , V.EMPRESA
+                , E.NOMBRE AS EMPRESA_NOMBRE
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
                 LEFT JOIN COMPROBANTES C ON C.VIATICOS = V.ID
+                LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
             WHERE
                 (C.REGISTRADOS > 0 OR C.RECHAZADOS > 0)
                 AND CEV.NOMBRE = 'ACEPTADA'
@@ -1221,9 +1237,12 @@ class Viaticos extends Model
                 , NVL(V.ENTREGA_MONTO, 0) AS ENTREGA_MONTO
                 , NVL(V.COMPROBACION_MONTO, 0) AS COMPROBACION_MONTO
                 , NVL(V.COMPROBACION_MONTO, 0) - NVL(V.ENTREGA_MONTO, 0) AS DIFERENCIA
+                , V.EMPRESA
+                , E.NOMBRE AS EMPRESA_NOMBRE
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
+                LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
             WHERE
                 CEV.NOMBRE = 'VALIDADA'
                 AND (NVL(V.COMPROBACION_MONTO, 0) - NVL(V.ENTREGA_MONTO, 0)) <> 0
