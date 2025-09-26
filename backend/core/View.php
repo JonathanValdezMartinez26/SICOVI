@@ -35,6 +35,11 @@ function getMenu()
                     'permisos' => [25, 26]
                 ],
                 [
+                    'label' => '1.1 Entrega (Analista)',
+                    'url' => '/Viaticos/EntregasPendientes',
+                    'permisos' => [25, 26]
+                ],
+                [
                     'label' => '2. Comprobación',
                     'url' => '/Viaticos/Validacion',
                     'permisos' => [25, 26]

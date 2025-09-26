@@ -18,7 +18,8 @@ class Viaticos extends Controller
                     valComprobante = null,
                     valConcepto = null,
                     modalConceptos = null,
-                    montoMaximoComprobante = 0
+                    montoMaximoComprobante = 0,
+                    esperaImagen = null
 
                 const getSolicitudes = (persistirVista = false) => {
                     const fechas = getInputFechas("#fechasSolicitudes", true)
@@ -1150,6 +1151,12 @@ class Viaticos extends Controller
                             })
                         }
                     })
+                    $("#comprobante").on("click", () => {
+                        esperaImagen = showWait("Seleccionando archivo...")
+                    })
+                    $("#comprobante").on("change", () => {
+                        if (esperaImagen) esperaImagen.close()
+                    })
                     $("#btnTomarFoto").on("click", () => {
                         $("#modalAgregarComprobante").modal("hide")
                         tomarFoto("Captura de Comprobante", (foto) => {
@@ -1781,13 +1788,17 @@ class Viaticos extends Controller
                             ])
                             
                             const empresaSpan = "<span><strong style='color:" + (solicitud.EMPRESA == 1 ? "red" : "#4C1013") + "'>" + solicitud.EMPRESA_NOMBRE + "</strong> - " + solicitud.ID + "</span>"
-
+                            const fechaEntrega = calcularFechaPago(solicitud.REGISTRO)
+                            const badgeFechaEntrega = fechaEntrega.isBefore(moment(), 'day') ? "<span class='badge rounded-pill bg-label-danger' title='La fecha de entrega ya pasó'>" + fechaEntrega.format(MOMENT_FRONT) + "</span>" :
+                                fechaEntrega.isSame(moment(), 'day') ? "<span class='badge rounded-pill bg-label-warning' title='La fecha de entrega es hoy'>" + fechaEntrega.format(MOMENT_FRONT) + "</span>" :
+                                "<span class='badge rounded-pill bg-label-success' title='Fecha programada para la entrega'>" + fechaEntrega.format(MOMENT_FRONT) + "</span>"
                             return [
                                 null,
                                 empresaSpan,
                                 solicitud.TIPO_NOMBRE,
                                 solicitud.USUARIO_NOMBRE,
                                 moment(solicitud.AUTORIZACION_FECHA).format(MOMENT_FRONT),
+                                badgeFechaEntrega,
                                 numeral(solicitud.AUTORIZACION_MONTO).format(NUMERAL_MONEDA),
                                 acciones
                             ]
@@ -1795,6 +1806,19 @@ class Viaticos extends Controller
 
                         actualizaDatosTabla(tabla, datos)
                     })
+                }
+
+                const calcularFechaPago = (registro) => {
+                    const fecha = moment(registro)
+                    const dia = fecha.isoWeekday()
+                    const hora = fecha.hour()
+                    let diaPago = 8 
+
+                    if (dia >= 1 && dia <= 2) diaPago = 4
+                    if (dia == 3 && hora < 12) diaPago = 4
+                    if (dia == 5 && hora < 17) diaPago = 10
+                    
+                    return fecha.clone().isoWeekday(diaPago)
                 }
 
                 const setValidacionEntrega = () => {
@@ -1955,6 +1979,210 @@ class Viaticos extends Controller
     public function getSolicitudesEntrega()
     {
         self::respuestaJSON(ViaticosDAO::getSolicitudesEntrega($_POST));
+    }
+
+    public function EntregasPendientes()
+    {
+        $script = <<<HTML
+            <script>
+                const tabla = "#historialSolicitudes"
+                let validacionEntrega = null
+
+                const getSolicitudes = () => {
+                    const fechas = getInputFechas("#fechasSolicitudes", true)
+
+                    const parametros = {
+                        fechaI: fechas.inicio,
+                        fechaF: fechas.fin
+                    }
+
+                    consultaServidor("/viaticos/getSolicitudesEntregasPendientes", parametros, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const datos = respuesta.datos.map(solicitud => {
+                            const acciones = menuAcciones([
+                                {
+                                    texto: "Detalles",
+                                    icono: "fa-eye",
+                                    funcion: "verSolicitud(" + solicitud.ID + ")"
+                                }
+                            ])
+                            
+                            const empresaSpan = "<span><strong style='color:" + (solicitud.EMPRESA == 1 ? "red" : "#4C1013") + "'>" + solicitud.EMPRESA_NOMBRE + "</strong> - " + solicitud.ID + "</span>"
+
+                            return [
+                                null,
+                                empresaSpan,
+                                solicitud.TIPO_NOMBRE,
+                                solicitud.USUARIO_NOMBRE,
+                                solicitud.SUCURSAL_NOMBRE,
+                                moment(solicitud.AUTORIZACION_FECHA).format(MOMENT_FRONT),
+                                numeral(solicitud.AUTORIZACION_MONTO).format(NUMERAL_MONEDA),
+                                acciones
+                            ]
+                        })
+
+                        actualizaDatosTabla(tabla, datos)
+                    })
+                }
+
+                const setValidacionEntrega = () => {
+                    const campos = {
+                        montoEntrega: {
+                            notEmpty: {
+                                message: "Debe ingresar un monto"
+                            },
+                            greaterThan: {
+                                min: 1,
+                                message: "Debe ser mayor a 0"
+                            },
+                            callback: {
+                                message: "El monto no puede ser mayor al monto autorizado.",
+                                callback: () => {
+                                    return numeral($("#montoEntrega").val()).value() <= numeral($("#verMontoAutorizado").val()).value()
+                                }
+                            }
+                        },
+                        observacionesEntrega: {
+                            callback: {
+                                message: "Debe indicar porque esta entregando un monto diferente al autorizado.",
+                                callback: () => {
+                                    if (numeral($("#verMontoAutorizado").val()).difference(numeral($("#montoEntrega").val()).value()) === 0) return true
+                                    return $("#observacionesEntrega").val().trim() !== ""
+                                }
+                            }
+                        }
+                    }
+    
+                    validacionEntrega = setValidacionModal(
+                        "#modalVerEntrega",
+                        campos,
+                        "#entregar",
+                        entrega_VG,
+                        "#cancelar"
+                    )
+                }
+
+                const verSolicitud = (solicitudId) => {
+                    consultaServidor("/viaticos/getResumenSolicitud_VG", { solicitudId }, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        const informacion = respuesta.datos.informacion
+                        $("#verSolicitante").val(informacion.USUARIO_NOMBRE)
+                        $("#verSucursal").val(informacion.ENTREGA_SUCURSAL_NOMBRE)
+                        $("#verFechaReg").val(moment(informacion.REGISTRO).format(MOMENT_FRONT_HORA))
+                        $("#verSolicitudId").val(informacion.ID)
+                        $("#verTipoSolId").val(informacion.TIPO_ID)
+                        $("#verTipoSol").val(informacion.TIPO_NOMBRE)
+                        $("#verFechaI").val(moment(informacion.FECHA_I).format(MOMENT_FRONT))
+                        $("#verFechaF").val(moment(informacion.FECHA_F).format(MOMENT_FRONT))
+                        $("#verProyecto").val(informacion.PROYECTO)
+                        $("#verAutorizado").val(informacion.AUTORIZACION_NOMBRE)
+                        $("#verFechaAutorizado").val(moment(informacion.AUTORIZACION_FECHA).format(MOMENT_FRONT_HORA))
+                        $("#verMontoAutorizado").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_MONEDA))
+                        $("#montoEntrega").val(numeral(informacion.AUTORIZACION_MONTO).format(NUMERAL_DECIMAL))
+                        $("#modalVerEntrega").modal("show")
+                    })
+                }
+
+                const entrega_VG = () => {
+                    confirmarMovimiento("¿Desea registrar la entrega?").then((continuar) => {
+                        if (!continuar.isConfirmed) return
+
+                        const parametros = {
+                            solicitudId: $("#verSolicitudId").val(),
+                            usuario: $_SESSION[usuario_id],
+                            metodo: $("#metodoEntrega").val(),
+                            monto: numeral($("#montoEntrega").val()).value(),
+                            observaciones: $("#observacionesEntrega").val(),
+                            estatus: $("#verTipoSolId").val() == 2 ? 6 : 3
+                        }
+
+                        consultaServidor("/viaticos/entrega_VG", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+                            const mensaje = $("<div>")
+                                .append("<p>La entrega se ha registrado correctamente.</p>")
+                                .append("<p>Debe imprimir el comprobante y ser firmado por quien recibe y por quien entrega.</p>")
+
+                            showSuccess(mensaje).then(() => {
+                                const parametro = new FormData()
+                                parametro.append("solicitudId", parametros.solicitudId)
+                                $("#modalVerEntrega").modal("hide")
+                                mostrarArchivoDescargado(
+                                    "/viaticos/getComprobanteEntrega",
+                                    parametro,
+                                    {
+                                        titulo: "Comprobante de entrega",
+                                        fncClose: getSolicitudes
+                                    }
+                                )
+                            })
+                        })
+                    })
+                }
+
+                const reimprimirComprobanteAjuste = () => {
+                    const solicitudId = $("#solicitudReimprimir").val().trim()
+                    if (!solicitudId) return showError("Ingrese el número de la solicitud.")
+
+                    const formData = new FormData()
+                    formData.append("solicitudId", solicitudId)
+                    $("#modalReimprimir").modal("hide")
+                    mostrarArchivoDescargado(
+                        "/viaticos/getComprobanteEntrega",
+                        formData,
+                        {
+                            titulo: "Comprobante de entrega"
+                        }
+                    )
+                }
+
+                const keypress_solicitudReimprimir = (event) => {
+                    const charCode = event.which ? event.which : event.keyCode
+                    if (charCode === 13) {
+                        event.preventDefault()
+                        reimprimirComprobanteAjuste()
+                        return
+                    }
+
+                    if (charCode > 31 && (charCode < 48 || charCode > 57) && charCode !== 46) {
+                        event.preventDefault()
+                    }
+                }
+
+                $(document).ready(() => {
+                    setInputFechas("#fechasSolicitudes", { rango:true, iniD: -30 })
+                    setInputMoneda("#montoEntrega")
+                    $("#btnBuscarSolicitudes").on("click", getSolicitudes)
+                    $("#btnReimprimir").on("click", () => $("#modalReimprimir").modal("show"))
+                    $("#solicitudReimprimir").on("keypress", keypress_solicitudReimprimir)
+                    $("#btnReimprimirAjuste").on("click", reimprimirComprobanteAjuste)
+                    $("#modalReimprimir").on("shown.bs.modal", () => {
+                        $("#solicitudReimprimir").val("").trigger("focus")
+                    })
+
+                    setValidacionEntrega()
+                    configuraTabla(tabla)
+                    getSolicitudes()
+                });
+            </script>
+        HTML;
+
+        $metodosDisponibles = ViaticosDAO::getCatalogoMetodosEntrega();
+        $metodosEntrega = '';
+        if ($metodosDisponibles['success']) {
+            foreach ($metodosDisponibles['datos'] as $metodo) {
+                $metodosEntrega .= "<option value='{$metodo['ID']}'>{$metodo['NOMBRE']}</option>";
+            }
+        }
+
+        self::set("titulo", "Entregas Pendientes (Analista)");
+        self::set("script", $script);
+        self::set("metodosEntrega", $metodosEntrega);
+        self::render("viaticos_entrega_analista");
+    }
+
+    public function getSolicitudesEntregasPendientes()
+    {
+        self::respuestaJSON(ViaticosDAO::getSolicitudesEntregasPendientes($_POST));
     }
 
     public function entrega_VG()

@@ -234,7 +234,7 @@ class Viaticos extends Model
             WHERE
                 VC.VIATICOS = :solicitudId
             ORDER BY
-                VC.ID
+                VC.FECHA DESC
         SQL;
 
         $val = [
@@ -938,6 +938,7 @@ class Viaticos extends Model
                 , V.AUTORIZACION_MONTO
                 , V.EMPRESA
                 , E.NOMBRE AS EMPRESA_NOMBRE
+                , TO_CHAR(V.REGISTRO, 'YYYY-MM-DD') AS REGISTRO
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
@@ -957,6 +958,52 @@ class Viaticos extends Model
             'empresa' => $datos['empresa'],
             'region' => $datos['region'],
             'sucursal' => $datos['sucursal'],
+            'fechaI' => $datos['fechaI'],
+            'fechaF' => $datos['fechaF']
+        ];
+
+        try {
+            $db = new Database();
+            $r = $db->queryAll($qry, $params);
+            return self::resultado(true, 'Solicitudes encontradas.', $r);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function getSolicitudesEntregasPendientes($datos)
+    {
+        $qry = <<<SQL
+            SELECT
+                V.ID
+                , V.TIPO AS TIPO_ID
+                , CASE 
+                    WHEN V.TIPO = 1 THEN 'Viáticos'
+                    WHEN V.TIPO = 2 THEN 'Gastos'
+                    ELSE 'Desconocido'
+                END AS TIPO_NOMBRE
+                , V.USUARIO AS USUARIO_ID
+                , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
+                , TO_CHAR(V.AUTORIZACION_FECHA, 'YYYY-MM-DD') AS AUTORIZACION_FECHA
+                , V.AUTORIZACION_MONTO
+                , V.EMPRESA
+                , E.NOMBRE AS EMPRESA_NOMBRE
+                , SR.SUCURSAL
+                , SR.SUCURSAL_NOMBRE
+            FROM
+                VIATICOS V
+                LEFT JOIN CAT_VIATICOS_ESTATUS CEV ON CEV.ID = V.ESTATUS
+                LEFT JOIN USUARIO U ON U.ID = V.USUARIO
+                LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
+                LEFT JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = V.EMPRESA AND SR.REGION = V.REGION AND SR.SUCURSAL = V.SUCURSAL
+            WHERE
+                (V.TIPO = 1 AND CEV.NOMBRE = 'AUTORIZADA') OR (V.TIPO = 2 AND CEV.NOMBRE = 'COMPROBADA')
+                AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
+            ORDER BY
+                ID DESC
+        SQL;
+
+        $params = [
             'fechaI' => $datos['fechaI'],
             'fechaF' => $datos['fechaF']
         ];

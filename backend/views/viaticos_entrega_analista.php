@@ -23,8 +23,8 @@
                     <th>ID</th>
                     <th>Tipo</th>
                     <th>Solicitante</th>
+                    <th>Sucursal para entrega</th>
                     <th>Fecha de Autorización</th>
-                    <th>Fecha de Entrega</th>
                     <th>Monto</th>
                     <th>Acciones</th>
                 </tr>
