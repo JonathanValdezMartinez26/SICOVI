@@ -233,6 +233,7 @@ class Viaticos extends Model
                 LEFT JOIN CAT_VIATICOS_CONCEPTO CCV ON CCV.ID = VC.CONCEPTO
             WHERE
                 VC.VIATICOS = :solicitudId
+                FILTROS_EXTRA
             ORDER BY
                 VC.FECHA DESC
         SQL;
@@ -242,7 +243,7 @@ class Viaticos extends Model
         ];
 
         if (isset($datos['comprobacion'])) {
-            $qry .= ' AND (VC.ESTATUS IS NULL OR VC.ESTATUS = 0)';
+            $qry = str_replace('FILTROS_EXTRA', ' AND (VC.ESTATUS IS NULL OR VC.ESTATUS = 0)', $qry);
         }
 
         try {
