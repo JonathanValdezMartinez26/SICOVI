@@ -42,7 +42,7 @@ function getMenu()
                 [
                     'label' => '2. Comprobación',
                     'url' => '/Viaticos/Validacion',
-                    'permisos' => [25, 26]
+                    'permisos' => [25, 26, 50]
                 ],
                 [
                     'label' => '3. Ajustes',
