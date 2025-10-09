@@ -777,7 +777,7 @@ class CapHum extends Controller
                     const contenedor = $('<div></div>').addClass('d-flex flex-column align-items-center')
                     const idText = $('<strong></strong>').text(id)
                     const badge = $('<span></span>').text(empresaNombre).addClass('badge rounded-pill text-muted').css({
-                        'background-color': empresa === '1' ? '#4C1013' : "red",
+                        'background-color': empresa === '2' ? '#4C1013' : "red",
                         'font-size': '0.5rem',
                     })
                     contenedor.append(idText).append(badge)
