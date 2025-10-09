@@ -242,8 +242,11 @@ class Viaticos extends Model
             'solicitudId' => $datos['solicitudId']
         ];
 
+        // Asegurar que FILTROS_EXTRA siempre se reemplace
         if (isset($datos['comprobacion'])) {
             $qry = str_replace('FILTROS_EXTRA', ' AND (VC.ESTATUS IS NULL OR VC.ESTATUS = 0)', $qry);
+        } else {
+            $qry = str_replace('FILTROS_EXTRA', '', $qry);
         }
 
         try {
