@@ -130,16 +130,22 @@ class Model
             FROM
                 NOMINA
             WHERE
-                EMPRESA = :empresaId
+                ESTATUS = 1
                 AND REGION = :regionId
                 AND SUCURSAL = :sucursalId
         SQL;
 
         $params = [
-            'empresaId' => $datos['empresa'],
             'regionId' => $datos['region'],
             'sucursalId' => $datos['sucursal']
         ];
+
+        if ($datos['region'] !== '333' && $datos['sucursal'] !== '666') {
+            $query = $query . " AND EMPRESA = :empresaId";
+            $params['empresaId'] = $datos['empresa'];
+        }
+
+        $query = $query . " ORDER BY NOMBRE";
 
         try {
             $db = new Database();

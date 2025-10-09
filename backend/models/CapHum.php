@@ -34,17 +34,23 @@ class CapHum extends Model
 
         $qry = <<<SQL
             SELECT
-                P.ID,
-                P.NOMBRE,
-                P.APELLIDO_1,
-                P.APELLIDO_2,
-                P.RFC,
-                P.CURP,
-                TO_CHAR(P.FECHA_NACIMIENTO, 'YYYY-MM-DD') AS FECHA_NACIMIENTO,
-                P.SEXO,
-                P.ESTATUS,
-                CASE WHEN P.FOTO IS NOT NULL THEN P.ID ELSE NULL END AS FOTO
-            FROM PERSONA P
+                P.ID
+                , GET_NOMBRE_PERSONA(P.ID) AS NOMBRE_COMPLETO
+                , P.RFC
+                , P.CURP
+                , TO_CHAR(P.FECHA_NACIMIENTO, 'YYYY-MM-DD') AS FECHA_NACIMIENTO
+                , P.SEXO
+                , P.ESTATUS
+                , CASE WHEN P.FOTO IS NOT NULL THEN P.ID ELSE NULL END AS FOTO
+                , TO_CHAR(N.INGRESO, 'YYYY-MM-DD') AS FECHA_INGRESO
+                , CP.DESCRIPCION AS PUESTO
+                , SR.EMPRESA
+                , SR.EMPRESA_NOMBRE
+            FROM
+                PERSONA P
+                LEFT JOIN NOMINA N ON N.PERSONA = P.ID
+                LEFT JOIN CAT_PUESTOS CP ON CP.ID_PUESTO = N.PUESTO
+                LEFT JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = N.EMPRESA AND SR.REGION = N.REGION AND SR.SUCURSAL = N.SUCURSAL
             WHERE $where
             ORDER BY P.NOMBRE, P.APELLIDO_1, P.APELLIDO_2
             SQL;

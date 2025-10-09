@@ -6,7 +6,6 @@
             <label class="form-label">Búsqueda general</label>
             <div class="input-group input-group-merge">
                 <input type="text" id="filtroGeneral" class="form-control" placeholder="Buscar por nombre, RFC, CURP...">
-                <i class="input-group-text fa fa-magnifying-glass"></i>
                 <button id="btnBuscar" class="btn btn-outline-primary">Buscar</button>
             </div>
         </div>
@@ -21,10 +20,10 @@
                     <th></th>
                     <th>ID</th>
                     <th>Foto</th>
-                    <th>Nombre Completo</th>
-                    <th>RFC</th>
-                    <th>CURP</th>
+                    <th>Colaborador</th>
+                    <th>DNI</th>
                     <th>Fecha Nacimiento</th>
+                    <th>Ingreso</th>
                     <th>Estatus</th>
                     <th>Acciones</th>
                 </tr>
@@ -330,7 +329,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-md-4 mt-0">
-                                        <label for="empresa" class="form-label">Registro Base</label>
+                                        <label for="empresa" class="form-label">Opera en</label>
                                         <select id="empresa" name="empresa" class="form-select">
                                             <option value="" selected disabled>Seleccione una empresa</option>
                                             <?= $empresas ?>

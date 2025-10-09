@@ -18,6 +18,7 @@ class CapHum extends Controller
                 let modoEdicion = false
                 let datosOriginales = {}
                 let hayCambios = false
+                let cargandoEmpleados = false
 
                 const camposPersona = {
                     personales: {
@@ -751,14 +752,18 @@ class CapHum extends Controller
                             const fotoUrl = persona.FOTO ? "/CapHum/getFotoPersona?personaId=" + persona.ID : "/assets/img/misc/user.svg"
                             const fotoHtml = '<img src="' + fotoUrl + '" alt="Foto" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">'
 
+                            const id = getID(persona.ID, persona.EMPRESA, persona.EMPRESA_NOMBRE)
+                            const colaborador = getColaborador(persona.NOMBRE_COMPLETO, persona.PUESTO)
+                            const dni = getDNI(persona.RFC, persona.CURP)
+
                             return [
                                 null,
-                                persona.ID,
+                                id,
                                 fotoHtml,
-                                persona.NOMBRE + " " + persona.APELLIDO_1 + " " + (persona.APELLIDO_2 || ""),
-                                persona.RFC,
-                                persona.CURP,
+                                colaborador,
+                                dni,
                                 getFecha(persona.FECHA_NACIMIENTO),
+                                getFecha(persona.FECHA_INGRESO),
                                 getEstatus(persona.ESTATUS == 1 ? "Activo" : "Inactivo", persona.ESTATUS == 1 ? "success" : "danger"),
                                 menuAcciones([ver, "divisor", eliminar])
                             ]
@@ -766,6 +771,38 @@ class CapHum extends Controller
 
                         actualizaDatosTabla(tabla, datos, persistirVista)
                     })
+                }
+
+                const getID = (id, empresa, empresaNombre) => {
+                    const contenedor = $('<div></div>').addClass('d-flex flex-column align-items-center')
+                    const idText = $('<strong></strong>').text(id)
+                    const badge = $('<span></span>').text(empresaNombre).addClass('badge rounded-pill text-muted').css({
+                        'background-color': empresa === '1' ? '#4C1013' : "red",
+                        'font-size': '0.5rem',
+                    })
+                    contenedor.append(idText).append(badge)
+                    return contenedor.prop('outerHTML')
+                }
+
+                const getColaborador = (nombreCompleto, puesto) => {
+                    const contenedor = $('<div></div>').addClass('d-flex flex-column')
+                    const nombreElem = $('<span></span>').text(nombreCompleto).addClass('fw-bold')
+                    const puestoElem = $('<span></span>').text(puesto || '-').addClass('text-muted').css('font-size', '0.8rem')
+                    contenedor.append(nombreElem).append(puestoElem)
+                    return contenedor.prop('outerHTML')
+                }
+
+                const getDNI = (rfc, curp) => {
+                    const contenedor = $('<div></div>')
+                    if (rfc) {
+                        const rfcElem = $('<div></div>').append($('<strong></strong>').text('RFC: ')).append(document.createTextNode(rfc))
+                        contenedor.append(rfcElem)
+                    }
+                    if (curp) {
+                        const curpElem = $('<div></div>').append($('<strong></strong>').text('CURP: ')).append(document.createTextNode(curp))
+                        contenedor.append(curpElem)
+                    }
+                    return contenedor.prop('outerHTML')
                 }
 
                 const nuevaPersona = () => {
@@ -861,19 +898,27 @@ class CapHum extends Controller
                         $("#empresa").val(empresa.EMPRESA);
                         $("#empresa").trigger("change")
 
-                        $("#region").val(empresa.REGION);
+                        Array.from($("#region").find('option[data-empresa="' + empresa.EMPRESA + '"]')).forEach(opt => {
+                            if (opt.value == empresa.REGION) opt.selected = true
+                        });
                         $("#region").trigger("change");
 
-                        $("#sucursal").val(empresa.SUCURSAL);
+                        Array.from($("#sucursal").find('option[data-empresa="' + empresa.EMPRESA + '"]')).forEach(opt => {
+                            if (opt.value == empresa.SUCURSAL) opt.selected = true
+                        });
                         $("#sucursal").trigger("change");
 
-                        setTimeout(() => {
-                            $("#jefeInmediato").val(nomina.JEFE);
-                            $("#jefeInmediato").attr("disabled", "disabled");
-                            $("#reporta").val(usuarios[0].AUTORIZADOR);
-                            $("#reporta").attr("disabled", "disabled");
-                        }, 1000);
-                        
+                        while (cargandoEmpleados) { 
+                            await new Promise(r => setTimeout(r, 1000))
+                            console.log("Esperando empleados...");
+                            
+                        }
+
+                        $("#jefeInmediato").val(nomina.JEFE);
+                        $("#jefeInmediato").attr("disabled", "disabled");
+                        $("#reporta").val(usuarios[0].AUTORIZADOR);
+                        $("#reporta").attr("disabled", "disabled");
+
                         $("#puesto").val(nomina.PUESTO);
                         emails.forEach(email => {
                             if (email.TIPO === "4") {
@@ -951,7 +996,6 @@ class CapHum extends Controller
                     })
                 }
 
-                // Función para bloquear/desbloquear campos del modal
                 const bloquearCamposModal = (bloquear) => {
                     const campos = $('#modalPersona input, #modalPersona select, #modalPersona textarea')
                     campos.prop('disabled', bloquear)
@@ -962,7 +1006,6 @@ class CapHum extends Controller
                     }
                 }
 
-                // Función para alternar entre modo visualización y edición
                 const toggleModoEdicion = () => {
                     const esNuevoRegistro = $("#personaIdHidden").val() === ""
                     
@@ -1005,7 +1048,6 @@ class CapHum extends Controller
                     actualizarBotonesModal()
                 }
 
-                // Función para obtener todos los datos del formulario
                 const obtenerDatosFormulario = () => {
                     const datos = {}
                     $('#modalPersona input, #modalPersona select, #modalPersona textarea').each(function() {
@@ -1019,7 +1061,6 @@ class CapHum extends Controller
                     return datos
                 }
 
-                // Función para restaurar datos del formulario
                 const restaurarDatosFormulario = (datos) => {
                     Object.keys(datos).forEach(id => {
                         const elemento = $('#' + id)
@@ -1280,10 +1321,10 @@ class CapHum extends Controller
                         sucursal
                     }
 
+                    cargandoEmpleados = true
                     consultaServidor("/CapHum/getPersonalSucursal", parametros, (respuesta) => {
-                        if (!respuesta.success) {
-                            return showError(respuesta.mensaje)
-                        }
+                        cargandoEmpleados = false
+                        if (!respuesta.success) return showError(respuesta.mensaje)
 
                         const personal = respuesta.datos
                         let  opciones = "<option value='' selected disabled>Seleccione un jefe</option>"

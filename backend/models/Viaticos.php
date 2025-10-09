@@ -246,6 +246,8 @@ class Viaticos extends Model
             $qry = str_replace('FILTROS_EXTRA', ' AND (VC.ESTATUS IS NULL OR VC.ESTATUS = 0)', $qry);
         }
 
+        $qry = str_replace('FILTROS_EXTRA', '', $qry);
+
         try {
             $db = new Database();
             $r = $db->queryAll($qry, $val);
