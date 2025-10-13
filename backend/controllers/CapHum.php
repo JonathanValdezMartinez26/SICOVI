@@ -726,10 +726,16 @@ class CapHum extends Controller
                 }
 
                 const getPersonas = (persistirVista = false) => {
-                    const filtro = $("#filtroGeneral").val()
+                    const empresa = $("#filtroEmpresa").val()
+                    const region = $("#filtroRegion").val()
+                    const sucursal = $("#filtroSucursal").val()
+                    const filtroColaborador = $("#filtroColaborador").val()
                     
                     const parametros = {
-                        filtro: filtro
+                        empresa,
+                        region,
+                        sucursal,
+                        filtroColaborador
                     }
 
                     consultaServidor("/CapHum/getPersonas", parametros, (respuesta) => {
@@ -1345,6 +1351,27 @@ class CapHum extends Controller
                     $("#reporta").prop("disabled", true).html('<option value="" selected disabled>Seleccione a quien reporta</option>')
                 }
 
+                const cambioFiltroEmpresa = () => {
+                    const empresa = $("#filtroEmpresa").val()
+                    const region = $("#filtroRegion option[data-empresa='" + empresa + "']").first().val()
+                    $("#filtroRegion").val(region).trigger("change")
+                    const sucursal = $("#filtroSucursal option[data-empresa='" + empresa + "'][data-region='" + region + "']").first().val()
+                    $("#filtroSucursal").val(sucursal).trigger("change")
+                    getPersonas()
+                }
+
+                const cambioFiltroRegion = () => {
+                    const empresa = $("#filtroEmpresa").val()
+                    const region = $("#filtroRegion").val()
+                    const sucursal = $("#filtroSucursal option[data-empresa='" + empresa + "'][data-region='" + region + "']").first().val()
+                    $("#filtroSucursal").val(sucursal).trigger("change")
+                    getPersonas()
+                }
+
+                const cambioFiltroSucursal = () => {
+                    getPersonas()
+                }
+
                 $(document).ready(() => {
                     const maxF = moment().subtract(18, 'years').format(MOMENT_FRONT);
                     const minF = moment().subtract(70, 'years').format(MOMENT_FRONT);
@@ -1373,28 +1400,16 @@ class CapHum extends Controller
                     $("#btnCancelarGuardarPersona").click(function() {
                         const esNuevoRegistro = $("#personaIdHidden").val() === ""
                         
-                        if (esNuevoRegistro) {
-                            // En modo registro, cancelar cierra el modal
-                            modalPersona.hide()
-                        } else if (modoEdicion) {
-                            // En modo edición, cancelar vuelve a modo visualización
-                            toggleModoEdicion()
-                        } else {
-                            // En modo visualización, cerrar el modal
-                            modalPersona.hide()
-                        }
+                        if (esNuevoRegistro) modalPersona.hide()
+                        else if (modoEdicion) toggleModoEdicion()
+                        else modalPersona.hide()
                     })
                     
                     $("#btnGuardarCambiosPersona").click(function() {
                         const esNuevoRegistro = $("#personaIdHidden").val() === ""
                         
-                        if (esNuevoRegistro) {
-                            // En modo registro, usar la función de registro
-                            guardarPersona()
-                        } else {
-                            // En modo edición, guardar cambios específicos
-                            guardarCambiosPersona()
-                        }
+                        if (esNuevoRegistro) guardarPersona()
+                        else guardarCambiosPersona()
                     })
 
                     manejarCambiosFoto("#fotoInput", "#fotoPreview")
@@ -1424,6 +1439,7 @@ class CapHum extends Controller
                     })
 
                     setSelectEmpresaRegionSucursal("#empresa", "#region", "#sucursal", { empChange: bloqueaJefe, regChange: bloqueaJefe, sucChange: getPersonalSucursal })
+                    setSelectEmpresaRegionSucursal("#filtroEmpresa", "#filtroRegion", "#filtroSucursal", { empChange: cambioFiltroEmpresa, regChange: cambioFiltroRegion, sucChange: cambioFiltroSucursal })
 
                     $('#jefeInmediato').change(function() {
                         const valor = $(this).val()
@@ -1482,8 +1498,11 @@ class CapHum extends Controller
         $this->set("puestos", $puestos);
         $this->set("proveedores", $proveedores);
         $this->set("empresas", $optionsSucursales['empresas']);
-        $this->set("sucursales", $optionsSucursales['sucursales']);
         $this->set("regiones", $optionsSucursales['regiones']);
+        $this->set("sucursales", $optionsSucursales['sucursales']);
+        $this->set("filtroEmpresa", $optionsSucursales['empresas']);
+        $this->set("filtroRegion", $optionsSucursales['regiones']);
+        $this->set("filtroSucursal", $optionsSucursales['sucursales']);
         $this->set("bancos", $bancos);
         $this->set("perfiles", $perfiles);
         $this->render('caphum_gestion');

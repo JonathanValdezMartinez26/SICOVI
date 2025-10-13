@@ -17,10 +17,6 @@ class CapHum extends Model
     // Lista personas con filtro opcional
     public static function getPersonas($datos)
     {
-        $filtro = $datos['filtro'] ?? '';
-        $where = '';
-        $params = [];
-
         if (!empty($filtro)) {
             $where = "(UPPER(P.NOMBRE) LIKE UPPER(:filtro)"
                 . " OR UPPER(P.APELLIDO_1) LIKE UPPER(:filtro)"
@@ -51,9 +47,40 @@ class CapHum extends Model
                 LEFT JOIN NOMINA N ON N.PERSONA = P.ID
                 LEFT JOIN CAT_PUESTOS CP ON CP.ID_PUESTO = N.PUESTO
                 LEFT JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = N.EMPRESA AND SR.REGION = N.REGION AND SR.SUCURSAL = N.SUCURSAL
-            WHERE $where
+            WHERE
+                FILTROS
             ORDER BY P.NOMBRE, P.APELLIDO_1, P.APELLIDO_2
             SQL;
+
+        $where = ['P.ESTATUS = 1'];
+        $params = [];
+
+        if ($datos['filtroColaborador']) {
+            $filtro = $datos['filtroColaborador'];
+            $where[] = "(UPPER(P.NOMBRE) LIKE UPPER(:filtro)"
+                . " OR UPPER(P.APELLIDO_1) LIKE UPPER(:filtro)"
+                . " OR UPPER(P.APELLIDO_2) LIKE UPPER(:filtro)"
+                . " OR UPPER(P.RFC) LIKE UPPER(:filtro)"
+                . " OR UPPER(P.CURP) LIKE UPPER(:filtro))";
+            $params['filtro'] = "%{$filtro}%";
+        }
+
+        if ($datos['empresa']) {
+            $where[] = "SR.EMPRESA = :empresa";
+            $params['empresa'] = $datos['empresa'];
+        }
+
+        if ($datos['region']) {
+            $where[] = "SR.REGION = :region";
+            $params['region'] = $datos['region'];
+        }
+
+        if ($datos['sucursal']) {
+            $where[] = "SR.SUCURSAL = :sucursal";
+            $params['sucursal'] = $datos['sucursal'];
+        }
+
+        $qry = str_replace('FILTROS', implode(' AND ', $where), $qry);
 
         try {
             $db = new Database();

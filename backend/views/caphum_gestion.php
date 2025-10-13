@@ -2,14 +2,36 @@
 
 <div class="card">
     <div class="row justify-content-between m-4">
-        <div class="col-4">
-            <label class="form-label">Búsqueda general</label>
+        <div class="col-7">
+            <label class="form-label">Filtros</label>
+            <div class="row">
+                <div class="col-3">
+                    <select id="filtroEmpresa" class="form-select">
+                        <?= $filtroEmpresa ?>
+                    </select>
+                </div>
+                <div class="col-4">
+                    <select id="filtroRegion" class="form-select">
+                        <option value="" selected disabled>Seleccione una región</option>
+                        <?= $filtroRegion ?>
+                    </select>
+                </div>
+                <div class="col-5">
+                    <select id="filtroSucursal" class="form-select">
+                        <option value="" selected disabled>Seleccione una sucursal</option>
+                        <?= $filtroSucursal ?>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <label class="form-label">Búsqueda especifica</label>
             <div class="input-group input-group-merge">
-                <input type="text" id="filtroGeneral" class="form-control" placeholder="Buscar por nombre, RFC, CURP...">
+                <input type="text" id="filtroPPersonal" class="form-control" placeholder="Nombre, RFC o CURP">
                 <button id="btnBuscar" class="btn btn-outline-primary">Buscar</button>
             </div>
         </div>
-        <div class="col-4 d-flex align-self-end justify-content-end">
+        <div class="col-2">
             <button id="btnNuevaPersona" class="btn btn-info"><i class="fa fa-plus">&nbsp;</i>Registrar Colaborador</button>
         </div>
     </div>

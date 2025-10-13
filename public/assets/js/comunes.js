@@ -439,10 +439,6 @@ const setSelectEmpresaRegionSucursal = (
     const selRegion = $(region)
     const selSucursal = $(sucursal)
 
-    const getID = (elemento, tipo) => {
-        return elemento && elemento.length > 0 ? $(elemento[0]).attr(`data-${tipo}`) : null
-    }
-
     selEmpresa.on("change", function () {
         const empresaId = $(this).find("option:selected").val()
 
