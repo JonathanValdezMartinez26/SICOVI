@@ -1346,10 +1346,10 @@ class CapHum extends Controller
                 }
 
                 $(document).ready(() => {
-                    const maxF = moment().subtract(18, 'years').format('YYYY-MM-DD');
-                    const minF = moment().subtract(70, 'years').format('YYYY-MM-DD');
+                    const maxF = moment().subtract(18, 'years').format(MOMENT_FRONT);
+                    const minF = moment().subtract(70, 'years').format(MOMENT_FRONT);
                     setInputFechas("#fechaNacimiento", { minF, maxF, iniF: maxF, enModal: true })
-                    setInputFechas("#fechaIngreso", { minD: -1800, maxD: 7, enModal: true })
+                    setInputFechas("#fechaIngreso", { minF: '01/01/2013', maxD: 7, enModal: true })
                     configuraTabla(tabla)
                     initWizard()
                     getPersonas()
