@@ -1440,6 +1440,7 @@ class CapHum extends Controller
 
                     setSelectEmpresaRegionSucursal("#empresa", "#region", "#sucursal", { empChange: bloqueaJefe, regChange: bloqueaJefe, sucChange: getPersonalSucursal })
                     setSelectEmpresaRegionSucursal("#filtroEmpresa", "#filtroRegion", "#filtroSucursal", { empChange: cambioFiltroEmpresa, regChange: cambioFiltroRegion, sucChange: cambioFiltroSucursal })
+                    $("#filtroEmpresa").trigger("change")
 
                     $('#jefeInmediato').change(function() {
                         const valor = $(this).val()
