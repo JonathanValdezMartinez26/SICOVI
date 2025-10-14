@@ -68,6 +68,11 @@ function getMenu()
                     'label' => 'Formatos Cultiva',
                     'url' => '/CapHum/FormatosCultiva',
                     'permisos' => [25, 26, 27, 28]
+                ],
+                [
+                    'label' => 'Incidencias de Devolución',
+                    'url' => '/CapHum/RecuperacionViaticos',
+                    'permisos' => [25, 26, 27, 28]
                 ]
             ]
         ],

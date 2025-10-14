@@ -1251,4 +1251,141 @@ class CapHum extends Model
             return self::resultado(false, 'Error al actualizar datos bancarios: ' . $e->getMessage());
         }
     }
+
+    public static function getSolicitudesRecuperacion()
+    {
+        $qry = <<<SQL
+            SELECT
+                VR.ID
+                , VR.VIATICOS
+                , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
+                , TO_CHAR(VR.FECHA_REGISTRO, 'YYYY-MM-DD HH24:MI:SS') AS FECHA_REGISTRO
+                , VR.MOTIVO
+                , CVR.CODIGO AS ESTATUS_NOMBRE
+                , CVR.DESCRIPCION AS ESTATUS_DESCRIPCION
+                , NVL(V.COMPROBACION_MONTO, 0) - NVL(V.ENTREGA_MONTO, 0) AS DIFERENCIA
+                , V.EMPRESA
+                , E.NOMBRE AS EMPRESA_NOMBRE
+            FROM
+                VIATICOS_RECUPERACION VR
+                LEFT JOIN CAT_VIATICOS_RECUPERACION CVR ON VR.ESTATUS = CVR.ID
+                LEFT JOIN VIATICOS V ON V.ID = VR.VIATICOS
+                LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
+            WHERE
+                VR.FECHA_SOLUCION IS NULL
+            ORDER BY
+                VR.FECHA_REGISTRO ASC
+        SQL;
+
+        try {
+            $db = new Database();
+            $res = $db->queryAll($qry);
+            return self::resultado(true, 'Solicitudes obtenidas correctamente.', $res);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al obtener las solicitudes.', null, $e->getMessage());
+        }
+    }
+
+    public static function recuperacionPorNomina($datos)
+    {
+        $qrys[] = <<<SQL
+            UPDATE
+                VIATICOS_RECUPERACION
+            SET
+                ESTATUS = (SELECT ID FROM CAT_VIATICOS_RECUPERACION WHERE CODIGO = 'RCH')
+                , FECHA_SOLUCION = SYSDATE
+                , SOLUCION = 'Descuento vía nómina'
+                , USUARIO_SOLUCION = :usuario
+            WHERE ID = :id
+        SQL;
+
+        $params[] = [
+            'id' => $datos['caso'],
+            'usuario' => $datos['usuario']
+        ];
+
+        $qrys[] = <<<SQL
+            INSERT INTO VIATICOS_OBSERVACIONES (OBSERVACION, USUARIO, VIATICOS, ESTATUS)
+            VALUES ((SELECT DESCRIPCION FROM CAT_VIATICOS_RECUPERACION WHERE CODIGO = 'RCH'), :usuario, :viaticos, (SELECT ESTATUS FROM VIATICOS WHERE ID = :viaticos))
+        SQL;
+
+        $params[] = [
+            'viaticos' => $datos['viaticos'],
+            'usuario' => $datos['usuario']
+        ];
+
+        $qrys[] = <<<SQL
+            UPDATE
+                VIATICOS
+            SET
+                DIFERENCIA_MONTO = COMPROBACION_MONTO - NVL(ENTREGA_MONTO, 0)   
+                , DIFERENCIA_FECHA = SYSDATE
+                , DIFERENCIA_USUARIO = :usuario
+                , DIFERENCIA_EMPRESA = :empresa
+                , DIFERENCIA_REGION = :region
+                , DIFERENCIA_SUCURSAL = :sucursal
+                , DIFERENCIA_OBSERVACION = (SELECT ID FROM VIATICOS_OBSERVACIONES WHERE VIATICOS = :id ORDER BY ID DESC FETCH FIRST 1 ROW ONLY)
+                , ESTATUS = (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'FINALIZADA')
+            WHERE
+                ID = :id
+        SQL;
+
+        $params[] = [
+            'id' => $datos['viaticos'],
+            'usuario' => $datos['usuario'],
+            'empresa' => $datos['empresa'],
+            'region' => $datos['region'],
+            'sucursal' => $datos['sucursal']
+        ];
+
+        try {
+            $db = new Database();
+            $db->CRUD_multiple($qrys, $params);
+            return self::resultado(true, 'Estatus de la solicitud actualizado correctamente.');
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al actualizar el estatus de la solicitud.', null, $e->getMessage());
+        }
+    }
+
+    public static function delegarSaldoTS($datos)
+    {
+        $qrys[] = <<<SQL
+            UPDATE
+                VIATICOS
+            SET
+                ESTATUS = (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'VALIDADA')
+            WHERE
+                ID = :id
+        SQL;
+
+        $params[] = [
+            'id' => $datos['viaticos']
+        ];
+
+        $qrys[] = <<<SQL
+            UPDATE
+                VIATICOS_RECUPERACION
+            SET
+                ESTATUS = (SELECT ID FROM CAT_VIATICOS_RECUPERACION WHERE CODIGO = 'CCC')
+                , FECHA_SOLUCION = SYSDATE
+                , SOLUCION = 'Turnado a Tesorería.'
+                , USUARIO_SOLUCION = :usuario
+            WHERE
+                ID = :id
+        SQL;
+
+        $params[] = [
+            'id' => $datos['caso'],
+            'usuario' => $datos['usuario']
+        ];
+
+        try {
+            $db = new Database();
+            $result = $db->CRUD_multiple($qrys, $params);
+            if (!$result) return self::resultado(false, 'No se encontró la solicitud a delegar.');
+            return self::resultado(true, 'Solicitud delegada correctamente.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al delegar la solicitud.', null, $e->getMessage());
+        }
+    }
 }

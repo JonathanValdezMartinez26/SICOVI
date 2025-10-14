@@ -2952,6 +2952,7 @@ class Viaticos extends Controller
                 const delegarSaldo = () => {
                     const solicitudId = $("#idSolicitudDelegar").val()
                     const motivo = $("#motivoDelegar").find("option:selected").val()
+                    const motivoText = $("#motivoDelegar").find("option:selected").text()
                     const motivoOtro = $("#motivoOtro").val().trim()
                     
                     if (motivo === "") return showError("Debe seleccionar un motivo para turnar la solicitud.")
@@ -2963,7 +2964,7 @@ class Viaticos extends Controller
                         const parametros = {
                             usuario: $_SESSION[usuario_id],
                             solicitudId,
-                            motivo: motivo == 4 ? motivoOtro : motivo
+                            motivo: motivo == 4 ? motivoOtro : motivoText
                         }
 
                         consultaServidor("/viaticos/delegarSaldoCH_VG", parametros, (respuesta) => {

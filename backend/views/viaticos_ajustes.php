@@ -1,4 +1,4 @@
-<h4>Entrega de Viáticos y devolución de Gastos</h4>
+<h4>Ajuste de diferencia en gastos</h4>
 
 <div class="card">
     <div class="row justify-content-between m-4">

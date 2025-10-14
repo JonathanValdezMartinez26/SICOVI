@@ -1979,4 +1979,145 @@ class CapHum extends Controller
             'tipo' => $_FILES['archivo']['type']
         ];
     }
+
+    public function RecuperacionViaticos()
+    {
+        $script = <<<HTML
+            <script>
+                const tabla = "#historialSolicitudes"
+
+                const getSolicitudes = () => {
+                    consultaServidor("/CapHum/getSolicitudesRecuperacion", null, (respuesta) => {
+                        if (!respuesta.success) return showError(respuesta.mensaje)
+
+                        const datos = respuesta.datos.map((solicitud) => {
+                            const acciones = [
+                                {
+                                    texto: "Resolver con descuento vía nómina",
+                                    icono: "fa-money-check-dollar",
+                                    funcion: "descuentoNomina(" + solicitud.ID + ", " + solicitud.VIATICOS + ")"
+                                },
+                                {
+                                    texto: "Cerrar sin descuento",
+                                    icono: "fa-money-bill-trend-up",
+                                    funcion: "cerrarSinDescuento(" + solicitud.ID + ", " + solicitud.VIATICOS + ")"
+                                }
+                            ]
+                            
+                            const diferencia = numeral(solicitud.DIFERENCIA)
+                            let dif
+
+                            if (diferencia.value() < 0) {
+                                dif = "down text-danger"
+                                acciones.push({
+                                    texto: "Turnar a Tesorería",
+                                    icono: "fa-user-tie",
+                                    funcion: "enviarTS(" + solicitud.ID + ", " + solicitud.VIATICOS + ")"
+                                })
+                            } else {
+                                dif = "up text-success"
+                            }
+
+                            const empresaSpan = "<span><strong style='color:" + (solicitud.EMPRESA == 1 ? "red" : "#4C1013") + "'>" + solicitud.EMPRESA_NOMBRE + "</strong> - " + solicitud.VIATICOS + "</span>"
+                            const dias = moment().diff(moment(solicitud.FECHA_REGISTRO), 'days')
+                            let badgeDias = ""
+
+                            if (dias < 4) {
+                                badgeDias = "<span class='badge bg-success'>" + dias + " días</span>"
+                            } else if (dias > 4) {
+                                badgeDias = "<span class='badge bg-danger text-dark'>" + dias + " días</span>"
+                            } else {
+                                badgeDias = "<span class='badge bg-warning'>" + dias + " días</span>"
+                            }
+                            
+                            return [
+                                null,
+                                empresaSpan,
+                                solicitud.USUARIO_NOMBRE,
+                                diferencia.format(NUMERAL_MONEDA),
+                                solicitud.MOTIVO,
+                                null,
+                                moment(solicitud.FECHA_REGISTRO).format(MOMENT_FRONT_HORA),
+                                badgeDias,
+                                menuAcciones(acciones)
+                            ]
+                        })
+
+                        actualizaDatosTabla(tabla, datos)
+                    })
+                }
+
+                const descuentoNomina = (id, viaticos) => {
+                    confirmarMovimiento("¿Confirma que desea resolver esta solicitud con descuento vía nómina?").then((continuar) => {
+                        if (!continuar.isConfirmed) return
+
+                        const parametros = {
+                            caso: id,
+                            viaticos,
+                            usuario: "{$_SESSION['usuario_id']}",
+                            empresa: "{$_SESSION['empresa_id']}",
+                            region: "{$_SESSION['region_id']}",
+                            sucursal: "{$_SESSION['sucursal_id']}"
+                        }
+                        
+                        consultaServidor("/CapHum/recuperacionPorNomina", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+
+                            showSuccess(respuesta.mensaje).then(getSolicitudes)
+                        })
+                    })
+                }
+
+                const cerrarSinDescuento = (id, viaticos) => {
+                    confirmarMovimiento("¿Confirma que desea cerrar esta solicitud sin descuento?").then((continuar) => {
+                        if (!continuar.isConfirmed) return
+
+                        showSuccess("La solicitud se cerro sin descuento.").then(getSolicitudes)
+                    })
+                }
+
+                const enviarTS = (id, viaticos) => {
+                    confirmarMovimiento("¿Confirma que desea turnar esta solicitud a Tesorería?").then((continuar) => {
+                        if (!continuar.isConfirmed) return
+
+                        const parametros = {
+                            caso: id,
+                            viaticos,
+                            usuario: "{$_SESSION['usuario_id']}",
+                        }
+                        
+                        consultaServidor("/CapHum/delegarSaldoTS", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+
+                            showSuccess(respuesta.mensaje).then(getSolicitudes)
+                        })
+                    })
+                }
+
+                $(document).ready(function() {
+                    configuraTabla(tabla)
+                    getSolicitudes()
+                })
+            </script>
+        HTML;
+
+        self::set("titulo", "Recuperación de Viáticos");
+        self::set("script", $script);
+        self::render("caphum_recuperacion_viaticos");
+    }
+
+    public function getSolicitudesRecuperacion()
+    {
+        self::respuestaJSON(CapHumDAO::getSolicitudesRecuperacion());
+    }
+
+    public function recuperacionPorNomina()
+    {
+        self::respuestaJSON(CapHumDAO::recuperacionPorNomina($_POST));
+    }
+
+    public function delegarSaldoTS()
+    {
+        self::respuestaJSON(CapHumDAO::delegarSaldoTS($_POST));
+    }
 }
