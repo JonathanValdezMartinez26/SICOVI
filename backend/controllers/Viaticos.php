@@ -2855,16 +2855,27 @@ class Viaticos extends Controller
                     consultaServidor("/viaticos/getSolicitudesAjustes", parametros, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         const datos = respuesta.datos.map((solicitud) => {
-                            const acciones = menuAcciones([
+                            const acciones = [
                                 {
                                     texto: "Detalles",
                                     icono: "fa-eye",
                                     funcion: "verDetalles(" + solicitud.ID + ")"
                                 }
-                            ])
+                            ]
                             
                             const diferencia = numeral(solicitud.DIFERENCIA)
-                            const dif = diferencia.value() < 0 ? "down text-danger" : "up text-success"
+                            let dif
+
+                            if (diferencia.value() < 0) {
+                                dif = "down text-danger"
+                                acciones.push({
+                                    texto: "Turnar a CH",
+                                    icono: "fa-user-tie",
+                                    funcion: "enviarCH(" + solicitud.ID + ")"
+                                })
+                            } else {
+                                dif = "up text-success"
+                            }
 
                             const empresaSpan = "<span><strong style='color:" + (solicitud.EMPRESA == 1 ? "red" : "#4C1013") + "'>" + solicitud.EMPRESA_NOMBRE + "</strong> - " + solicitud.ID + "</span>"
                             
@@ -2873,7 +2884,7 @@ class Viaticos extends Controller
                                 empresaSpan,
                                 solicitud.USUARIO_NOMBRE,
                                 "<i class='fa-solid fa-arrow-trend-" + dif + "'>&nbsp;</i>" + diferencia.format(NUMERAL_MONEDA),
-                                acciones
+                                menuAcciones(acciones)
                             ]
                         })
 
@@ -2930,6 +2941,39 @@ class Viaticos extends Controller
                         }
                         
                         $("#modalVerAjuste").modal("show")
+                    })
+                }
+
+                const enviarCH = (id) => {
+                    $("#modalDelegarSaldo").find("#idSolicitudDelegar").val(id)
+                    $("#modalDelegarSaldo").modal("show")
+                }
+
+                const delegarSaldo = () => {
+                    const solicitudId = $("#idSolicitudDelegar").val()
+                    const motivo = $("#motivoDelegar").find("option:selected").val()
+                    const motivoOtro = $("#motivoOtro").val().trim()
+                    
+                    if (motivo === "") return showError("Debe seleccionar un motivo para turnar la solicitud.")
+                    if (motivo == 4 && motivoOtro === "") return showError("Debe especificar el motivo.")
+
+                    confirmarMovimiento("¿Desea turnar la solicitud a CH?").then((continuar) => {
+                        if (!continuar.isConfirmed) return
+
+                        const parametros = {
+                            usuario: $_SESSION[usuario_id],
+                            solicitudId,
+                            motivo: motivo == 4 ? motivoOtro : motivo
+                        }
+
+                        consultaServidor("/viaticos/delegarSaldoCH_VG", parametros, (respuesta) => {
+                            if (!respuesta.success) return showError(respuesta.mensaje)
+
+                            showSuccess("Solicitud turnada correctamente.").then(() => {
+                                $("#modalDelegarSaldo").modal("hide")
+                                getSolicitudes()
+                            })
+                        })
                     })
                 }
 
@@ -2994,8 +3038,21 @@ class Viaticos extends Controller
                     $("#modalReimprimir").on("shown.bs.modal", () => {
                         $("#solicitudReimprimir").val("").trigger("focus")
                     })
-                    configuraTabla(tabla)
+                    $("#modalDelegarSaldo").on("shown.bs.modal", () => {
+                        $("#motivoDelegar").val("")
+                        $("#motivoOtro").val("")
+                    })
+                    $("#motivoDelegar").on("change", () => {
+                        const motivo = $("#motivoDelegar").find("option:selected").val()
+                        if (motivo == 4) $("#divOtroMotivo").show()
+                        else {
+                            $("#divOtroMotivo").hide()
+                            $("#motivoOtro").val("")
+                        }
+                    })
+                    $("#btnDelegarSaldo").on("click", delegarSaldo)
 
+                    configuraTabla(tabla)
                     getSolicitudes()
                 })
             </script>
@@ -3256,5 +3313,10 @@ class Viaticos extends Controller
             'estilo' => $estilo,
             'cuerpo' => $cuerpo
         ];
+    }
+
+    public function delegarSaldoCH_VG()
+    {
+        self::respuestaJSON(ViaticosDAO::delegarSaldoCH_VG($_POST));
     }
 }

@@ -1412,4 +1412,42 @@ class Viaticos extends Model
             return self::resultado(false, 'Error al procesar la solicitud.', null, $e->getMessage());
         }
     }
+
+    public static function delegarSaldoCH_VG($datos)
+    {
+        $qrys[] = <<<SQL
+            UPDATE
+                VIATICOS
+            SET
+                ESTATUS = (SELECT ID FROM CAT_VIATICOS_ESTATUS WHERE NOMBRE = 'DELEGADO (CH)')
+            WHERE
+                ID = :id
+        SQL;
+
+        $params[] = [
+            'id' => $datos['solicitudId']
+        ];
+
+        $qrys[] = <<<SQL
+            INSERT INTO VIATICOS_RECUPERACION
+                (VIATICOS, MOTIVO, USUARIO_DELEGO)
+            VALUES
+                (:solicitud, :motivo, :usuario)
+        SQL;
+
+        $params[] = [
+            'solicitud' => $datos['solicitudId'],
+            'motivo' => $datos['motivo'],
+            'usuario' => $datos['usuario']
+        ];
+
+        try {
+            $db = new Database();
+            $result = $db->CRUD_multiple($qrys, $params);
+            if (!$result) return self::resultado(false, 'No se encontró la solicitud a delegar.');
+            return self::resultado(true, 'Solicitud delegada correctamente.', $result);
+        } catch (\Exception $e) {
+            return self::resultado(false, 'Error al delegar la solicitud.', null, $e->getMessage());
+        }
+    }
 }

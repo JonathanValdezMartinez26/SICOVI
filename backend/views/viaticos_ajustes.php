@@ -129,3 +129,42 @@
     </div>
 </div>
 <!-- / Modal para reimprimir un comprobante -->
+
+<!-- Modal para reasignar los saldos en contra -->
+<div class="modal fade" id="modalDelegarSaldo" tabindex="-1" aria-hidden="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center w-100">
+                    <h4 class="address-title mb-2">Delegar saldo en contra a Capital Humano</h4>
+                    <p class="address-subtitle"></p>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <label for="motivoDelegar" class="form-label">Motivo</label>
+                        <input type="hidden" id="idSolicitudDelegar">
+                        <select name="motivoDelegar" id="motivoDelegar" class="form-select">
+                            <option value="" selected disabled>Seleccione una opción</option>
+                            <option value="1">El colaborador hace caso omiso.</option>
+                            <option value="2">Se negó a devolver el monto.</option>
+                            <option value="3">No fue localizado.</option>
+                            <option value="4">Otro</option>
+                        </select>
+                    </div>
+                    <div class="col-12" style="display: none;" id="divOtroMotivo">
+                        <label for="motivoOtro" class="form-label">Indique el motivo</label>
+                        <textarea name="motivoOtro" id="motivoOtro" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancelarDelegar" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Cancelar</button>
+                <button type="button" id="btnDelegarSaldo" class="btn btn-primary">Delegar Saldo</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- / Modal para reasignar los saldos en contra -->
