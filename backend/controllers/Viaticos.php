@@ -2248,6 +2248,8 @@ class Viaticos extends Controller
         $fmt = new \NumberFormatter('es_MX', \NumberFormatter::CURRENCY);
         $monto = $fmt->formatCurrency($monto, 'MXN');
 
+        $nombre_empresa = 'Lizbeth Fuentes';
+
         $estilo = <<<HTML
             <style>
                 body {
@@ -2362,13 +2364,13 @@ class Viaticos extends Controller
                     <td class="left">
                         <div class="field-row">
                             <span class="field-label">Empresa:</span>
-                            <span class="field-value">[NOMBRE DE LA EMPRESA]</span>
+                            <span class="field-value">{$nombre_empresa}</span>
                         </div>
                     </td>
                     <td class="right">
                         <div class="field-row">
                             <span class="field-label">Folio:</span>
-                            <span class="field-value">[000001]</span>
+                            <span class="field-value">{$datos['ID']}</span>
                         </div>
                     </td>
                 </tr>
@@ -2376,13 +2378,13 @@ class Viaticos extends Controller
                     <td class="left">
                         <div class="field-row">
                             <span class="field-label">Sucursal:</span>
-                            <span class="field-value">[SUCURSAL]</span>
+                            <span class="field-value">{$datos['SUCURSAL_NOMBRE']}</span>
                         </div>
                     </td>
                     <td class="right">
                         <div class="field-row">
                             <span class="field-label">Fecha:</span>
-                            <span class="field-value">[DD/MM/AAAA]</span>
+                            <span class="field-value">{$datos['ENTREGA_FECHA']}</span>
                         </div>
                     </td>
                 </tr>
@@ -2391,7 +2393,7 @@ class Viaticos extends Controller
 
             <!-- Contenido principal -->
             <div class="content-section">
-                <p>Por medio del presente documento se hace constar la <strong>ENTREGA DE VIÁTICOS</strong> por parte de <strong>[NOMBRE_ENTREGADOR]</strong> en representación de <strong>[NOMBRE_EMPRESA]</strong>, al empleado <strong>[NOMBRE_RECEPTOR]</strong>, quien desempeña el cargo de <strong>[PUESTO_EMPLEADO]</strong>.</p>
+                <p>Por medio del presente documento se hace constar la <strong>ENTREGA DE VIÁTICOS</strong> por parte de <strong>{$datos['ENTREGA_NOMBRE']}</strong> en representación de <strong>$nombre_empresa</strong>, al empleado <strong>{$datos['USUARIO_NOMBRE']}</strong>, quien desempeña el cargo de <strong>{$datos['PUESTO']}</strong>.</p>
                 
                 <p>El beneficiario se compromete a utilizar los recursos otorgados de manera responsable y conforme a los lineamientos establecidos en las políticas internas de viáticos y gastos de representación de la empresa, así como a presentar la documentación comprobatoria correspondiente en los plazos establecidos.</p>
                 

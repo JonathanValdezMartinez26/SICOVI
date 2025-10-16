@@ -1105,13 +1105,20 @@ class Viaticos extends Model
                 , V.PROYECTO
                 , V.ENTREGA_USUARIO
                 , GET_NOMBRE_USUARIO(V.ENTREGA_USUARIO) AS ENTREGA_NOMBRE
-                , TO_CHAR(V.ENTREGA_FECHA, 'YYYY-MM-DD') AS ENTREGA_FECHA
+                , TO_CHAR(V.ENTREGA_FECHA, 'DD/MM/YYYY') AS ENTREGA_FECHA
                 , V.ENTREGA_MONTO
                 , V.ENTREGA_METODO
                 , CMEV.NOMBRE AS METODO_ENTREGA
+                , SR.SUCURSAL
+                , SR.SUCURSAL_NOMBRE
+                , CP.DESCRIPCION AS PUESTO
             FROM
                 VIATICOS V
                 LEFT JOIN CAT_VIATICOS_METODO_ENTREGA CMEV ON CMEV.ID = V.ENTREGA_METODO
+                LEFT JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = V.EMPRESA AND SR.REGION = V.REGION AND SR.SUCURSAL = V.SUCURSAL
+                LEFT JOIN USUARIO U ON U.ID = V.USUARIO
+                LEFT JOIN NOMINA N ON N.PERSONA = U.PERSONA
+                LEFT JOIN CAT_PUESTOS CP ON CP.ID_PUESTO = N.PUESTO
             WHERE
                 V.ID = :id
                 AND V.ENTREGA_MONTO IS NOT NULL
