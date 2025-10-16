@@ -840,7 +840,7 @@ class Viaticos extends Model
                 LEFT JOIN USUARIO U ON U.ID = V.USUARIO
                 LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
             WHERE
-                ((V.TIPO = 1 AND CEV.NOMBRE IN ('SOLICITADA', 'AUTORIZADA', 'COMPROBADA', 'RECHAZADA')) OR (V.TIPO = 2 AND CEV.NOMBRE IN ('COMPROBADA', 'RECHAZADA')))
+                ((V.TIPO = 1 AND CEV.NOMBRE IN ('SOLICITADA', 'COMPROBADA')) OR (V.TIPO = 2 AND CEV.NOMBRE IN ('COMPROBADA', 'RECHAZADA')))
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
             ORDER BY
                 ID DESC

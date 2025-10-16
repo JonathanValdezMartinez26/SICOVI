@@ -871,6 +871,9 @@ class Viaticos extends Controller
                 }
 
                 const finalizarComprobacion = () => {
+                    const comprobantes = $("#tbodyVerComprobantesSolicitud tr").length
+                    if (comprobantes === 0) return showWarning("Debe capturar al menos un comprobante para finalizar la comprobación.")
+
                     const mensaje = $("<div class='text-center'></div>")
                         .append("<p class='fw-bold'>Al finalizar la comprobación, no podrá agregar más comprobantes a esta solicitud.</p>")
                         .append("¿Desea continuar?")
@@ -1806,7 +1809,7 @@ class Viaticos extends Controller
                                 empresaSpan,
                                 solicitud.TIPO_NOMBRE,
                                 solicitud.USUARIO_NOMBRE,
-                                moment(solicitud.AUTORIZACION_FECHA).format(MOMENT_FRONT),
+                                solicitud?.AUTORIZACION_FECHA ? moment(solicitud.AUTORIZACION_FECHA).format(MOMENT_FRONT) : "",
                                 badgeFechaEntrega,
                                 numeral(solicitud.AUTORIZACION_MONTO).format(NUMERAL_MONEDA),
                                 acciones
@@ -2024,7 +2027,7 @@ class Viaticos extends Controller
                                 solicitud.TIPO_NOMBRE,
                                 solicitud.USUARIO_NOMBRE,
                                 solicitud.SUCURSAL_NOMBRE,
-                                moment(solicitud.AUTORIZACION_FECHA).format(MOMENT_FRONT),
+                                solicitud?.AUTORIZACION_FECHA ? moment(solicitud.AUTORIZACION_FECHA).format(MOMENT_FRONT) : "",
                                 numeral(solicitud.AUTORIZACION_MONTO).format(NUMERAL_MONEDA),
                                 acciones
                             ]
