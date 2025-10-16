@@ -14,7 +14,6 @@ class CapHum extends Model
         return $resultado['mensaje'] ?? null;
     }
 
-    // Lista personas con filtro opcional
     public static function getPersonas($datos)
     {
         if (!empty($filtro)) {
@@ -91,7 +90,6 @@ class CapHum extends Model
         }
     }
 
-    // Detalle completo de persona y sus usuarios
     public static function getPersonaDetalle($datos)
     {
         $qryPersona = <<<SQL
@@ -161,6 +159,7 @@ class CapHum extends Model
             WHERE
                 N.PERSONA = :id
         SQL;
+        $empHab = 'SELECT ID_EMPRESA AS EMPRESA FROM CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO WHERE ID_PERSONA = :id';
         $qryBancos = "SELECT ID_BANCO, CB.NOMBRE, NUMERO, TIPO_NUMERO FROM PERSONA_DATOS_BANCARIOS PDB JOIN CAT_BANCO CB ON CB.ID = PDB.ID_BANCO WHERE PERSONA = :id";
         $qryTelefonos = "SELECT NUMERO, TIPO FROM PERSONA_TELEFONO WHERE PERSONA = :id";
         $qryEmails = "SELECT DIRECCION, TIPO FROM PERSONA_EMAIL WHERE PERSONA = :id";
@@ -178,6 +177,7 @@ class CapHum extends Model
 
             $nomina = $db->queryOne($qryNomina, $params);
             $empresa = $db->queryOne($qryEmpresa, $params);
+            $empresasHabilitadas = $db->queryAll($empHab, $params);
             $bancos = $db->queryAll($qryBancos, $params);
             $usuarios = $db->queryAll($qryUsuarios, $params);
             $telefonos = $db->queryAll($qryTelefonos, $params);
@@ -192,7 +192,8 @@ class CapHum extends Model
                 'nomina' => $nomina,
                 'bancos' => $bancos,
                 'contactos' => $contactos,
-                'empresa' => $empresa
+                'empresa' => $empresa,
+                'empresasHabilitadas' => $empresasHabilitadas
             ];
 
             return self::resultado(true, 'Detalle obtenido correctamente.', $resultado);
@@ -234,6 +235,9 @@ class CapHum extends Model
             // 4) Nomina
             $creaNom = self::crearNomina($personaId, $datos, $db);
             if (empty($creaNom['success'])) throw new \Exception(self::getErrorMessage($creaNom) ?? 'Error creando nomina');
+
+            $empresas = self::habilitaEmpresas($personaId, $datos, $db);
+            if (empty($empresas['success'])) throw new \Exception(self::getErrorMessage($empresas) ?? 'Error habilitando empresas');
 
             // 5) Datos bancarios
             $insBanco = self::insertarDatosBancarios($personaId, $datos, $db);
@@ -398,6 +402,29 @@ class CapHum extends Model
             return self::resultado(true, 'Nómina creada');
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al crear nómina', null, $e->getMessage());
+        }
+    }
+
+    public static function habilitaEmpresas($personaId, $empresas, $db = null)
+    {
+        $qry = "INSERT INTO CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO (ID_PERSONA, ID_EMPRESA, USAURIO_ALTA) VALUES (:persona, :empresa, :usuario)";
+        $qrys[] = 'DELETE FROM CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO WHERE ID_PERSONA = :persona';
+        $params[] = ['persona' => $personaId];
+
+        foreach (explode(',', $empresas['empresasHabilitadas']) as $empresa) {
+            if (!empty($empresa)) {
+                $qrys[] = $qry;
+                $params[] = ['persona' => $personaId, 'empresa' => $empresa, 'usuario' => $_SESSION['usuario_id'] ?? null];
+            }
+        }
+
+        try {
+            if (!$db) $db = new Database();
+            $db->CRUD_multiple($qrys, $params);
+
+            return self::resultado(true, "Empresas habilitadas");
+        } catch (\Exception $e) {
+            return self::resultado(false, 'No se pudo habilitar empresas. ', null, $e->getMessage());
         }
     }
 
@@ -818,7 +845,6 @@ class CapHum extends Model
         }
     }
 
-    // Actualizar datos de una persona existente
     public static function actualizarPersona($datos, $fotoData = null)
     {
         try {
@@ -862,11 +888,11 @@ class CapHum extends Model
                 throw new \Exception($resultado['mensaje']);
             }
 
-            // 6. Actualizar datos laborales
-            // $resultado = self::actualizarDatosLaborales($db, $personaId, $datos);
-            // if (!$resultado['success']) {
-            //     throw new \Exception($resultado['mensaje']);
-            // }
+            // 6. Actualizar datos laborales ** ESTABA COMENTADO ANTES **
+            $resultado = self::actualizarDatosLaborales($db, $personaId, $datos);
+            if (!$resultado['success']) {
+                throw new \Exception($resultado['mensaje']);
+            }
 
             // 7. Actualizar correos empresariales con lógica especial
             $resultado = self::actualizarCorreosEmpresariales($db, $personaId, $datos);
@@ -888,6 +914,12 @@ class CapHum extends Model
 
             // 10. Actualizar datos bancarios
             $resultado = self::actualizarDatosBancarios($db, $personaId, $datos);
+            if (!$resultado['success']) {
+                throw new \Exception($resultado['mensaje']);
+            }
+
+            // 11. Actualizar empresas habilitadas
+            $resultado = self::actualizarEmpresasHabilitadas($db, $personaId, $datos);
             if (!$resultado['success']) {
                 throw new \Exception($resultado['mensaje']);
             }
@@ -1053,17 +1085,20 @@ class CapHum extends Model
     {
         try {
             // Verificar si ya existe registro laboral
-            $qryCheck = "SELECT COUNT(*) as COUNT FROM PERSONA_SUCURSAL WHERE PERSONA = :personaId";
-            $result = $db->CRUD($qryCheck, ['personaId' => $personaId]);
+            $qryCheck = "SELECT COUNT(*) as COUNT FROM NOMINA WHERE PERSONA = :personaId";
+            $result = $db->queryOne($qryCheck, ['personaId' => $personaId]);
 
-            if ($result['filas'][0]['COUNT'] > 0) {
-                // Actualizar existente
+            if ($result['COUNT'] > 0) {
                 $qryUpdate = <<<SQL
-                    UPDATE PERSONA_SUCURSAL SET
+                    UPDATE NOMINA SET
                         EMPRESA = :empresa,
                         REGION = :region,
                         SUCURSAL = :sucursal,
-                        FECHA_ACTUALIZACION = SYSDATE
+                        JEFE = :jefeInmediato,
+                        PUESTO = :puesto,
+                        PROVEEDOR = :proveedor,
+                        TIPO = :tipo,
+                        NUMERO = :numero
                     WHERE PERSONA = :personaId
                 SQL;
 
@@ -1071,25 +1106,17 @@ class CapHum extends Model
                     'personaId' => $personaId,
                     'empresa' => $datos['empresa'] ?? '',
                     'region' => $datos['region'] ?? '',
-                    'sucursal' => $datos['sucursal'] ?? ''
+                    'sucursal' => $datos['sucursal'] ?? '',
+                    'jefeInmediato' => $datos['jefeInmediato'] ?? '',
+                    'puesto' => $datos['puesto'] ?? '',
+                    'proveedor' => $datos['proveedor'] ?? '',
+                    'tipo' => $datos['tipoNomina'] ?? '',
+                    'numero' => $datos['numeroNomina'] ?? ''
                 ];
 
                 $db->CRUD($qryUpdate, $params);
             } else {
-                // Insertar nuevo
-                $qryInsert = <<<SQL
-                    INSERT INTO PERSONA_SUCURSAL (PERSONA, EMPRESA, REGION, SUCURSAL, FECHA_REGISTRO)
-                    VALUES (:personaId, :empresa, :region, :sucursal, SYSDATE)
-                SQL;
-
-                $params = [
-                    'personaId' => $personaId,
-                    'empresa' => $datos['empresa'] ?? '',
-                    'region' => $datos['region'] ?? '',
-                    'sucursal' => $datos['sucursal'] ?? ''
-                ];
-
-                $db->CRUD($qryInsert, $params);
+                return self::resultado(false, 'No existe registro laboral para actualizar.');
             }
 
             return self::resultado(true, 'Datos laborales actualizados.');
@@ -1098,7 +1125,6 @@ class CapHum extends Model
         }
     }
 
-    // Actualizar correos empresariales con lógica especial
     private static function actualizarCorreosEmpresariales($db, $personaId, $datos)
     {
         try {
@@ -1249,6 +1275,29 @@ class CapHum extends Model
             return self::resultado(true, 'Datos bancarios actualizados.');
         } catch (\Exception $e) {
             return self::resultado(false, 'Error al actualizar datos bancarios: ' . $e->getMessage());
+        }
+    }
+
+    private static function actualizarEmpresasHabilitadas($db, $personaId, $datos)
+    {
+        $qry = "INSERT INTO CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO (ID_PERSONA, ID_EMPRESA, USAURIO_ALTA) VALUES (:persona, :empresa, :usuario)";
+        $qrys[] = 'DELETE FROM CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO WHERE ID_PERSONA = :persona';
+        $params[] = ['persona' => $personaId];
+
+        foreach (explode(',', $datos['empresasHabilitadas']) as $empresa) {
+            if (!empty($empresa)) {
+                $qrys[] = $qry;
+                $params[] = ['persona' => $personaId, 'empresa' => $empresa, 'usuario' => $_SESSION['usuario_id'] ?? null];
+            }
+        }
+
+        try {
+            if (!$db) $db = new Database();
+            $db->CRUD_multiple($qrys, $params);
+
+            return self::resultado(true, "Empresas habilitadas");
+        } catch (\Exception $e) {
+            return self::resultado(false, 'No se pudo habilitar empresas. ', null, $e->getMessage());
         }
     }
 

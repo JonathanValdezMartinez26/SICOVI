@@ -397,6 +397,15 @@
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
                                     <div class="col-md-6 mt-0">
+                                        <label for="empresasHabilitadas" class="form-label">Empresas en las que colabora</label>
+                                        <div id="empresasHabilitadas" class="d-flex justify-content-evenly align-items-center border rounded p-2">
+                                            <?= $variasEmpresas ?>
+                                        </div>
+                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mt-0">
                                         <label for="correoEmpresa" class="form-label">Correo Electrónico Empresa</label>
                                         <div id="correosContainer">
                                             <div class="input-group mb-2">
@@ -408,34 +417,33 @@
                                         </div>
                                         <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                     </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-4 mt-0">
-                                        <label for="usuario" class="form-label">Usuario</label>
-                                        <input type="text" id="usuario" name="usuario" class="form-control" maxlength="20" placeholder="Coloca aquí el RFC del colaborador">
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                                    </div>
-                                    <div class="col-md-4 mt-0 form-group form-password-toggle">
-                                        <label class="form-label" for="password">Contraseña</label>
-                                        <div class="input-group input-group-merge">
-                                            <input
-                                                type="password"
-                                                id="password"
-                                                class="form-control"
-                                                name="password"
-                                                placeholder="Ingresa la contraseña"
-                                                aria-describedby="password" />
-                                            <i class="input-group-text cursor-pointer fa fa-eye z-5"></i>
+                                    <div class="col-md-6 mt-0">
+                                        <div>
+                                            <label for="usuario" class="form-label">Usuario</label>
+                                            <input type="text" id="usuario" name="usuario" class="form-control" maxlength="20" placeholder="Coloca aquí el RFC del colaborador">
+                                            <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                                         </div>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
-                                    </div>
-                                    <div class="col-md-4 mt-0">
-                                        <label for="perfil" class="form-label">Perfil de Usuario</label>
-                                        <select id="perfil" name="perfil" class="form-select">
-                                            <option value="" selected disabled>Seleccione un perfil</option>
-                                            <?= $perfiles ?? '' ?>
-                                        </select>
-                                        <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                        <div> <label class="form-label" for="password">Contraseña</label>
+                                            <div class="input-group input-group-merge">
+                                                <input
+                                                    type="password"
+                                                    id="password"
+                                                    class="form-control"
+                                                    name="password"
+                                                    placeholder="Ingresa la contraseña"
+                                                    aria-describedby="password" />
+                                                <i class="input-group-text cursor-pointer fa fa-eye z-5"></i>
+                                            </div>
+                                            <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                        </div>
+                                        <div>
+                                            <label for="perfil" class="form-label">Perfil de Usuario</label>
+                                            <select id="perfil" name="perfil" class="form-select">
+                                                <option value="" selected disabled>Seleccione un perfil</option>
+                                                <?= $perfiles ?? '' ?>
+                                            </select>
+                                            <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12 d-flex justify-content-between mt-4">
@@ -522,7 +530,7 @@
                                 </div>
                             </div>
 
-                            <!-- Paso 4: Confirmación -->
+                            <!-- Confirmación -->
                             <div id="confirmacion" class="content">
                                 <div class="content-header mb-4">
                                     <h6 class="mb-0">Confirmación de Registro</h6>
@@ -577,6 +585,7 @@
                                                         <p class="mb-1"><strong>Puesto:</strong> <span id="resumenPuesto">-</span></p>
                                                         <p class="mb-1"><strong>Jefe Inmediato:</strong> <span id="resumenJefeInmediato">-</span></p>
                                                         <p class="mb-1"><strong>Reporta a:</strong> <span id="resumenReporta">-</span></p>
+                                                        <p class="mb-1"><strong>Empresas en las que colabora:</strong> <span id="resumenEmpresasHabilitadas">-</span></p>
                                                         <p class="mb-1"><strong>Correos Empresa:</strong> <span id="resumenCorreosEmpresa">-</span></p>
                                                     </div>
                                                     <div class="col-md-6">

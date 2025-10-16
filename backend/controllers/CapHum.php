@@ -24,6 +24,7 @@ class CapHum extends Controller
                     personales: {
                         nombre: {
                             elemento: "nombre",
+                            limpiar: () => $("#nombre").val(""),
                             valor: () => $("#nombre").val(),
                             texto: () => $("#nombre").val(),
                             validacion: () => $("#nombre").val().trim() !== "",
@@ -31,6 +32,7 @@ class CapHum extends Controller
                         },
                         apellido1: {
                             elemento: "apellido1",
+                            limpiar: () => $("#apellido1").val(""),
                             valor: () => $("#apellido1").val(),
                             texto: () => $("#apellido1").val(),
                             validacion: () => $("#apellido1").val().trim() !== "",
@@ -38,6 +40,7 @@ class CapHum extends Controller
                         },
                         apellido2: {
                             elemento: "apellido2",
+                            limpiar: () => $("#apellido2").val(""),
                             valor: () => $("#apellido2").val(),
                             texto: () => $("#apellido2").val(),
                             validacion: () => true,
@@ -45,6 +48,7 @@ class CapHum extends Controller
                         },
                         rfc: {
                             elemento: "rfc",
+                            limpiar: () => $("#rfc").val(""),
                             valor: () => $("#rfc").val(),
                             texto: () => $("#rfc").val(),
                             validacion: () => $("#rfc").val().trim() !== "",
@@ -52,6 +56,7 @@ class CapHum extends Controller
                         },
                         curp: {
                             elemento: "curp",
+                            limpiar: () => $("#curp").val(""),
                             valor: () => $("#curp").val(),
                             texto: () => $("#curp").val(),
                             validacion: () => $("#curp").val().trim() !== "",
@@ -59,6 +64,10 @@ class CapHum extends Controller
                         },
                         fechaNacimiento: {
                             elemento: "fechaNacimiento",
+                            limpiar: () => {
+                                const ini = moment().subtract(18, 'years').format(MOMENT_FRONT);
+                                updateInputFechas("#fechaNacimiento", { iniF: ini })
+                            },
                             valor: () => getInputFechas("#fechaNacimiento", false, true),
                             texto: () => $("#fechaNacimiento").val(),
                             validacion: () => $("#fechaNacimiento").val() !== '',
@@ -66,6 +75,7 @@ class CapHum extends Controller
                         },
                         sexo: {
                             elemento: "sexo",
+                            limpiar: () => $("#sexo").val(""),
                             valor: () => $("#sexo option:selected").val(),
                             texto: () => $("#sexo option:selected").text(),
                             validacion: () => $("#sexo option:selected").val() !== "",
@@ -73,6 +83,7 @@ class CapHum extends Controller
                         },
                         estadoCivil: {
                             elemento: "estadoCivil",
+                            limpiar: () => $("#estadoCivil").val(""),
                             valor: () => $("#estadoCivil option:selected").val(),
                             texto: () => $("#estadoCivil option:selected").text(),
                             validacion: () => $("#estadoCivil option:selected").val() !== "",
@@ -80,6 +91,7 @@ class CapHum extends Controller
                         },
                         nacionalidad: {
                             elemento: "nacionalidad",
+                            limpiar: () => $("#nacionalidad").val("MEXICANA"),
                             valor: () => $("#nacionalidad").val(),
                             texto: () => $("#nacionalidad").val(),
                             validacion: () => $("#nacionalidad").val().trim() !== "",
@@ -87,6 +99,7 @@ class CapHum extends Controller
                         },
                         nss: {
                             elemento: "nss",
+                            limpiar: () => $("#nss").val(""),
                             valor: () => $("#nss").val(),
                             texto: () => $("#nss").val(),
                             validacion: () => $("#nss").val().trim() === "" || ($("#nss").val().trim() !== "" && $("#nss").val().trim().length === 11),
@@ -94,6 +107,7 @@ class CapHum extends Controller
                         },
                         infonavit: {
                             elemento: "infonavit",
+                            limpiar: () => $("#infonavit").prop("checked", false),
                             valor: () => $("#infonavit").is(":checked") ? 1 : 0,
                             texto: () => $("#infonavit").is(":checked") ? "Sí" : "No",
                             validacion: () => true,
@@ -101,6 +115,7 @@ class CapHum extends Controller
                         },
                         calle: {
                             elemento: "calle",
+                            limpiar: () => $("#calle").val(""),
                             valor: () => $("#calle").val(),
                             texto: () => $("#calle").val(),
                             validacion: () => $("#calle").val().trim() !== "",
@@ -108,6 +123,7 @@ class CapHum extends Controller
                         },
                         codigoPostal: {
                             elemento: "codigoPostal",
+                            limpiar: () => $("#codigoPostal").val(""),
                             valor: () => $("#codigoPostal").val(),
                             texto: () => $("#codigoPostal").val(),
                             validacion: () => $("#codigoPostal").val().trim() !== "" && $("#codigoPostal").val().trim().length === 5,
@@ -115,6 +131,7 @@ class CapHum extends Controller
                         },
                         colonia: {
                             elemento: "colonia",
+                            limpiar: () => $("#colonia").val(""),
                             valor: () => $("#colonia option:selected").val(),
                             texto: () => $("#colonia option:selected").text(),
                             validacion: () => $("#colonia option:selected").val() !== "",
@@ -122,6 +139,7 @@ class CapHum extends Controller
                         },
                         municipio: {
                             elemento: "municipio",
+                            limpiar: () => $("#municipio").val(""),
                             valor: () => $("#municipio option:selected").val(),
                             texto: () => $("#municipio option:selected").text(),
                             validacion: () => $("#municipio option:selected").val() !== "",
@@ -129,6 +147,7 @@ class CapHum extends Controller
                         },
                         estado: {
                             elemento: "estado",
+                            limpiar: () => $("#estado").val(""),
                             valor: () => $("#estado option:selected").val(),
                             texto: () => $("#estado option:selected").text(),
                             validacion: () => $("#estado option:selected").val() !== "",
@@ -138,6 +157,7 @@ class CapHum extends Controller
                     contacto: {
                         telefonoPrincipal: {
                             elemento: "telefonoPrincipal",
+                            limpiar: () => $("#telefonoPrincipal").val(""),
                             valor: () => $("#telefonoPrincipal").val(),
                             texto: () => $("#telefonoPrincipal").val(),
                             validacion: () => $("#telefonoPrincipal").val().trim() !== "",
@@ -145,6 +165,7 @@ class CapHum extends Controller
                         },
                         telefonoAlterno: {
                             elemento: "telefonoAlterno",
+                            limpiar: () => $("#telefonoAlterno").val(""),
                             valor: () => $("#telefonoAlterno").val(),
                             texto: () => $("#telefonoAlterno").val(),
                             validacion: () => true,
@@ -152,6 +173,7 @@ class CapHum extends Controller
                         },
                         correoPrincipal: {
                             elemento: "correoPrincipal",
+                            limpiar: () => $("#correoPrincipal").val(""),
                             valor: () => $("#correoPrincipal").val(),
                             texto: () => $("#correoPrincipal").val(),
                             validacion: () => true,
@@ -159,6 +181,7 @@ class CapHum extends Controller
                         },
                         contactoEmergenciaNombre: {
                             elemento: "contactoEmergenciaNombre",
+                            limpiar: () => $("#contactoEmergenciaNombre").val(""),
                             valor: () => $("#contactoEmergenciaNombre").val(),
                             texto: () => $("#contactoEmergenciaNombre").val(),
                             validacion: () => true,
@@ -166,8 +189,12 @@ class CapHum extends Controller
                         },
                         contactoEmergenciaParentesco: {
                             elemento: "contactoEmergenciaParentesco",
+                            limpiar: () => $("#contactoEmergenciaParentesco").val(""),
                             valor: () => $("#contactoEmergenciaParentesco option:selected").val(),
-                            texto: () => $("#contactoEmergenciaParentesco option:selected").text(),
+                            texto: () => {
+                                const option = $("#contactoEmergenciaParentesco option:selected")
+                                return option.val() ? option.text() : ""
+                            },
                             validacion: () => {
                                 if ($("#contactoEmergenciaNombre").val().trim() !== "") {
                                     return $("#contactoEmergenciaParentesco option:selected").val() !== "";
@@ -178,6 +205,7 @@ class CapHum extends Controller
                         },
                         contactoEmergenciaTelefono: {
                             elemento: "contactoEmergenciaTelefono",
+                            limpiar: () => $("#contactoEmergenciaTelefono").val(""),
                             valor: () => $("#contactoEmergenciaTelefono").val(),
                             texto: () => $("#contactoEmergenciaTelefono").val(),
                             validacion: () => {
@@ -190,6 +218,7 @@ class CapHum extends Controller
                         },
                         condicionesMedicas: {
                             elemento: "condicionesMedicas",
+                            limpiar: () => $("#condicionesMedicas").val(""),
                             valor: () => $("#condicionesMedicas").val(),
                             texto: () => $("#condicionesMedicas").val(),
                             validacion: () => true,
@@ -197,6 +226,7 @@ class CapHum extends Controller
                         },
                         informacionAdicional: {
                             elemento: "informacionAdicional",
+                            limpiar: () => $("#informacionAdicional").val(""),
                             valor: () => $("#informacionAdicional").val(),
                             texto: () => $("#informacionAdicional").val(),
                             validacion: () => true,
@@ -206,6 +236,10 @@ class CapHum extends Controller
                     laborales: {
                         empresa: {
                             elemento: "empresa",
+                            limpiar: () => {
+                                $("#empresa").val("")
+                                $("#empresa").trigger("change")
+                            },
                             valor: () => $("#empresa option:selected").val(),
                             texto: () => $("#empresa option:selected").text(),
                             validacion: () => $("#empresa option:selected").val() !== "",
@@ -213,6 +247,10 @@ class CapHum extends Controller
                         },
                         region: {
                             elemento: "region",
+                            limpiar: () => {
+                                $("#region").val("")
+                                $("#region").trigger("change")
+                            },
                             valor: () => $("#region option:selected").val(),
                             texto: () => $("#region option:selected").text(),
                             validacion: () => $("#region option:selected").val() !== "",
@@ -220,6 +258,10 @@ class CapHum extends Controller
                         },
                         sucursal: {
                             elemento: "sucursal",
+                            limpiar: () => {
+                                $("#sucursal").val("")
+                                $("#sucursal").trigger("change")
+                            },
                             valor: () => $("#sucursal option:selected").val(),
                             texto: () => $("#sucursal option:selected").text(),
                             validacion: () => $("#sucursal option:selected").val() !== "",
@@ -227,6 +269,9 @@ class CapHum extends Controller
                         },
                         jefeInmediato: {
                             elemento: "jefeInmediato",
+                            limpiar: () => {
+                                $("#jefeInmediato").prop("disabled", true).html('<option value="" selected disabled>Seleccione un jefe</option>')
+                            },
                             valor: () => $("#jefeInmediato option:selected").val(),
                             texto: () => $("#jefeInmediato option:selected").text(),
                             validacion: () => $("#jefeInmediato option:selected").val() !== "",
@@ -234,6 +279,9 @@ class CapHum extends Controller
                         },
                         reporta: {
                             elemento: "reporta",
+                            limpiar: () => {
+                                $("#reporta").prop("disabled", true).html('<option value="" selected disabled>Seleccione a quien reporta</option>')
+                            },
                             valor: () => $("#reporta option:selected").val(),
                             texto: () => $("#reporta option:selected").text(),
                             validacion: () => true, //$("#reporta option:selected").val() !== "",
@@ -241,13 +289,43 @@ class CapHum extends Controller
                         },
                         puesto: {
                             elemento: "puesto",
+                            limpiar: () => $("#puesto").val(""),
                             valor: () => $("#puesto option:selected").val(),
                             texto: () => $("#puesto option:selected").text(),
                             validacion: () => $("#puesto option:selected").val() !== "",
                             mensaje: "Seleccione un puesto."
                         },
+                        empresasHabilitadas: {
+                            elemento: "empresasHabilitadas",
+                            limpiar: () => $('input[name="empresasHabilitadas[]"]').prop("checked", false),
+                            valor: () => {
+                                const empresas = []
+                                $('input[name="empresasHabilitadas[]"]:checked').each(function() {
+                                    empresas.push($(this).val())
+                                })
+                                return empresas.join(',')
+                            },
+                            texto: () => {
+                                const empresas = []
+                                $('input[name="empresasHabilitadas[]"]:checked').each(function() {
+                                    empresas.push($(this).next('.form-check-label').text())
+                                })
+                                return empresas.join(', ')
+                            },
+                            validacion: () => {
+                                const seleccionadas = $('input[name="empresasHabilitadas[]"]:checked').length
+                                return seleccionadas > 0
+                            },
+                            mensaje: "Seleccione al menos una empresa."
+                        },
                         correoLaboral: {
                             elemento: "correoLaboral",
+                            limpiar: () => {
+                                const original = $('#correosContainer').children().first().clone()
+                                original.find('input[name="correoEmpresa[]"]').val("")
+
+                                $('#correosContainer').empty().append(original)
+                            },
                             valor: () => {
                                     const correos = []
                                     $('input[name="correoEmpresa[]"]').each(function() {
@@ -269,6 +347,7 @@ class CapHum extends Controller
                         },
                         usuario: {
                             elemento: "usuario",
+                            limpiar: () => $("#usuario").val(""),
                             valor: () => $("#usuario").val(),
                             texto: () => $("#usuario").val(),
                             validacion: () => $("#usuario").val() !== "",
@@ -276,6 +355,15 @@ class CapHum extends Controller
                         },
                         password: {
                             elemento: "password",
+                            limpiar: () => {
+                                $("#password")
+                                    .val("")
+                                    .attr("type", "password")
+                                    .parent()
+                                    .find("i")
+                                    .removeClass("fa-eye-slash")
+                                    .addClass("fa-eye")
+                            },
                             valor: () => $("#password").val(),
                             texto: () => $("#password").val(),
                             validacion: () => $("#password").val().length >= 8,
@@ -283,6 +371,7 @@ class CapHum extends Controller
                         },
                         perfil: {
                             elemento: "perfil",
+                            limpiar: () => $("#perfil").val(""),
                             valor: () => $("#perfil option:selected").val(),
                             texto: () => $("#perfil option:selected").text(),
                             validacion: () => $("#perfil option:selected").val() !== "",
@@ -292,6 +381,10 @@ class CapHum extends Controller
                     nomina: {
                         fechaIngreso: {
                             elemento: "fechaIngreso",
+                            limpiar: () => {
+                                const ini = moment().format(MOMENT_FRONT);
+                                updateInputFechas("#fechaIngreso", { iniF: ini })
+                            },
                             valor: () => getInputFechas("#fechaIngreso", false, true),
                             texto: () => $("#fechaIngreso").val(),
                             validacion: () => $("#fechaIngreso").val() !== "",
@@ -299,6 +392,7 @@ class CapHum extends Controller
                         },
                         proveedor: {
                             elemento: "proveedor",
+                            limpiar: () => $("#proveedor").val(""),
                             valor: () => $("#proveedor option:selected").val(),
                             texto: () => $("#proveedor option:selected").text(),
                             validacion: () => $("#proveedor option:selected").val() !== "",
@@ -306,6 +400,7 @@ class CapHum extends Controller
                         },
                         tipoNomina: {
                             elemento: "tipoNomina",
+                            limpiar: () => $("#tipoNomina").val(""),
                             valor: () => $("#tipoNomina option:selected").val(),
                             texto: () => $("#tipoNomina option:selected").text(),
                             validacion: () => $("#tipoNomina option:selected").val() !== "",
@@ -313,6 +408,7 @@ class CapHum extends Controller
                         },
                         numeroNomina: {
                             elemento: "numeroNomina",
+                            limpiar: () => $("#numeroNomina").val(""),
                             valor: () => $("#numeroNomina").val(),
                             texto: () => $("#numeroNomina").val(),
                             validacion: () => $("#numeroNomina").val() !== "",
@@ -321,23 +417,34 @@ class CapHum extends Controller
                         banco: {
                             elemento: "banco",
                             valor: () => $("#banco").val(),
+                            limpiar: () => $("#banco").val(""),
                             texto: () => $("#banco option:selected").text(),
                             validacion: () => $("#banco option:selected").val() !== "",
                             mensaje: "Seleccione un banco."
                         },
                         cuentaBancaria: {
                             elemento: "cuentaBancaria",
+                            limpiar: () => $("#cuentaBancaria").val(""),
                             valor: () => $("#cuentaBancaria").val(),
                             texto: () => $("#cuentaBancaria").val(),
-                            validacion: () => $("#cuentaBancaria").val() !== "",
-                            mensaje: "Ingrese una cuenta bancaria válida."
+                            validacion: () => {
+                                if ($("#cuentaBancaria").val() !== "") return $("#cuentaBancaria").val().trim().length === 18
+
+                                return $("#tarjeta").val().trim() !== ""
+                            },
+                            mensaje: () => $("#cuentaBancaria").val() === "" && $("#tarjeta").val() === "" ? "Debe ingresar un número de cuenta o tarjeta." : "El numero de cuenta debe tener 18 dígitos."
                         },
                         tarjeta: {
                             elemento: "tarjeta",
+                            limpiar: () => $("#tarjeta").val(""),
                             valor: () => $("#tarjeta").val(),
                             texto: () => $("#tarjeta").val(),
-                            validacion: () => $("#tarjeta").val().length === 16,
-                            mensaje: "El número de tarjeta debe tener 16 dígitos."
+                            validacion: () => {
+                                if ($("#tarjeta").val() !== "") return $("#tarjeta").val().trim().length === 16
+
+                                return $("#cuentaBancaria").val().trim() !== ""
+                            },
+                            mensaje: () => $("#cuentaBancaria").val() === "" && $("#tarjeta").val() === "" ? "Debe ingresar un número de cuenta o tarjeta." : "El número de tarjeta debe tener 16 dígitos."
                         }
                     }
                 }
@@ -361,7 +468,6 @@ class CapHum extends Controller
                 const initWizard = () => {
                     const wizardElement = document.querySelector('.wizard-registro-colaborador')
                     if (wizardElement) {
-                        // Inicializar con linear: true por defecto (para registro)
                         wizardPersona = new Stepper(wizardElement, { linear: true, animation: true })
                         
                         const nextButtons = wizardElement.querySelectorAll('.btn-next')
@@ -390,16 +496,12 @@ class CapHum extends Controller
                             })
                         })
 
-                        // Agregar navegación directa por pasos en visualización/edición
                         const stepHeaders = wizardElement.querySelectorAll('.bs-stepper-header .step')
                         stepHeaders.forEach((step, index) => {
                             step.addEventListener('click', () => {
                                 const esNuevoRegistro = $("#personaIdHidden").val() === ""
                                 
-                                // Solo permitir navegación directa en modo visualización/edición
-                                if (!esNuevoRegistro) {
-                                    wizardPersona.to(index + 1)
-                                }
+                                if (!esNuevoRegistro) wizardPersona.to(index + 1)
                             })
                         })
                     }
@@ -419,8 +521,6 @@ class CapHum extends Controller
                             return validarWizard("laborales")
                         case 3:
                             return validarWizard("nomina")
-                        case 4:
-                            return true
                         default:
                             return true
                     }
@@ -433,15 +533,38 @@ class CapHum extends Controller
                     Object.keys(items).forEach(campoKey => {
                         const campo = items[campoKey]
                         const valor = campo.valor()
-                        const campoMensaje = getFvMessage($("#" + campo.elemento))
                         const validacion = campo.validacion()
+                        const campoMensaje = getFvMessage($("#" + campo.elemento))
+                        const mensaje = typeof campo.mensaje === 'function' ? campo.mensaje() : campo.mensaje
+
                         valido = valido ? validacion : false
-                        campoMensaje.text(!validacion ? campo.mensaje : "")
+                        campoMensaje.text(!validacion ? mensaje : "")
                     })
 
                     if (!valido) showError('Por favor complete todos los campos requeridos')
 
                     return valido
+                }
+
+                const limpiarWizard = () => {
+                    Object.keys(camposPersona).forEach(grupo => {
+                        const items = camposPersona[grupo]
+
+                        Object.keys(items).forEach(campoKey => {
+                            const campo = items[campoKey]
+                            const campoMensaje = getFvMessage($("#" + campo.elemento))
+
+                            if (campo?.limpiar) campo.limpiar()
+                            campoMensaje.text("")
+                        })
+                    })
+
+                    $("#personaId").val("")
+                    $("#personaIdHidden").val("")
+                    $("#fotoInput").val("")
+                    $("#fotoPreview").attr("src", "/assets/img/misc/user.svg")
+                    
+                    if (wizardPersona) wizardPersona.to(1)
                 }
 
                 const llenarResumen = () => {
@@ -466,10 +589,7 @@ class CapHum extends Controller
                 }
 
                 const guardarCambiosPersona = () => {
-                    if (!verificarCambios()) {
-                        showError("No se han detectado cambios para guardar")
-                        return
-                    }
+                    if (!verificarCambios()) return showError("No se han detectado cambios para guardar")
 
                     const formData = new FormData()
                     formData.append('id', $("#personaIdHidden").val())
@@ -492,15 +612,12 @@ class CapHum extends Controller
                     consultaServidor("/CapHum/actualizarPersona", formData, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         showSuccess(respuesta.mensaje)
-                        
-                        // Volver a modo visualización
                         modoEdicion = false
                         hayCambios = false
                         datosOriginales = obtenerDatosFormulario()
                         bloquearCamposModal(true)
                         actualizarBotonesModal()
-                        
-                        // Actualizar tabla
+                        $("#modalPersona").modal("hide")
                         getPersonas(true)
                     }, {
                         procesar: false,
@@ -812,30 +929,15 @@ class CapHum extends Controller
                 }
 
                 const nuevaPersona = () => {
-                    limpiarPersona()
-                    
-                    // Configurar modal para modo registro
-                    modoEdicion = false // En registro iniciamos en modo visualización hasta que el usuario empiece a llenar datos
                     $("#tituloModalPersona").text("Registrar nuevo colaborador")
                     $(".address-subtitle").text("Complete los siguientes pasos para el registro")
-                    $("#personaId").val("")
-                    $("#personaIdHidden").val("")
                     
-                    // Configurar wizard para mostrar confirmación
+                    modoEdicion = false
+                    limpiarWizard()
                     configurarWizardParaModo(true)
-                    
-                    // Configurar botones para modo registro
                     actualizarBotonesModal()
-                    
-                    // Habilitar todos los campos para registro
                     bloquearCamposModal(false)
                     
-                    // Ir al primer step del wizard
-                    if (wizardPersona) {
-                        wizardPersona.to(1)
-                    }
-                    
-                    // Mostrar modal
                     modalPersona.show()
                 }
 
@@ -846,13 +948,13 @@ class CapHum extends Controller
                         const persona = respuesta.datos.persona
                         const nomina = respuesta.datos.nomina
                         const empresa = respuesta.datos.empresa
+                        const empresasHabilitadas = respuesta.datos.empresasHabilitadas
                         const contactos = respuesta.datos.contactos
                         const telefonos = respuesta.datos.telefonos
                         const emails = respuesta.datos.emails
                         const usuarios = respuesta.datos.usuarios
                         const bancos = respuesta.datos.bancos
 
-                        // Configurar modal para modo visualización
                         modoEdicion = false
                         $("#tituloModalPersona").text("Detalles del colaborador")
                         $(".address-subtitle").text("Información completa del colaborador")
@@ -874,7 +976,7 @@ class CapHum extends Controller
                         $("#sexo").val(persona.SEXO)
                         $("#calle").val(persona.CALLE_NUMERO)
                         $("#codigoPostal").val(persona.CP);
-                        $("#codigoPostal").trigger("blur"); // Para cargar colonias
+                        $("#codigoPostal").trigger("blur")
                         setTimeout(() => {
                             $("#colonia").val(persona.COLONIA)
                             $("#colonia").attr("disabled", "disabled")
@@ -899,8 +1001,6 @@ class CapHum extends Controller
                         $("#contactoEmergenciaTelefono").val(contactos[0]?.TELEFONO || "");
                         $("#condicionesMedicas").val(persona.CONDICIONES_MEDICAS || "");
                         $("#informacionAdicional").val(persona.OTROS_DATOS_RELEVANTES || "");
-
-                        // Cargar datos de empresa
                         $("#empresa").val(empresa.EMPRESA);
                         $("#empresa").trigger("change")
 
@@ -926,15 +1026,16 @@ class CapHum extends Controller
                         $("#reporta").attr("disabled", "disabled");
 
                         $("#puesto").val(nomina.PUESTO);
+                        empresasHabilitadas.forEach(empresa => {
+                            $('input[name="empresasHabilitadas[]"]').each(function() {
+                                $(this).val() == empresa.EMPRESA ? $(this).prop('checked', true) : null
+                            })
+                        });
+
                         emails.forEach(email => {
                             if (email.TIPO === "4") {
-                                // el input tiene el name "correoEmpresa[]"
-                                if ($("#correosContainer").children().length === 1 && $("#correosContainer").children().first().find('input').val() === "") {
-                                    // Si solo hay un input vacío, reutilizarlo
-                                    $("#correosContainer").children().first().find('input').val(email.DIRECCION);
-                                    return;
-                                    
-                                }
+                                if ($("#correosContainer").children().length === 1 && $("#correosContainer").children().first().find('input').val() === "")
+                                    return $("#correosContainer").children().first().find('input').val(email.DIRECCION)
 
                                 const nuevoCorreo = $("#correosContainer").children().first().clone();
                                 nuevoCorreo.find('input').val(email.DIRECCION);
@@ -948,7 +1049,6 @@ class CapHum extends Controller
                         $("#tipoNomina").val(nomina.TIPO_NOMINA);
                         $("#numeroNomina").val(nomina.NUMERO_NOMINA);
                         
-                        // Cargar datos bancarios
                         bancos.forEach(banco => {
                             $("#banco").val(banco.ID_BANCO);
                             if (banco.TIPO_NUMERO === "1") {
@@ -960,11 +1060,8 @@ class CapHum extends Controller
 
                         $("#usuario").val(usuarios[0]?.USUARIO || "");
                         $("#perfil").val(usuarios[0]?.PERFIL || "");
-
-                        // Mostrar ID de usuario arriba de la foto
                         $("#usuarioIdDisplay").text(persona?.ID || "-");
 
-                        // Configurar imagen de perfil
                         let fotoSrc = "/assets/img/misc/user.svg"
                         try {
                             const filaEncontrada = $(tabla + ' tbody tr').filter(function() {
@@ -990,14 +1087,8 @@ class CapHum extends Controller
                         }
                         
                         $("#fotoPreview").attr("src", fotoSrc)
-
-                        // Bloquear todos los campos para modo visualización
                         bloquearCamposModal(true)
-                        
-                        // Ir al primer step del wizard
                         wizardPersona.to(1)
-                        
-                        // Mostrar el modal
                         modalPersona.show()
                     })
                 }
@@ -1005,11 +1096,9 @@ class CapHum extends Controller
                 const bloquearCamposModal = (bloquear) => {
                     const campos = $('#modalPersona input, #modalPersona select, #modalPersona textarea')
                     campos.prop('disabled', bloquear)
-                    if (bloquear) {
-                        $('#btnCambiarFoto').hide()
-                    } else {
-                        $('#btnCambiarFoto').show()
-                    }
+
+                    if (bloquear) $('#btnCambiarFoto').hide()
+                    else $('#btnCambiarFoto').show()
                 }
 
                 const toggleModoEdicion = () => {
@@ -1086,39 +1175,6 @@ class CapHum extends Controller
                             getPersonas(true)
                         })
                     })
-                }
-
-                const limpiarPersona = () => {
-                    $("#personaId").val("")
-                    $("#nombre").val("")
-                    $("#apellido1").val("")
-                    $("#apellido2").val("")
-                    $("#rfc").val("")
-                    $("#curp").val("")
-                    $("#fechaNacimiento").val("")
-                    $("#sexo").val("")
-                    $("#usuario").val("")
-                    $("#password").val("")
-                    $("#perfil").val("")
-                    $("#empresa").val("")
-                    $("#region").val("")
-                    $("#sucursal").val("")
-                    $("#puesto").val("")
-                    $("#nomina").val("")
-                    $("#tipoNomina").val("")
-                    $("#numeroNomina").val("")
-                    $("#jefeInmediato").val("")
-                    $("#reporta").val("")
-                    $('#correosContainer').html('<div class="input-group mb-2"><input type="email" name="correoEmpresa[]" class="form-control" placeholder="correo@empresa.com"><button type="button" class="btn btn-outline-success" onclick="agregarCorreo()"><i class="fa fa-plus"></i></button></div>')
-                    $("#fotoInput").val("")
-                    $("#fotoPreview").attr("src", "/assets/img/misc/user.svg")
-                    $("#contactoEmergenciaNombre").val("")
-                    $("#contactoEmergenciaParentesco").val("")
-                    $("#contactoEmergenciaTelefono").val("")
-                    $("#condicionesMedicas").val("")
-                    $("#informacionAdicional").val("")
-                    $("#usuarioIdDisplay").text("-")
-                    $('.fv-message').text('')
                 }
 
                 const inhabilitarPersona = () => {
@@ -1381,7 +1437,6 @@ class CapHum extends Controller
                     initWizard()
                     getPersonas()
                     
-                    // Inicializar modal de persona
                     modalPersona = new bootstrap.Modal(document.getElementById('modalPersona'))
                     
                     window.agregarCorreo = agregarCorreo
@@ -1394,8 +1449,6 @@ class CapHum extends Controller
                     $("#btnCambiarFoto").click(() => $("#fotoInput").click())
                     $("#btnCambiarFotoDetalle").click(() => $("#detalleFotoInput").click())
                     $("#btnCambiarFotoResumen").click(() => $("#resumenFotoInput").click())
-                    
-                    // Event listeners para el modal unificado
                     $("#btnEditarPersona").click(toggleModoEdicion)
                     $("#btnCancelarGuardarPersona").click(function() {
                         const esNuevoRegistro = $("#personaIdHidden").val() === ""
@@ -1469,6 +1522,17 @@ class CapHum extends Controller
                     $('#tarjeta').on('input', function() {
                         camposNumericos($(this), 18)
                     })
+
+                    $("#password").parent().find("i").click(function() {
+                        const input = $("#password")
+                        if (input.attr("type") === "password") {
+                            input.attr("type", "text")
+                            $(this).removeClass("fa-eye").addClass("fa-eye-slash")
+                        } else {
+                            input.attr("type", "password")
+                            $(this).removeClass("fa-eye-slash").addClass("fa-eye")
+                        }
+                    })
                 })
             </script>
         HTML;
@@ -1492,6 +1556,19 @@ class CapHum extends Controller
         $catProveedores = CapHumDAO::getCatalogoNominaProveedores();
         if ($catProveedores['success']) $proveedores = self::getOptions($catProveedores['datos'], 'ID_PROVEEDOR', 'NOMBRE_PROVEEDOR');
 
+        $variasEmpresas = "";
+        $empresasTmp = [];
+        foreach ($catSucursales['datos'] as $empresa) {
+            if (in_array($empresa['EMPRESA'], $empresasTmp)) continue;
+            $empresasTmp[] = $empresa['EMPRESA'];
+            $variasEmpresas .= <<<HTML
+                <div class="input-group gap-2">
+                    <input type="checkbox" name="empresasHabilitadas[]" class="form-check-input" value="{$empresa['EMPRESA']}">
+                    <label class="form-check-label" for="empresasHabilitadas">{$empresa['EMPRESA_NOMBRE']}</label>
+                </div>
+            HTML;
+        }
+
         $this->set('titulo', 'Gestión Capital Humano | ' . CONFIGURACION['EMPRESA']);
         $this->set('script', $script);
         $this->set('css', '<link rel="stylesheet" href="/assets/css/wizard-rh.css">');
@@ -1504,6 +1581,7 @@ class CapHum extends Controller
         $this->set("filtroEmpresa", $optionsSucursales['empresas']);
         $this->set("filtroRegion", $optionsSucursales['regiones']);
         $this->set("filtroSucursal", $optionsSucursales['sucursales']);
+        $this->set("variasEmpresas", $variasEmpresas);
         $this->set("bancos", $bancos);
         $this->set("perfiles", $perfiles);
         $this->render('caphum_gestion');
@@ -1566,7 +1644,7 @@ class CapHum extends Controller
             fclose($fotoData['foto']);
         }
 
-        $this->respuestaJSON($resultado);
+        self::respuestaJSON($resultado);
     }
 
     public function actualizarPersona()
