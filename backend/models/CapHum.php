@@ -1084,7 +1084,6 @@ class CapHum extends Model
     private static function actualizarDatosLaborales($db, $personaId, $datos)
     {
         try {
-            // Verificar si ya existe registro laboral
             $qryCheck = "SELECT COUNT(*) as COUNT FROM NOMINA WHERE PERSONA = :personaId";
             $result = $db->queryOne($qryCheck, ['personaId' => $personaId]);
 

@@ -1136,7 +1136,16 @@ class Viaticos extends Controller
                     })
                     $("#nochesComprobante").on("input", () => {
                         if ($("#conceptoComprobante").val() != "2") return
+                        
                         const noches = numeral($("#nochesComprobante").val()).value() || 0
+
+                        if (noches > 15) {
+                            showWarning("El número máximo de noches es 15.").then(() => {
+                                $("#nochesComprobante").val(15)
+                                $("#nochesComprobante").focus()
+                            })
+                        }
+
                         const montoMaximo = numeral($("#conceptoComprobante").find("option:selected").attr("data-monto") || 0).value()
                         const montoMaximoTotal = montoMaximo * noches
                         montoMaximoComprobante = montoMaximoTotal

@@ -419,14 +419,6 @@ const resetValidacion = (validador, reset) => {
 }
 
 /*
- * Funcion para forzar las mayusculas en un input o textarea
- * Se debe agregar la clase "mayusculas" al input o textarea
- */
-$(document).on("input", ".mayusculas", function () {
-    $(this).val($(this).val().toUpperCase())
-})
-
-/*
  * Función para los selectores de empresa, region y sucursal
  */
 const setSelectEmpresaRegionSucursal = (
@@ -480,3 +472,19 @@ const setSelectEmpresaRegionSucursal = (
         if (sucChange) sucChange(empresaId, regionId, sucursalId)
     })
 }
+
+/*
+ * Funcion para forzar las mayusculas en un input o textarea
+ * Se debe agregar la clase "mayusculas" al input o textarea
+ */
+$(document).on("input", ".mayusculas", function () {
+    $(this).val($(this).val().toUpperCase())
+})
+
+/*
+ * Funcion para forzar el uso solo numeros en un input
+ * Se debe agregar la clase "solo_numeros" al input
+ */
+$(document).on("input", ".solo_numeros", function () {
+    $(this).val($(this).val().replace(/\D/g, ""))
+})

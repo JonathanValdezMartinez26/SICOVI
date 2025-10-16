@@ -273,7 +273,7 @@
                     <div class="form-group col-4">
                         <div class="form-group" style="display: none;" id="divNoches">
                             <label for="nochesComprobante" class="form-label">Noches</label>
-                            <input type="text" id="nochesComprobante" name="nochesComprobante" class="form-control" value="1" min="0">
+                            <input type="text" id="nochesComprobante" name="nochesComprobante" class="form-control solo_numeros" value="1" maxlength="2">
                             <div class="fv-message text-danger small" style="min-height: 1.25rem"></div>
                         </div>
                         <label for="montoComprobante" class="form-label">Monto del comprobante</label>
