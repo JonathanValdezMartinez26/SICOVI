@@ -160,10 +160,10 @@ class CapHum extends Model
                 N.PERSONA = :id
         SQL;
         $empHab = 'SELECT ID_EMPRESA AS EMPRESA FROM CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO WHERE ID_PERSONA = :id';
-        $qryBancos = "SELECT ID_BANCO, CB.NOMBRE, NUMERO, TIPO_NUMERO FROM PERSONA_DATOS_BANCARIOS PDB JOIN CAT_BANCO CB ON CB.ID = PDB.ID_BANCO WHERE PERSONA = :id";
-        $qryTelefonos = "SELECT NUMERO, TIPO FROM PERSONA_TELEFONO WHERE PERSONA = :id";
-        $qryEmails = "SELECT DIRECCION, TIPO FROM PERSONA_EMAIL WHERE PERSONA = :id";
-        $qryContactos = "SELECT PCE.ID, PCE.NOMBRE, PCE.TELEFONO, CP.ID_PARENTESCO AS PARENTESCO, CP.DESCRIPCION AS PARENTESCO_NOMBRE FROM PERSONA_CONTACTO_EMERGENCIA PCE JOIN CAT_PARENTESCO_EMERGENCIA CP ON CP.ID_PARENTESCO = PCE.PARENTESCO WHERE PCE.PERSONA = :id";
+        $qryBancos = "SELECT ID_BANCO, CB.NOMBRE, NUMERO, TIPO_NUMERO FROM PERSONA_DATOS_BANCARIOS PDB JOIN CAT_BANCO CB ON CB.ID = PDB.ID_BANCO WHERE PERSONA = :id AND PDB.ESTATUS = 'A'";
+        $qryTelefonos = "SELECT NUMERO, TIPO FROM PERSONA_TELEFONO WHERE PERSONA = :id AND ESTATUS = 1";
+        $qryEmails = "SELECT DIRECCION, TIPO FROM PERSONA_EMAIL WHERE PERSONA = :id AND ESTATUS = 1";
+        $qryContactos = "SELECT PCE.ID, PCE.NOMBRE, PCE.TELEFONO, CP.ID_PARENTESCO AS PARENTESCO, CP.DESCRIPCION AS PARENTESCO_NOMBRE FROM PERSONA_CONTACTO_EMERGENCIA PCE JOIN CAT_PARENTESCO_EMERGENCIA CP ON CP.ID_PARENTESCO = PCE.PARENTESCO WHERE PCE.PERSONA = :id AND PCE.ESTATUS = 'A'";
 
         $params = [
             'id' => $datos['id'] ?? 0
@@ -206,57 +206,68 @@ class CapHum extends Model
     {
         try {
             $db = new Database();
-            $db->beginTransaction();
+            $qrys = [];
+            $params = [];
 
-            // 1) Crear persona
-            $crea = self::crearPersona($datos, $fotoData, $db);
-            if (!$crea['success']) throw new \Exception(self::getErrorMessage($crea) ?? 'Error creando persona');
-            $personaId = $crea['datos']['id'];
-
-            // 2) Telefonos persona
-            $telefonos = [
-                ['1', $datos['telefonoPrincipal'] ?? null],
-                ['2', $datos['telefonoAlterno'] ?? null]
-            ];
-            $insTel = self::insertarTelefonosPersona($personaId, $telefonos, $db);
-            if (!$insTel['success']) throw new \Exception(self::getErrorMessage($insTel) ?? 'Error insertando teléfonos persona');
-
-            // 3) Emails persona
-            $emails = [
-                ['1', $datos['correoPrincipal'] ?? null]
-            ];
-            $laborales = explode(',', $datos['correoLaboral'] ?? '');
-            foreach ($laborales as $email) {
-                $emails[] = ['4', $email];
+            // 1) Validar o Crear persona
+            if (!$datos['id']) {
+                $crea = self::crearPersona($datos, $fotoData, $db);
+                if (!$crea['success']) throw new \Exception(self::getErrorMessage($crea) ?? 'Error creando persona');
+                $personaId = $crea['datos']['id'];
+            } else {
+                $personaId = $datos['id'];
+                $result = self::actualizarPersona($datos, $fotoData, $db);
+                if (!$result['success']) throw new \Exception(self::getErrorMessage($result) ?? 'Error actualizando persona');
             }
-            $insEmail = self::insertarEmailsPersona($personaId, $emails, $db);
-            if (empty($insEmail['success'])) throw new \Exception(self::getErrorMessage($insEmail) ?? 'Error insertando emails persona');
+
+            // 2) Telefonos del colaborador
+            [$q, $p] = self::upsertTelefonosPersona($personaId, $datos);
+            $qrys = array_merge($qrys, $q);
+            $params = array_merge($params, $p);
+
+            // 3) Emails del colaborador
+            [$q, $p] = self::upsertEmailsPersona($personaId, $datos);
+            $qrys = array_merge($qrys, $q);
+            $params = array_merge($params, $p);
 
             // 4) Nomina
-            $creaNom = self::crearNomina($personaId, $datos, $db);
-            if (empty($creaNom['success'])) throw new \Exception(self::getErrorMessage($creaNom) ?? 'Error creando nomina');
+            [$q, $p] = self::upsertNomina($personaId, $datos);
+            $qrys = array_merge($qrys, $q);
+            $params = array_merge($params, $p);
 
-            $empresas = self::habilitaEmpresas($personaId, $datos, $db);
-            if (empty($empresas['success'])) throw new \Exception(self::getErrorMessage($empresas) ?? 'Error habilitando empresas');
+            // 5) Empresas habilitadas
+            [$q, $p] = self::upsertEmpresas($personaId, $datos);
+            $qrys = array_merge($qrys, $q);
+            $params = array_merge($params, $p);
 
-            // 5) Datos bancarios
-            $insBanco = self::insertarDatosBancarios($personaId, $datos, $db);
-            if (empty($insBanco['success'])) throw new \Exception(self::getErrorMessage($insBanco) ?? 'Error datos bancarios');
+            // 6) Datos bancarios
+            [$q, $p] = self::upsertDatosBancarios($personaId, $datos);
+            $qrys = array_merge($qrys, $q);
+            $params = array_merge($params, $p);
 
-            // 6) Contacto emergencia
-            if ($datos['contactoEmergenciaNombre'] && $datos['contactoEmergenciaTelefono'] && $datos['contactoEmergenciaParentesco']) {
-                $creaContacto = self::crearContactoEmergencia($personaId, $datos, $db);
-                if (empty($creaContacto['success'])) throw new \Exception(self::getErrorMessage($creaContacto) ?? 'Error creando contacto');
-            }
+            // 7) Contacto emergencia
+            [$q, $p] = self::upsertContactoEmergencia($personaId, $datos);
+            $qrys = array_merge($qrys, $q);
+            $params = array_merge($params, $p);
 
-            // 7) Registro de usuario principal
-            $creaUsuario = self::crearUsuario($personaId, $datos, $db);
-            if (empty($creaUsuario['success'])) throw new \Exception(self::getErrorMessage($creaUsuario) ?? 'Error creando usuario');
+            // 7) Registro de usuario principal para el sistema
+            [$q, $p] = self::upsertUsuario($personaId, $datos, $db);
+            $qrys = array_merge($qrys, $q);
+            $params = array_merge($params, $p);
 
-            $db->commit();
+            $db->CRUD_multiple($qrys, $params);
             return self::resultado(true, 'Registro completado correctamente.');
         } catch (\Exception $e) {
-            $db->rollBack();
+            if (!$datos['id'] && isset($personaId)) {
+                try {
+                    $dbDel = new Database();
+                    $dbDel->beginTransaction();
+                    $dbDel->CRUD("DELETE FROM PERSONA WHERE ID = :id", ['id' => $personaId]);
+                    $dbDel->commit();
+                } catch (\Exception $ex) {
+                    // No hacer nada, ya se está en un error
+                }
+            }
             return self::resultado(false, 'Error al registrar persona.', null, $e->getMessage());
         }
     }
@@ -276,7 +287,6 @@ class CapHum extends Model
                 'ret' => ', :foto'
             ];
         }
-
 
         $qry = <<<SQL
             INSERT INTO PERSONA (
@@ -322,160 +332,296 @@ class CapHum extends Model
                 'largo' => 40
             ]
         ];
+
         if ($fotoData) $ret = array_merge($ret, $retFoto);
 
         try {
             if (!$db) $db = new Database();
+            $db->beginTransaction();
             $res = $db->CRUD($qry, $params, $ret);
             if (!$res || !isset($ret['id'])) return self::resultado(false, 'No se pudo insertar persona.');
 
-            $id = $ret['id']['valor'];
-            return self::resultado(true, "Persona registrada", ['id' => $id]);
+            $db->commit();
+            return self::resultado(true, "Persona registrada", ['id' => $ret['id']['valor']]);
         } catch (\Exception $e) {
+            $db->rollBack();
             return self::resultado(false, 'Error al registrar persona: ' . $e->getMessage());
         }
     }
 
-    public static function insertarTelefonosPersona($personaId, $telefonos, $db = null)
-    {
-        $qry = "INSERT INTO PERSONA_TELEFONO (PERSONA, NUMERO, TIPO) VALUES (:persona, :numero, :tipo)";
-        try {
-            if (!$db) $db = new Database();
-            foreach ($telefonos as $telefono) {
-                if (is_array($telefono) && !empty($telefono[1]) && !is_null($telefono[1])) {
-                    $params = ['persona' => $personaId, 'numero' => $telefono[1], 'tipo' => $telefono[0]];
-                    $db->CRUD($qry, $params);
-                }
-            }
-
-            return self::resultado(true, "Teléfonos insertados");
-        } catch (\Exception $e) {
-            return self::resultado(false, 'No se pudo insertar teléfonos persona. ', null, $e->getMessage());
-        }
-    }
-
-    public static function insertarEmailsPersona($personaId, $emails, $db = null)
-    {
-        $qry = "INSERT INTO PERSONA_EMAIL (PERSONA, DIRECCION, TIPO) VALUES (:persona, :direccion, :tipo)";
-        try {
-            if (!$db) $db = new Database();
-            foreach ($emails as $email) {
-                if (is_array($email) && !empty($email[1]) && !is_null($email[1])) {
-                    $params = ['persona' => $personaId, 'direccion' => $email[1], 'tipo' => $email[0]];
-                    $db->CRUD($qry, $params);
-                }
-            }
-
-            return self::resultado(true, "Emails insertados");
-        } catch (\Exception $e) {
-            return self::resultado(false, 'No se pudo insertar emails persona. ', null, $e->getMessage());
-        }
-    }
-
-    public static function crearNomina($personaId, $nomina, $db = null)
+    public static function actualizarPersona($datos, $fotoData = null, $db = null)
     {
         $qry = <<<SQL
-            INSERT INTO NOMINA (
-                PERSONA, EMPRESA, REGION, SUCURSAL, JEFE, PUESTO, INGRESO, PROVEEDOR, TIPO, NUMERO
-            )
-            VALUES (
-                :persona, :empresa, :region, :sucursal, :jefe, :puesto, TO_DATE(:fecha_ingreso, 'YYYY-MM-DD'), :proveedor, :tipo, :numero
-            )
-            SQL;
+            UPDATE PERSONA SET
+                NOMBRE = :nombre,
+                APELLIDO_1 = :apellido1,
+                APELLIDO_2 = :apellido2,
+                RFC = :rfc,
+                CURP = :curp,
+                FECHA_NACIMIENTO = TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'),
+                SEXO = :sexo,
+                ESTADO_CIVIL = :estado_civil,
+                NACIONALIDAD = :nacionalidad,
+                NSS = :nss,
+                INFONAVIT = :infonavit,
+                CALLE_NUMERO = :calle_numero,
+                CP = :cp,
+                ESTADO = :estado,
+                MUNICIPIO = :municipio,
+                COLONIA = :colonia,
+                CONDICIONES_MEDICAS = :condiciones_medicas,
+                OTROS_DATOS_RELEVANTES = :informacion_adicional,
+                FOTO = EMPTY_BLOB()
+            WHERE ID = :id
+            RETURNING FOTO INTO :foto
+        SQL;
 
         $params = [
-            'persona' => $personaId,
-            'empresa' => $nomina['empresa'] ?? null,
-            'region' => $nomina['region'] ?? null,
-            'sucursal' => $nomina['sucursal'] ?? null,
-            'jefe' => $nomina['jefeInmediato'] ?? -1,
-            'puesto' => $nomina['puesto'] ?? null,
-            'fecha_ingreso' => $nomina['fechaIngreso'] ?? null,
-            'proveedor' => $nomina['proveedor'] ?? null,
-            'tipo' => $nomina['tipoNomina'] ?? null,
-            'numero' => $nomina['numeroNomina'] ?? null
+            'id' => $datos['id'] ?? null,
+            'nombre' => $datos['nombre'] ?? null,
+            'apellido1' => $datos['apellido1'] ?? null,
+            'apellido2' => $datos['apellido2'] ?? null,
+            'rfc' => $datos['rfc'] ?? null,
+            'curp' => $datos['curp'] ?? null,
+            'fecha_nacimiento' => $datos['fechaNacimiento'] ?? null,
+            'sexo' => $datos['sexo'] ?? null,
+            'estado_civil' => $datos['estadoCivil'] ?? null,
+            'nacionalidad' => $datos['nacionalidad'] ?? null,
+            'nss' => $datos['nss'] ?? null,
+            'infonavit' => $datos['infonavit'] ?? null,
+            'calle_numero' => $datos['calle'] ?? null,
+            'cp' => $datos['codigoPostal'] ?? null,
+            'estado' => $datos['estado'] ?? null,
+            'municipio' => $datos['municipio'] ?? null,
+            'colonia' => $datos['colonia'] ?? null,
+            'condiciones_medicas' => $datos['condicionesMedicas'] ?? null,
+            'informacion_adicional' => $datos['informacionAdicional'] ?? null
+        ];
+
+        $ret = [
+            'foto' => [
+                'valor' => $fotoData['foto'] ?? null,
+                'tipo' => \PDO::PARAM_LOB
+            ]
         ];
 
         try {
             if (!$db) $db = new Database();
-            $db->CRUD($qry, $params);
-            return self::resultado(true, 'Nómina creada');
+            $db->beginTransaction();
+            $db->CRUD($qry, $params, $ret);
+            $db->commit();
+            return self::resultado(true, 'Foto actualizada correctamente.');
         } catch (\Exception $e) {
-            return self::resultado(false, 'Error al crear nómina', null, $e->getMessage());
+            $db->rollBack();
+            return self::resultado(false, 'Error al actualizar la foto.', null, $e->getMessage());
         }
     }
 
-    public static function habilitaEmpresas($personaId, $empresas, $db = null)
+    public static function upsertTelefonosPersona($personaId, $datos)
     {
-        $qry = "INSERT INTO CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO (ID_PERSONA, ID_EMPRESA, USAURIO_ALTA) VALUES (:persona, :empresa, :usuario)";
+        $qrys[] = "UPDATE PERSONA_TELEFONO SET ESTATUS = 0 WHERE PERSONA = :persona";
+        $params[] = ['persona' => $personaId];
+
+        $qry = <<<SQL
+            MERGE INTO PERSONA_TELEFONO PT
+            USING (SELECT :persona AS PERSONA, :numero AS NUMERO, :tipo AS TIPO FROM DUAL) SRC
+            ON (PT.PERSONA = SRC.PERSONA AND PT.TIPO = SRC.TIPO AND PT.NUMERO = SRC.NUMERO)
+            WHEN MATCHED THEN
+                UPDATE SET ESTATUS = 1
+            WHEN NOT MATCHED THEN
+                INSERT (PERSONA, NUMERO, TIPO) VALUES (SRC.PERSONA, SRC.NUMERO, SRC.TIPO)
+        SQL;
+
+        $telefonos = [
+            ['1', $datos['telefonoPrincipal'] ?? null],
+            ['2', $datos['telefonoAlterno'] ?? null]
+        ];
+
+        foreach ($telefonos as $telefono) {
+            if (!empty($telefono[1]) && !is_null($telefono[1])) {
+                $qrys[] = $qry;
+                $params[] = [
+                    'persona' => $personaId,
+                    'numero' => $telefono[1],
+                    'tipo' => $telefono[0]
+                ];
+            }
+        }
+
+        return [$qrys, $params];
+    }
+
+    public static function upsertEmailsPersona($persona, $datos)
+    {
+        $qrys[] = "UPDATE PERSONA_EMAIL SET ESTATUS = 0 WHERE PERSONA = :persona";
+        $params[] = ['persona' => $persona];
+
+        $qry = <<<SQL
+            MERGE INTO PERSONA_EMAIL PE
+            USING (SELECT :persona AS PERSONA, :direccion AS DIRECCION, :tipo AS TIPO FROM DUAL) SRC
+            ON (PE.PERSONA = SRC.PERSONA AND PE.TIPO = SRC.TIPO AND PE.DIRECCION = SRC.DIRECCION)
+            WHEN MATCHED THEN
+                UPDATE SET ESTATUS = 1
+            WHEN NOT MATCHED THEN
+                INSERT (PERSONA, DIRECCION, TIPO) VALUES (SRC.PERSONA, SRC.DIRECCION, SRC.TIPO)
+        SQL;
+
+        $emails = [
+            ['1', $datos['correoPrincipal'] ?? null]
+        ];
+        $laborales = explode(',', $datos['correoLaboral'] ?? '');
+        foreach ($laborales as $email) {
+            $emails[] = ['4', $email];
+        }
+
+        foreach ($emails as $email) {
+            if (!empty($email[1]) && !is_null($email[1])) {
+                $qrys[] = $qry;
+                $params[] = [
+                    'persona' => $persona,
+                    'direccion' => $email[1],
+                    'tipo' => $email[0]
+                ];
+            }
+        }
+
+        return [$qrys, $params];
+    }
+
+    public static function upsertNomina($personaId, $datos)
+    {
+        $qry = <<<SQL
+            MERGE INTO NOMINA N
+            USING (SELECT :persona AS PERSONA, :empresa AS EMPRESA, :region AS REGION, :sucursal AS SUCURSAL FROM DUAL) SRC
+            ON (N.PERSONA = SRC.PERSONA)
+            WHEN MATCHED THEN
+                UPDATE SET
+                    N.EMPRESA = :empresa,
+                    N.REGION = :region,
+                    N.SUCURSAL = :sucursal,
+                    N.JEFE = :jefe,
+                    N.PUESTO = :puesto,
+                    N.INGRESO = TO_DATE(:fecha_ingreso, 'YYYY-MM-DD'),
+                    N.PROVEEDOR = :proveedor,
+                    N.TIPO = :tipo,
+                    N.NUMERO = :numero
+            WHEN NOT MATCHED THEN
+                INSERT (PERSONA, EMPRESA, REGION, SUCURSAL, INGRESO, JEFE, PUESTO, PROVEEDOR, TIPO, NUMERO, ESTATUS)
+                VALUES (SRC.PERSONA, SRC.EMPRESA, SRC.REGION, SRC.SUCURSAL, TO_DATE(:fecha_ingreso, 'YYYY-MM-DD'), :jefe, :puesto, :proveedor, :tipo, :numero, 1)
+        SQL;
+
+        $params = [
+            'persona' => $personaId,
+            'empresa' => $datos['empresa'] ?? null,
+            'region' => $datos['region'] ?? null,
+            'sucursal' => $datos['sucursal'] ?? null,
+            'jefe' => $datos['jefeInmediato'] ?? -1,
+            'puesto' => $datos['puesto'] ?? null,
+            'fecha_ingreso' => $datos['fechaIngreso'] ?? null,
+            'proveedor' => $datos['proveedor'] ?? null,
+            'tipo' => $datos['tipoNomina'] ?? null,
+            'numero' => $datos['numeroNomina'] ?? null
+        ];
+
+        return [[$qry], [$params]];
+    }
+
+    public static function upsertEmpresas($personaId, $datos)
+    {
         $qrys[] = 'DELETE FROM CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO WHERE ID_PERSONA = :persona';
         $params[] = ['persona' => $personaId];
 
-        foreach (explode(',', $empresas['empresasHabilitadas']) as $empresa) {
+        $qry = 'INSERT INTO CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO (ID_PERSONA, ID_EMPRESA, USUARIO_ALTA) VALUES (:persona, :empresa, :usuario)';
+
+        foreach (explode(',', $datos['empresasHabilitadas']) as $empresa) {
             if (!empty($empresa)) {
                 $qrys[] = $qry;
                 $params[] = ['persona' => $personaId, 'empresa' => $empresa, 'usuario' => $_SESSION['usuario_id'] ?? null];
             }
         }
 
-        try {
-            if (!$db) $db = new Database();
-            $db->CRUD_multiple($qrys, $params);
-
-            return self::resultado(true, "Empresas habilitadas");
-        } catch (\Exception $e) {
-            return self::resultado(false, 'No se pudo habilitar empresas. ', null, $e->getMessage());
-        }
+        return [$qrys, $params];
     }
 
-    public static function insertarDatosBancarios($personaId, $datosBancarios, $db = null)
+    public static function upsertDatosBancarios($personaId, $datos)
     {
-        $qry = "INSERT INTO PERSONA_DATOS_BANCARIOS (PERSONA, ID_BANCO, NUMERO, TIPO_NUMERO) VALUES (:persona, :banco, :numero, :tipo)";
-        $paramsTarjeta = [
+        $qrys[] = "UPDATE PERSONA_DATOS_BANCARIOS SET ESTATUS = 'I' WHERE PERSONA = :persona";
+        $params[] = ['persona' => $personaId];
+
+        $qry = <<<SQL
+            MERGE INTO PERSONA_DATOS_BANCARIOS PDB
+            USING (SELECT :persona AS PERSONA, :banco AS ID_BANCO, :numero AS NUMERO, :tipo AS TIPO_NUMERO FROM DUAL) SRC
+            ON (PDB.PERSONA = SRC.PERSONA AND PDB.ID_BANCO = SRC.ID_BANCO AND PDB.NUMERO = SRC.NUMERO AND PDB.TIPO_NUMERO = SRC.TIPO_NUMERO)
+            WHEN MATCHED THEN
+                UPDATE SET ESTATUS = 'A'
+            WHEN NOT MATCHED THEN
+                INSERT (PERSONA, ID_BANCO, NUMERO, TIPO_NUMERO) VALUES (SRC.PERSONA, SRC.ID_BANCO, SRC.NUMERO, SRC.TIPO_NUMERO)
+        SQL;
+
+        $qrys[] = $qry;
+        $params[] = [
             'persona' => $personaId,
-            'banco' => $datosBancarios['banco'] ?? null,
-            'numero' => $datosBancarios['noTarjeta'] ?? null,
-            'tipo' => 2,
-        ];
-        $paramsCuenta = [
-            'persona' => $personaId,
-            'banco' => $datosBancarios['banco'] ?? null,
-            'numero' => $datosBancarios['cuentaBancaria'] ?? null,
+            'banco' => $datos['banco'] ?? null,
+            'numero' => $datos['cuentaBancaria'] ?? null,
             'tipo' => 1,
         ];
 
-        try {
-            if (!$db) $db = new Database();
-            if ($paramsTarjeta['numero']) $db->CRUD($qry, $paramsTarjeta);
-            if ($paramsCuenta['numero']) $db->CRUD($qry, $paramsCuenta);
-            return self::resultado(true, 'Datos bancarios registrados correctamente');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al registrar datos bancarios', null, $e->getMessage());
-        }
-    }
-
-    public static function crearContactoEmergencia($personaId, $contacto, $db = null)
-    {
-        $qry = "INSERT INTO PERSONA_CONTACTO_EMERGENCIA (PERSONA, NOMBRE, PARENTESCO, TELEFONO) VALUES (:persona, :nombre, :parentesco, :telefono)";
-        $params = [
+        $qrys[] = $qry;
+        $params[] = [
             'persona' => $personaId,
-            'nombre' => $contacto['contactoEmergenciaNombre'] ?? null,
-            'parentesco' => $contacto['contactoEmergenciaParentesco'] ?? null,
-            'telefono' => $contacto['contactoEmergenciaTelefono'] ?? null
+            'banco' => $datos['banco'] ?? null,
+            'numero' => $datos['tarjeta'] ?? null,
+            'tipo' => 2,
         ];
 
-        try {
-            if (!$db) $db = new Database();
-            $db->CRUD($qry, $params);
-            return self::resultado(true, 'Contacto de emergencia creado');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'No se pudo registrar el contacto de emergencia', null, $e->getMessage());
-        }
+        return [$qrys, $params];
     }
 
-    public static function crearUsuario($personaId, $datos, $db = null)
+    public static function upsertContactoEmergencia($personaId, $datos)
     {
-        $qry = "INSERT INTO USUARIO (PERSONA, EMPRESA, REGION, SUCURSAL, USUARIO, PASS, PERFIL, AUTORIZADOR) VALUES (:persona, :empresa, :region, :sucursal, :usuario, :pass, :perfil, :autorizador)";
+        $qrys[] = "UPDATE PERSONA_CONTACTO_EMERGENCIA SET ESTATUS = 'I' WHERE PERSONA = :persona";
+        $params[] = ['persona' => $personaId];
+
+        if (empty($datos['contactoEmergenciaNombre']) && empty($datos['contactoEmergenciaParentesco']) && empty($datos['contactoEmergenciaTelefono']))
+            return [$qrys, $params];
+
+        $qrys[] = <<<SQL
+            MERGE INTO PERSONA_CONTACTO_EMERGENCIA PCE
+            USING (SELECT :persona AS PERSONA, :nombre AS NOMBRE, :parentesco AS PARENTESCO, :telefono AS TELEFONO FROM DUAL) SRC
+            ON (PCE.PERSONA = SRC.PERSONA AND PCE.NOMBRE = SRC.NOMBRE AND PCE.PARENTESCO = SRC.PARENTESCO AND PCE.TELEFONO = SRC.TELEFONO)
+            WHEN MATCHED THEN
+                UPDATE SET ESTATUS = 'A'
+            WHEN NOT MATCHED THEN
+                INSERT (PERSONA, NOMBRE, PARENTESCO, TELEFONO) VALUES (SRC.PERSONA, SRC.NOMBRE, SRC.PARENTESCO, SRC.TELEFONO)
+        SQL;
+
+        $params[] = [
+            'persona' => $personaId,
+            'nombre' => $datos['contactoEmergenciaNombre'] ?? null,
+            'parentesco' => $datos['contactoEmergenciaParentesco'] ?? null,
+            'telefono' => $datos['contactoEmergenciaTelefono'] ?? null
+        ];
+
+        return [$qrys, $params];
+    }
+
+    public static function upsertUsuario($personaId, $datos)
+    {
+        $qry = <<<SQL
+            MERGE INTO USUARIO U
+            USING (SELECT :persona AS PERSONA, :empresa AS EMPRESA, :region AS REGION, :sucursal AS SUCURSAL FROM DUAL) SRC
+            ON (U.PERSONA = SRC.PERSONA AND U.EMPRESA = SRC.EMPRESA AND U.REGION = SRC.REGION AND U.SUCURSAL = SRC.SUCURSAL)
+            WHEN MATCHED THEN
+                UPDATE SET
+                    U.USUARIO = :usuario,
+                    U.PERFIL = :perfil,
+                    U.AUTORIZADOR = :autorizador,
+                    U.PASS = CASE WHEN :pass IS NOT NULL OR :pass <> '' THEN :pass ELSE U.PASS END
+            WHEN NOT MATCHED THEN
+                INSERT (PERSONA, EMPRESA, REGION, SUCURSAL, USUARIO, PASS, PERFIL, AUTORIZADOR)
+                VALUES (SRC.PERSONA, SRC.EMPRESA, SRC.REGION, SRC.SUCURSAL, :usuario, :pass, :perfil, :autorizador)
+        SQL;
+
         $params = [
             'persona' => $personaId,
             'empresa' => $datos['empresa'] ?? null,
@@ -487,13 +633,7 @@ class CapHum extends Model
             'autorizador' => $datos['reporta'] ?? 0
         ];
 
-        try {
-            if (!$db) $db = new Database();
-            $db->CRUD($qry, $params);
-            return self::resultado(true, 'Usuario creado');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al crear usuario', null, $e->getMessage());
-        }
+        return [[$qry], [$params]];
     }
 
     public static function eliminarPersona($datos)
@@ -842,461 +982,6 @@ class CapHum extends Model
         } catch (\Exception $e) {
             $db->rollBack();
             return self::resultado(false, 'Error al registrar el formato.', null, $e->getMessage());
-        }
-    }
-
-    public static function actualizarPersona($datos, $fotoData = null)
-    {
-        try {
-            $db = new Database();
-            $db->beginTransaction();
-
-            $personaId = $datos['id'];
-            if (empty($personaId)) {
-                throw new \Exception("ID de persona requerido para actualización.");
-            }
-
-            // 1. Actualizar datos personales
-            $resultado = self::actualizarDatosPersonales($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            // 2. Actualizar foto si se proporciona
-            if ($fotoData && isset($fotoData['foto'])) {
-                $resultado = self::actualizarFotoPersona($db, $personaId, $fotoData);
-                if (!$resultado['success']) {
-                    throw new \Exception($resultado['mensaje']);
-                }
-            }
-
-            // 3. Actualizar teléfonos
-            $resultado = self::actualizarTelefonos($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            // 4. Actualizar emails personales
-            $resultado = self::actualizarEmailsPersonales($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            // 5. Actualizar contacto de emergencia
-            $resultado = self::actualizarContactoEmergencia($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            // 6. Actualizar datos laborales ** ESTABA COMENTADO ANTES **
-            $resultado = self::actualizarDatosLaborales($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            // 7. Actualizar correos empresariales con lógica especial
-            $resultado = self::actualizarCorreosEmpresariales($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            // 8. Actualizar usuario y contraseña
-            $resultado = self::actualizarUsuario($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            // 9. Actualizar datos de nómina
-            $resultado = self::actualizarDatosNomina($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            // 10. Actualizar datos bancarios
-            $resultado = self::actualizarDatosBancarios($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            // 11. Actualizar empresas habilitadas
-            $resultado = self::actualizarEmpresasHabilitadas($db, $personaId, $datos);
-            if (!$resultado['success']) {
-                throw new \Exception($resultado['mensaje']);
-            }
-
-            $db->commit();
-            return self::resultado(true, 'Datos de la persona actualizados correctamente.');
-        } catch (\Exception $e) {
-            if (isset($db)) $db->rollBack();
-            return self::resultado(false, 'Error al actualizar los datos de la persona.', null, $e->getMessage());
-        }
-    }
-
-    // Métodos auxiliares para actualización
-    private static function actualizarDatosPersonales($db, $personaId, $datos)
-    {
-        try {
-            $qry = <<<SQL
-                UPDATE PERSONA SET
-                    NOMBRE = :nombre,
-                    APELLIDO_1 = :apellido1,
-                    APELLIDO_2 = :apellido2,
-                    RFC = :rfc,
-                    CURP = :curp,
-                    FECHA_NACIMIENTO = TO_DATE(:fechaNacimiento, 'YYYY-MM-DD'),
-                    SEXO = :sexo,
-                    ESTADO_CIVIL = :estadoCivil,
-                    NACIONALIDAD = :nacionalidad,
-                    NSS = :nss,
-                    INFONAVIT = :infonavit,
-                    CALLE_NUMERO = :calle,
-                    CP = :codigoPostal,
-                    COLONIA = :colonia,
-                    MUNICIPIO = :municipio,
-                    ESTADO = :estado,
-                    CONDICIONES_MEDICAS = :condicionesMedicas,
-                    OTROS_DATOS_RELEVANTES = :informacionAdicional
-                WHERE ID = :personaId
-            SQL;
-
-            $params = [
-                'personaId' => $personaId,
-                'nombre' => $datos['nombre'] ?? '',
-                'apellido1' => $datos['apellido1'] ?? '',
-                'apellido2' => $datos['apellido2'] ?? '',
-                'rfc' => $datos['rfc'] ?? '',
-                'curp' => $datos['curp'] ?? '',
-                'fechaNacimiento' => $datos['fechaNacimiento'] ?? '',
-                'sexo' => $datos['sexo'] ?? '',
-                'estadoCivil' => $datos['estadoCivil'] ?? '',
-                'nacionalidad' => $datos['nacionalidad'] ?? '',
-                'nss' => $datos['nss'] ?? '',
-                'infonavit' => isset($datos['infonavit']) && $datos['infonavit'] ? 1 : 0,
-                'calle' => $datos['calle'] ?? '',
-                'codigoPostal' => $datos['codigoPostal'] ?? '',
-                'colonia' => $datos['colonia'] ?? '',
-                'municipio' => $datos['municipio'] ?? '',
-                'estado' => $datos['estado'] ?? '',
-                'condicionesMedicas' => $datos['condicionesMedicas'] ?? '',
-                'informacionAdicional' => $datos['informacionAdicional'] ?? ''
-            ];
-
-            $db->CRUD($qry, $params);
-            return self::resultado(true, 'Datos personales actualizados.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar datos personales: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarFotoPersona($db, $personaId, $fotoData)
-    {
-        try {
-            $qry = "UPDATE PERSONA SET FOTO = :foto WHERE ID = :personaId";
-
-            $params = [
-                'personaId' => $personaId,
-                'foto' => [
-                    'valor' => $fotoData['foto'],
-                    'tipo' => \PDO::PARAM_LOB
-                ]
-            ];
-
-            $db->CRUD($qry, $params);
-            return self::resultado(true, 'Foto actualizada.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar foto: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarTelefonos($db, $personaId, $datos)
-    {
-        try {
-            // Eliminar teléfonos existentes
-            $qryDelete = "DELETE FROM PERSONA_TELEFONO WHERE PERSONA = :personaId";
-            $db->CRUD($qryDelete, ['personaId' => $personaId]);
-
-            // Insertar teléfonos actualizados
-            if (!empty($datos['telefonoPrincipal'])) {
-                $qryInsert = "INSERT INTO PERSONA_TELEFONO (PERSONA, TIPO, NUMERO) VALUES (:personaId, '1', :telefono)";
-                $db->CRUD($qryInsert, ['personaId' => $personaId, 'telefono' => $datos['telefonoPrincipal']]);
-            }
-
-            if (!empty($datos['telefonoAlterno'])) {
-                $qryInsert = "INSERT INTO PERSONA_TELEFONO (PERSONA, TIPO, NUMERO) VALUES (:personaId, '2', :telefono)";
-                $db->CRUD($qryInsert, ['personaId' => $personaId, 'telefono' => $datos['telefonoAlterno']]);
-            }
-
-            return self::resultado(true, 'Teléfonos actualizados.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar teléfonos: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarEmailsPersonales($db, $personaId, $datos)
-    {
-        try {
-            // Eliminar emails personales existentes (tipo 1)
-            $qryDelete = "DELETE FROM PERSONA_EMAIL WHERE PERSONA = :personaId AND TIPO = '1'";
-            $db->CRUD($qryDelete, ['personaId' => $personaId]);
-
-            // Insertar email personal si existe
-            if (!empty($datos['correoPrincipal'])) {
-                $qryInsert = "INSERT INTO PERSONA_EMAIL (PERSONA, TIPO, DIRECCION, ESTATUS) VALUES (:personaId, '1', :email, 1)";
-                $db->CRUD($qryInsert, ['personaId' => $personaId, 'email' => $datos['correoPrincipal']]);
-            }
-
-            return self::resultado(true, 'Emails personales actualizados.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar emails personales: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarContactoEmergencia($db, $personaId, $datos)
-    {
-        try {
-            // Eliminar contactos de emergencia existentes
-            $qryDelete = "DELETE FROM PERSONA_CONTACTO_EMERGENCIA WHERE PERSONA = :personaId";
-            $db->CRUD($qryDelete, ['personaId' => $personaId]);
-
-            // Insertar contacto de emergencia si existe
-            if (!empty($datos['contactoEmergenciaNombre'])) {
-                $qryInsert = <<<SQL
-                    INSERT INTO PERSONA_CONTACTO_EMERGENCIA (PERSONA, NOMBRE, PARENTESCO, TELEFONO) 
-                    VALUES (:personaId, :nombre, :parentesco, :telefono)
-                SQL;
-
-                $params = [
-                    'personaId' => $personaId,
-                    'nombre' => $datos['contactoEmergenciaNombre'],
-                    'parentesco' => $datos['contactoEmergenciaParentesco'] ?? '',
-                    'telefono' => $datos['contactoEmergenciaTelefono'] ?? ''
-                ];
-
-                $db->CRUD($qryInsert, $params);
-            }
-
-            return self::resultado(true, 'Contacto de emergencia actualizado.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar contacto de emergencia: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarDatosLaborales($db, $personaId, $datos)
-    {
-        try {
-            $qryCheck = "SELECT COUNT(*) as COUNT FROM NOMINA WHERE PERSONA = :personaId";
-            $result = $db->queryOne($qryCheck, ['personaId' => $personaId]);
-
-            if ($result['COUNT'] > 0) {
-                $qryUpdate = <<<SQL
-                    UPDATE NOMINA SET
-                        EMPRESA = :empresa,
-                        REGION = :region,
-                        SUCURSAL = :sucursal,
-                        JEFE = :jefeInmediato,
-                        PUESTO = :puesto,
-                        PROVEEDOR = :proveedor,
-                        TIPO = :tipo,
-                        NUMERO = :numero
-                    WHERE PERSONA = :personaId
-                SQL;
-
-                $params = [
-                    'personaId' => $personaId,
-                    'empresa' => $datos['empresa'] ?? '',
-                    'region' => $datos['region'] ?? '',
-                    'sucursal' => $datos['sucursal'] ?? '',
-                    'jefeInmediato' => $datos['jefeInmediato'] ?? '',
-                    'puesto' => $datos['puesto'] ?? '',
-                    'proveedor' => $datos['proveedor'] ?? '',
-                    'tipo' => $datos['tipoNomina'] ?? '',
-                    'numero' => $datos['numeroNomina'] ?? ''
-                ];
-
-                $db->CRUD($qryUpdate, $params);
-            } else {
-                return self::resultado(false, 'No existe registro laboral para actualizar.');
-            }
-
-            return self::resultado(true, 'Datos laborales actualizados.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar datos laborales: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarCorreosEmpresariales($db, $personaId, $datos)
-    {
-        try {
-            // Obtener correos empresariales actuales de la base de datos
-            $qryCurrentEmails = "SELECT DIRECCION FROM PERSONA_EMAIL WHERE PERSONA = :personaId AND TIPO = '4' AND ESTATUS = 1";
-            $currentResult = $db->queryAll($qryCurrentEmails, ['personaId' => $personaId]);
-            $currentEmails = array_map(fn($row) => $row['DIRECCION'], $currentResult);
-
-            // Procesar correos del POST (correoLaboral contiene todos los emails separados por coma)
-            $newEmails = [];
-            if (!empty($datos['correoLaboral'])) {
-                $newEmails = array_filter(array_map('trim', explode(',', $datos['correoLaboral'])));
-            }
-
-            // Correos que están en POST pero no en BD -> INSERTAR
-            $emailsToInsert = array_diff($newEmails, $currentEmails);
-            foreach ($emailsToInsert as $email) {
-                if (!empty($email)) {
-                    $qryInsert = "INSERT INTO PERSONA_EMAIL (PERSONA, TIPO, DIRECCION, ESTATUS) VALUES (:personaId, '4', :email, 1)";
-                    $db->CRUD($qryInsert, ['personaId' => $personaId, 'email' => $email]);
-                }
-            }
-
-            // Correos que están en BD pero no en POST -> PASAR A ESTATUS 0
-            $emailsToDeactivate = array_diff($currentEmails, $newEmails);
-            foreach ($emailsToDeactivate as $email) {
-                $qryUpdate = "UPDATE PERSONA_EMAIL SET ESTATUS = 0 WHERE PERSONA = :personaId AND TIPO = '4' AND DIRECCION = :email";
-                $db->CRUD($qryUpdate, ['personaId' => $personaId, 'email' => $email]);
-            }
-
-            return self::resultado(true, 'Correos empresariales actualizados.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar correos empresariales: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarUsuario($db, $personaId, $datos)
-    {
-        try {
-            // Verificar si ya existe usuario para esta persona
-            $qryCheck = "SELECT COUNT(*) as COUNT FROM USUARIO WHERE PERSONA = :personaId";
-            $result = $db->queryOne($qryCheck, ['personaId' => $personaId]);
-
-            $params = [
-                'personaId' => $personaId,
-                'usuario' => $datos['usuario'] ?? '',
-                'perfil' => $datos['perfil'] ?? ''
-            ];
-
-            if ($result['COUNT'] > 0) {
-                // Actualizar existente
-                $qryUpdate = "UPDATE USUARIO SET USUARIO = :usuario, PERFIL = :perfil";
-
-                // Solo actualizar contraseña si no está vacía
-                if (!empty($datos['password'])) {
-                    $qryUpdate .= ", PASS = :password";
-                    $params['password'] = $datos['password'];
-                }
-
-                $qryUpdate .= " WHERE PERSONA = :personaId";
-                $db->CRUD($qryUpdate, $params);
-            }
-
-            return self::resultado(true, 'Usuario actualizado.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar usuario: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarDatosNomina($db, $personaId, $datos)
-    {
-        try {
-            // Verificar si ya existe registro de nómina
-            $qryCheck = "SELECT COUNT(*) as COUNT FROM NOMINA WHERE PERSONA = :personaId";
-            $result = $db->queryOne($qryCheck, ['personaId' => $personaId]);
-
-            if ($result['COUNT'] > 0) {
-                // Actualizar existente
-                $qryUpdate = <<<SQL
-                    UPDATE NOMINA SET
-                        PUESTO = :puesto,
-                        JEFE = :jefeInmediato,
-                        PROVEEDOR = :proveedor,
-                        INGRESO = TO_DATE(:fechaIngreso, 'YYYY-MM-DD'),
-                        TIPO = :tipoNomina,
-                        NUMERO = :numeroNomina
-                    WHERE PERSONA = :personaId
-                SQL;
-
-                $params = [
-                    'personaId' => $personaId,
-                    'puesto' => $datos['puesto'] ?? '',
-                    'jefeInmediato' => $datos['jefeInmediato'] ?? '',
-                    'proveedor' => $datos['proveedor'] ?? '',
-                    'fechaIngreso' => $datos['fechaIngreso'] ?? '',
-                    'tipoNomina' => $datos['tipoNomina'] ?? '',
-                    'numeroNomina' => $datos['numeroNomina'] ?? ''
-                ];
-
-                $db->CRUD($qryUpdate, $params);
-            }
-
-            return self::resultado(true, 'Datos de nómina actualizados.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar datos de nómina: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarDatosBancarios($db, $personaId, $datos)
-    {
-        try {
-            // Eliminar datos bancarios existentes
-            $qryDelete = "DELETE FROM PERSONA_DATOS_BANCARIOS WHERE PERSONA = :personaId";
-            $db->CRUD($qryDelete, ['personaId' => $personaId]);
-
-            // Insertar cuenta bancaria si existe
-            if (!empty($datos['cuentaBancaria'])) {
-                $qryInsert = <<<SQL
-                    INSERT INTO PERSONA_DATOS_BANCARIOS (PERSONA, ID_BANCO, TIPO_NUMERO, NUMERO) 
-                    VALUES (:personaId, :banco, '1', :cuenta)
-                SQL;
-
-                $params = [
-                    'personaId' => $personaId,
-                    'banco' => $datos['banco'] ?? '',
-                    'cuenta' => $datos['cuentaBancaria']
-                ];
-
-                $db->CRUD($qryInsert, $params);
-            }
-
-            // Insertar tarjeta si existe
-            if (!empty($datos['tarjeta'])) {
-                $qryInsert = <<<SQL
-                    INSERT INTO PERSONA_DATOS_BANCARIOS (PERSONA, ID_BANCO, TIPO_NUMERO, NUMERO) 
-                    VALUES (:personaId, :banco, '2', :tarjeta)
-                SQL;
-
-                $params = [
-                    'personaId' => $personaId,
-                    'banco' => $datos['banco'] ?? '',
-                    'tarjeta' => $datos['tarjeta']
-                ];
-
-                $db->CRUD($qryInsert, $params);
-            }
-
-            return self::resultado(true, 'Datos bancarios actualizados.');
-        } catch (\Exception $e) {
-            return self::resultado(false, 'Error al actualizar datos bancarios: ' . $e->getMessage());
-        }
-    }
-
-    private static function actualizarEmpresasHabilitadas($db, $personaId, $datos)
-    {
-        $qry = "INSERT INTO CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO (ID_PERSONA, ID_EMPRESA, USAURIO_ALTA) VALUES (:persona, :empresa, :usuario)";
-        $qrys[] = 'DELETE FROM CAT_PERSONA_EMPRESA_COMPRUEBA_PERMISO WHERE ID_PERSONA = :persona';
-        $params[] = ['persona' => $personaId];
-
-        foreach (explode(',', $datos['empresasHabilitadas']) as $empresa) {
-            if (!empty($empresa)) {
-                $qrys[] = $qry;
-                $params[] = ['persona' => $personaId, 'empresa' => $empresa, 'usuario' => $_SESSION['usuario_id'] ?? null];
-            }
-        }
-
-        try {
-            if (!$db) $db = new Database();
-            $db->CRUD_multiple($qrys, $params);
-
-            return self::resultado(true, "Empresas habilitadas");
-        } catch (\Exception $e) {
-            return self::resultado(false, 'No se pudo habilitar empresas. ', null, $e->getMessage());
         }
     }
 

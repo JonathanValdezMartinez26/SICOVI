@@ -20,7 +20,7 @@ class CapHum extends Controller
                 let hayCambios = false
                 let cargandoEmpleados = false
 
-                const camposPersona = {
+                const camposWizard = {
                     personales: {
                         nombre: {
                             elemento: "nombre",
@@ -284,7 +284,7 @@ class CapHum extends Controller
                             },
                             valor: () => $("#reporta option:selected").val(),
                             texto: () => $("#reporta option:selected").text(),
-                            validacion: () => true, //$("#reporta option:selected").val() !== "",
+                            validacion: () => $("#reporta option:selected").val() !== "",
                             mensaje: "Seleccione a quién reportar."
                         },
                         puesto: {
@@ -478,10 +478,9 @@ class CapHum extends Controller
                                 const esNuevoRegistro = $("#personaIdHidden").val() === ""
                                 
                                 if (esNuevoRegistro) {
-                                    if (validarPasoActual()) {
-                                        wizardPersona.next()
-                                        if (wizardPersona._currentIndex === wizardPersona._steps.length - 2) llenarResumen()
-                                    }
+                                    if (!validarPasoActual()) return
+                                    wizardPersona.next()
+                                    if (wizardPersona._currentIndex === wizardPersona._steps.length - 2) llenarResumen()
                                 } else {
                                     if (wizardPersona._steps[wizardPersona._currentIndex + 2].id === "stepConfirmacion") btn.disabled = true
                                     wizardPersona.next()
@@ -528,7 +527,7 @@ class CapHum extends Controller
 
                 const validarWizard = (grupo) => {
                     let valido = true
-                    const items = camposPersona[grupo]
+                    const items = camposWizard[grupo]
 
                     Object.keys(items).forEach(campoKey => {
                         const campo = items[campoKey]
@@ -547,8 +546,8 @@ class CapHum extends Controller
                 }
 
                 const limpiarWizard = () => {
-                    Object.keys(camposPersona).forEach(grupo => {
-                        const items = camposPersona[grupo]
+                    Object.keys(camposWizard).forEach(grupo => {
+                        const items = camposWizard[grupo]
 
                         Object.keys(items).forEach(campoKey => {
                             const campo = items[campoKey]
@@ -569,9 +568,9 @@ class CapHum extends Controller
 
                 const llenarResumen = () => {
                     const fotoSrc = $('#fotoPreview').attr('src')
-                    const nombre = camposPersona.personales.nombre.valor()
-                    const apellido1 = camposPersona.personales.apellido1.valor()
-                    const apellido2 = camposPersona.personales.apellido2.valor() || ''
+                    const nombre = camposWizard.personales.nombre.valor()
+                    const apellido1 = camposWizard.personales.apellido1.valor()
+                    const apellido2 = camposWizard.personales.apellido2.valor() || ''
                     const nombreCompleto = nombre + ' ' + apellido1 + ' ' + apellido2
 
                     const capitaliza = (s) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -579,8 +578,8 @@ class CapHum extends Controller
                     $('#resumenFoto').attr('src', fotoSrc)
                     $('#resumenNombreCompleto').text(nombreCompleto)
 
-                    Object.keys(camposPersona).forEach(campoKey => {
-                        const grupo = camposPersona[campoKey]
+                    Object.keys(camposWizard).forEach(campoKey => {
+                        const grupo = camposWizard[campoKey]
                         Object.keys(grupo).forEach(campoKey => {
                             const campo = grupo[campoKey]
                             $('#resumen' + capitaliza(campoKey)).text(campo.texto() || "-")
@@ -594,22 +593,20 @@ class CapHum extends Controller
                     const formData = new FormData()
                     formData.append('id', $("#personaIdHidden").val())
                     
-                    // Recopilar todos los campos del formulario
-                    Object.keys(camposPersona).forEach(campo => {
-                        const grupo = camposPersona[campo]
+                    Object.keys(camposWizard).forEach(campo => {
+                        const grupo = camposWizard[campo]
                         Object.keys(grupo).forEach(campoKey => {
                             const campo = grupo[campoKey]
                             formData.append(campoKey, campo.valor() || "")
                         })
                     })
                     
-                    // Agregar foto si se cambió
                     const fotoInput = $("#fotoInput")[0]
                     if (fotoInput.files && fotoInput.files[0]) {
                         formData.append('foto', fotoInput.files[0])
                     }
 
-                    consultaServidor("/CapHum/actualizarPersona", formData, (respuesta) => {
+                    consultaServidor("/CapHum/guardarPersona", formData, (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         showSuccess(respuesta.mensaje)
                         modoEdicion = false
@@ -627,8 +624,8 @@ class CapHum extends Controller
 
                 const guardarPersona = () => {
                     const formData = new FormData()
-                    Object.keys(camposPersona).forEach(campo => {
-                        const grupo = camposPersona[campo]
+                    Object.keys(camposWizard).forEach(campo => {
+                        const grupo = camposWizard[campo]
                         Object.keys(grupo).forEach(campoKey => {
                             const campo = grupo[campoKey]
                             formData.append(campoKey, campo.valor() || "")
@@ -817,31 +814,6 @@ class CapHum extends Controller
                     $("#detalleNombre, #detalleApellido1, #detalleApellido2, #detalleRfc, #detalleCurp, #detalleFechaNacimiento, #detalleSexo").off('input change', actualizarBotonEdicion)
                 }
 
-                const guardarEdicion = () => {
-                    const datos = {
-                        id: $("#detallePersonaIdHidden").val(),
-                        nombre: $("#detalleNombre").val(),
-                        apellido1: $("#detalleApellido1").val(),
-                        apellido2: $("#detalleApellido2").val(),
-                        rfc: $("#detalleRfc").val(),
-                        curp: $("#detalleCurp").val(),
-                        fechaNacimiento: $("#detalleFechaNacimiento").val(),
-                        sexo: $("#detalleSexo").val()
-                    }
-
-                    consultaServidor("/CapHum/guardarPersona", datos, (respuesta) => {
-                        if (!respuesta.success) return showError(respuesta.mensaje)
-                        showSuccess(respuesta.mensaje)
-                        cancelarEdicion()
-                        getPersonas(true)
-                        
-                        const nombreCompleto = datos.nombre + " " + datos.apellido1 + " " + (datos.apellido2 || "")
-                        $("#detalleNombre").val(datos.nombre)
-                        $("#detalleApellido1").val(datos.apellido1)
-                        $("#detalleApellido2").val(datos.apellido2)
-                    })
-                }
-
                 const getPersonas = (persistirVista = false) => {
                     const empresa = $("#filtroEmpresa").val()
                     const region = $("#filtroRegion").val()
@@ -942,6 +914,7 @@ class CapHum extends Controller
                 }
 
                 const verPersona = (id) => {
+                    limpiarWizard()
                     consultaServidor("/CapHum/getPersonaDetalle", {id: id}, async (respuesta) => {
                         if (!respuesta.success) return showError(respuesta.mensaje)
                         
@@ -972,7 +945,7 @@ class CapHum extends Controller
                         $("#estadoCivil").val(persona.ESTADO_CIVIL)
                         $("#nss").val(persona.NSS)
                         $("#infonavit").prop("checked", persona.INFONAVIT == 1)
-                        $("#fechaNacimiento").val(moment(persona.FECHA_NACIMIENTO).format(MOMENT_FRONT))
+                        updateInputFechas("#fechaNacimiento", { iniF: moment(persona.FECHA_NACIMIENTO).format(MOMENT_FRONT) })
                         $("#sexo").val(persona.SEXO)
                         $("#calle").val(persona.CALLE_NUMERO)
                         $("#codigoPostal").val(persona.CP);
@@ -1015,9 +988,7 @@ class CapHum extends Controller
                         $("#sucursal").trigger("change");
 
                         while (cargandoEmpleados) { 
-                            await new Promise(r => setTimeout(r, 1000))
-                            console.log("Esperando empleados...");
-                            
+                            await new Promise(r => setTimeout(r, 1000))                            
                         }
 
                         $("#jefeInmediato").val(nomina.JEFE);
@@ -1043,8 +1014,7 @@ class CapHum extends Controller
                             }
                         });
 
-
-                        $("#fechaIngreso").val(moment(nomina.INGRESO).format(MOMENT_FRONT));
+                        updateInputFechas("#fechaIngreso", { iniF: moment(nomina.INGRESO).format(MOMENT_FRONT) })
                         $("#proveedor").val(nomina.PROVEEDOR);
                         $("#tipoNomina").val(nomina.TIPO_NOMINA);
                         $("#numeroNomina").val(nomina.NUMERO_NOMINA);
@@ -1385,8 +1355,10 @@ class CapHum extends Controller
 
                     cargandoEmpleados = true
                     consultaServidor("/CapHum/getPersonalSucursal", parametros, (respuesta) => {
-                        cargandoEmpleados = false
-                        if (!respuesta.success) return showError(respuesta.mensaje)
+                        if (!respuesta.success) {
+                            cargandoEmpleados = false
+                            return showError(respuesta.mensaje)
+                        }
 
                         const personal = respuesta.datos
                         let  opciones = "<option value='' selected disabled>Seleccione un jefe</option>"
@@ -1399,6 +1371,8 @@ class CapHum extends Controller
 
                         $("#reporta").html(opciones)
                         $("#reporta").prop("disabled", false)
+                        
+                        cargandoEmpleados = false
                     })
                 }
 
@@ -1435,7 +1409,6 @@ class CapHum extends Controller
                     setInputFechas("#fechaIngreso", { minF: '01/01/2013', maxD: 7, enModal: true })
                     configuraTabla(tabla)
                     initWizard()
-                    getPersonas()
                     
                     modalPersona = new bootstrap.Modal(document.getElementById('modalPersona'))
                     
@@ -1647,48 +1620,6 @@ class CapHum extends Controller
         self::respuestaJSON($resultado);
     }
 
-    public function actualizarPersona()
-    {
-        $fotoData = null;
-        if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
-            if ($_FILES['foto']['size'] > 5 * 1024 * 1024) {
-                return $this->respuestaJSON([
-                    'success' => false,
-                    'mensaje' => 'La foto excede el tamaño máximo permitido de 5 MB.'
-                ]);
-            }
-
-            // Validar que sea una imagen
-            $tipoArchivo = $_FILES['foto']['type'];
-            if (!in_array($tipoArchivo, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
-                return $this->respuestaJSON([
-                    'success' => false,
-                    'mensaje' => 'Solo se permiten archivos de imagen (JPEG, PNG, GIF).'
-                ]);
-            }
-
-            try {
-                $fotoData = [
-                    'foto' => fopen($_FILES['foto']['tmp_name'], 'rb'),
-                ];
-            } catch (\Exception $e) {
-                return $this->respuestaJSON([
-                    'success' => false,
-                    'mensaje' => 'Error al procesar la foto: ' . $e->getMessage()
-                ]);
-            }
-        }
-
-        $resultado = CapHumDAO::actualizarPersona($_POST, $fotoData);
-
-        // Cerrar el recurso de la foto si se abrió
-        if ($fotoData && is_resource($fotoData['foto'])) {
-            fclose($fotoData['foto']);
-        }
-
-        $this->respuestaJSON($resultado);
-    }
-
     public function eliminarPersona()
     {
         $resultado = CapHumDAO::eliminarPersona($_POST);
@@ -1733,6 +1664,8 @@ class CapHum extends Controller
         }
 
         header('Content-Transfer-Encoding: binary');
+        header("Cache-Control: max-age=2592000, public");
+        header("Pragma: public");
         echo $archivo;
         if (is_resource($archivo)) {
             fclose($archivo);
