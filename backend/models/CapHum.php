@@ -616,7 +616,7 @@ class CapHum extends Model
                     U.USUARIO = :usuario,
                     U.PERFIL = :perfil,
                     U.AUTORIZADOR = :autorizador,
-                    U.PASS = CASE WHEN :pass IS NOT NULL OR :pass <> '' THEN :pass ELSE U.PASS END
+                    U.PASS = CASE WHEN :pass IS NULL OR :pass = '' THEN U.PASS ELSE :pass END
             WHEN NOT MATCHED THEN
                 INSERT (PERSONA, EMPRESA, REGION, SUCURSAL, USUARIO, PASS, PERFIL, AUTORIZADOR)
                 VALUES (SRC.PERSONA, SRC.EMPRESA, SRC.REGION, SRC.SUCURSAL, :usuario, :pass, :perfil, :autorizador)
