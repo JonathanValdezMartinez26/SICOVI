@@ -698,20 +698,19 @@ class CapHum extends Controller
                     let hayCambiosDetectados = false
                     const formActual = $('#modalPersona')
                     
-                    // Verificar todos los campos del formulario
-                    formActual.find('input, select, textarea').each(function() {
-                        const elemento = $(this)
-                        const id = elemento.attr('id')
-                        
-                        if (id && datosOriginales && datosOriginales.hasOwnProperty(id)) {
-                            const valorActual = elemento.attr('type') === 'checkbox' ? 
-                                elemento.is(':checked') : elemento.val()
-                            const valorOriginal = datosOriginales[id]
-                            
-                            if (valorActual !== valorOriginal) {
-                                hayCambiosDetectados = true
-                                return false // Salir del each
-                            }
+                    const datos = {}
+                    Object.keys(camposWizard).forEach(campoKey => {
+                        const grupo = camposWizard[campoKey]
+                        Object.keys(grupo).forEach(campoKey => {
+                            if (['fechaNacimiento', 'fechaIngreso'].includes(campoKey)) {
+                                datos[campoKey] = grupo[campoKey].texto()
+                            } else datos[campoKey] = grupo[campoKey].valor()
+                        })
+                    })
+
+                    Object.keys(datos).forEach(key => {
+                        if (datos[key] != datosOriginales[key]) {
+                            hayCambiosDetectados = true
                         }
                     })
                     
@@ -747,25 +746,19 @@ class CapHum extends Controller
                     const esNuevoRegistro = $("#personaIdHidden").val() === ""
                     
                     if (esNuevoRegistro) {
-                        // Modo registro: solo mostrar cancelar
                         btnEditar.hide()
                         btnGuardar.hide()
                         btnCancelar.text("Cancelar").show()
                     } else if (!modoEdicion) {
-                        // Modo visualización: mostrar editar y cerrar
                         btnEditar.show().text("Editar")
                         btnGuardar.hide()
                         btnCancelar.text("Cerrar").show()
                     } else {
-                        // Modo edición: mostrar cancelar y guardar (si hay cambios)
                         btnEditar.hide()
                         btnCancelar.text("Cancelar").show()
                         
-                        if (tieneModificaciones) {
-                            btnGuardar.show().text("Guardar Cambios")
-                        } else {
-                            btnGuardar.hide()
-                        }
+                        if (!tieneModificaciones) btnGuardar.hide()
+                        else btnGuardar.show().text("Guardar Cambios")
                     }
                 }
 
@@ -774,15 +767,12 @@ class CapHum extends Controller
                         modoEdicion = true
                         hayCambios = false
                         
-                        datosOriginales = {
-                            nombre: $("#detalleNombre").val(),
-                            apellido1: $("#detalleApellido1").val(),
-                            apellido2: $("#detalleApellido2").val(),
-                            rfc: $("#detalleRfc").val(),
-                            curp: $("#detalleCurp").val(),
-                            fechaNacimiento: $("#detalleFechaNacimiento").val(),
-                            sexo: $("#detalleSexo").val()
-                        }
+                        Object.keys(camposWizard).forEach(campoKey => {
+                            const grupo = camposWizard[campoKey]
+                            Object.keys(grupo).forEach(campoKey => {
+                                datosOriginales[campoKey] = grupo[campoKey].valor()
+                            })
+                        })
                         
                         $("#detalleNombre, #detalleApellido1, #detalleApellido2, #detalleRfc, #detalleCurp, #detalleFechaNacimiento, #detalleSexo").prop("disabled", false)
                         $("#btnCambiarFotoDetalle").prop("disabled", false)
@@ -1074,54 +1064,37 @@ class CapHum extends Controller
                 const toggleModoEdicion = () => {
                     const esNuevoRegistro = $("#personaIdHidden").val() === ""
                     
-                    if (esNuevoRegistro) return // No aplicar en modo registro
+                    if (esNuevoRegistro) return
                     
                     if (!modoEdicion) {
-                        // Activar modo edición
                         modoEdicion = true
                         hayCambios = false
-                        
-                        // Guardar estado original para poder cancelar
                         datosOriginales = obtenerDatosFormulario()
-                        
-                        // Habilitar campos
                         bloquearCamposModal(false)
-                        
-                        // Agregar listeners para detectar cambios
                         $('#modalPersona input, #modalPersona select, #modalPersona textarea').on('input change', () => {
-                            setTimeout(actualizarBotonesModal, 10) // Pequeño delay para que se actualice el valor
+                            setTimeout(actualizarBotonesModal, 10)
                         })
                         
                     } else {
-                        // Cancelar edición
                         modoEdicion = false
                         hayCambios = false
-                        
-                        // Bloquear campos
                         bloquearCamposModal(true)
-                        
-                        // Restaurar datos originales
-                        if (datosOriginales) {
-                            restaurarDatosFormulario(datosOriginales)
-                        }
-                        
-                        // Remover listeners
+                        if (datosOriginales) restaurarDatosFormulario(datosOriginales)
                         $('#modalPersona input, #modalPersona select, #modalPersona textarea').off('input change')
                     }
                     
-                    // Actualizar botones
                     actualizarBotonesModal()
                 }
 
                 const obtenerDatosFormulario = () => {
                     const datos = {}
-                    $('#modalPersona input, #modalPersona select, #modalPersona textarea').each(function() {
-                        const elemento = $(this)
-                        if (elemento.attr('type') === 'checkbox') {
-                            datos[elemento.attr('id')] = elemento.is(':checked')
-                        } else {
-                            datos[elemento.attr('id')] = elemento.val()
-                        }
+                    Object.keys(camposWizard).forEach(campoKey => {
+                        const grupo = camposWizard[campoKey]
+                        Object.keys(grupo).forEach(campoKey => {
+                            if (['fechaNacimiento', 'fechaIngreso'].includes(campoKey)) {
+                                datos[campoKey] = grupo[campoKey].texto()
+                            } else datos[campoKey] = grupo[campoKey].valor()
+                        })
                     })
                     return datos
                 }
