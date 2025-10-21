@@ -592,6 +592,7 @@ class CapHum extends Controller
 
                     const formData = new FormData()
                     formData.append('id', $("#personaIdHidden").val())
+                    formData.append('usuarioId', $("#usuarioIdHidden").val())
                     
                     Object.keys(camposWizard).forEach(campo => {
                         const grupo = camposWizard[campo]
@@ -684,7 +685,7 @@ class CapHum extends Controller
                                 $(previewId).attr('src', e.target.result)
                                 if (modoEdicion) {
                                     hayCambios = true
-                                    actualizarBotonEdicion()
+                                    actualizarBotonesModal()
                                 }
                             }
                             reader.readAsDataURL(file)
@@ -922,6 +923,7 @@ class CapHum extends Controller
                         $("#tituloModalPersona").text("Detalles del colaborador")
                         $(".address-subtitle").text("Información completa del colaborador")
                         $("#personaIdHidden").val(persona.ID)
+                        $("#usuarioIdHidden").val(usuarios[0]?.ID || "");
 
                         configurarWizardParaModo(false)
                         actualizarBotonesModal()

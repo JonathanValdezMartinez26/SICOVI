@@ -351,6 +351,19 @@ class CapHum extends Model
 
     public static function actualizarPersona($datos, $fotoData = null, $db = null)
     {
+        if ($fotoData) {
+            $retFoto = [
+                'foto' => [
+                    'valor' => $fotoData['foto'] ?? null,
+                    'tipo' => \PDO::PARAM_LOB
+                ]
+            ];
+            $qryFoto = [
+                'col' => ', FOTO = EMPTY_BLOB()',
+                'ret' => 'RETURNING FOTO INTO :foto'
+            ];
+        }
+
         $qry = <<<SQL
             UPDATE PERSONA SET
                 NOMBRE = :nombre,
@@ -370,10 +383,10 @@ class CapHum extends Model
                 MUNICIPIO = :municipio,
                 COLONIA = :colonia,
                 CONDICIONES_MEDICAS = :condiciones_medicas,
-                OTROS_DATOS_RELEVANTES = :informacion_adicional,
-                FOTO = EMPTY_BLOB()
+                OTROS_DATOS_RELEVANTES = :informacion_adicional
+                {$qryFoto['col']}
             WHERE ID = :id
-            RETURNING FOTO INTO :foto
+            {$qryFoto['ret']}
         SQL;
 
         $params = [
@@ -398,12 +411,9 @@ class CapHum extends Model
             'informacion_adicional' => $datos['informacionAdicional'] ?? null
         ];
 
-        $ret = [
-            'foto' => [
-                'valor' => $fotoData['foto'] ?? null,
-                'tipo' => \PDO::PARAM_LOB
-            ]
-        ];
+        $ret = [];
+
+        if ($fotoData) $ret = array_merge($ret, $retFoto);
 
         try {
             if (!$db) $db = new Database();
@@ -609,21 +619,25 @@ class CapHum extends Model
     {
         $qry = <<<SQL
             MERGE INTO USUARIO U
-            USING (SELECT :persona AS PERSONA, :empresa AS EMPRESA, :region AS REGION, :sucursal AS SUCURSAL FROM DUAL) SRC
-            ON (U.PERSONA = SRC.PERSONA AND U.EMPRESA = SRC.EMPRESA AND U.REGION = SRC.REGION AND U.SUCURSAL = SRC.SUCURSAL)
+            USING (SELECT :usuarioId AS USUARIO_ID, :persona AS PERSONA FROM DUAL) SRC
+            ON (U.ID = SRC.USUARIO_ID AND U.PERSONA = SRC.PERSONA)
             WHEN MATCHED THEN
                 UPDATE SET
                     U.USUARIO = :usuario,
                     U.PERFIL = :perfil,
                     U.AUTORIZADOR = :autorizador,
-                    U.PASS = CASE WHEN :pass IS NULL OR :pass = '' THEN U.PASS ELSE :pass END
+                    U.PASS = CASE WHEN :pass IS NULL OR :pass = '' THEN U.PASS ELSE :pass END,
+                    U.EMPRESA = :empresa,
+                    U.REGION = :region,
+                    U.SUCURSAL = :sucursal
             WHEN NOT MATCHED THEN
                 INSERT (PERSONA, EMPRESA, REGION, SUCURSAL, USUARIO, PASS, PERFIL, AUTORIZADOR)
-                VALUES (SRC.PERSONA, SRC.EMPRESA, SRC.REGION, SRC.SUCURSAL, :usuario, :pass, :perfil, :autorizador)
+                VALUES (SRC.PERSONA, :empresa, :region, :sucursal, :usuario, :pass, :perfil, :autorizador)
         SQL;
 
         $params = [
             'persona' => $personaId,
+            'usuarioId' => $datos['usuarioId'] ?? null,
             'empresa' => $datos['empresa'] ?? null,
             'region' => $datos['region'] ?? null,
             'sucursal' => $datos['sucursal'] ?? null,
