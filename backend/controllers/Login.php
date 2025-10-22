@@ -137,6 +137,8 @@ class Login extends Controller
             $_SESSION['autorizador_nombre'] = $datos['AUTORIZADOR_NOMBRE'];
             $_SESSION['autorizacion_propia'] = $datos['AUTORIZACION_PROPIA'];
             $_SESSION['es_jefe'] = $datos['ES_JEFE'];
+            $_SESSION['foto_perfil'] = $datos['FOTO'] > 0 ? "/CapHum/getFotoPersona?personaId={$datos['FOTO']}" : "/assets/img/misc/user.svg";
+
 
             $respuesta = self::respuesta(true, 'Bienvenido', [
                 'url' => '/' . VISTA_DEFECTO

@@ -12,6 +12,7 @@ class Login extends Model
         $query = <<<SQL
             SELECT
                 USUARIO.ID AS USUARIO_ID
+                , CASE WHEN PERSONA.FOTO IS NULL THEN 0 ELSE PERSONA.ID END AS FOTO
                 , GET_NOMBRE_USUARIO(USUARIO.ID) AS USUARIO_NOMBRE
                 , PERFIL.ID AS PERFIL_ID
                 , PERFIL.NOMBRE AS PERFIL_NOMBRE

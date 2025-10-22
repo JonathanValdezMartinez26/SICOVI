@@ -296,7 +296,7 @@ function getMenu()
                                     <div class="d-flex">
                                         <div class="flex-shrink-0 me-3">
                                             <div class="avatar avatar-online">
-                                                <img src="/assets/img/misc/user.svg" alt class="w-px-40 h-auto rounded-circle" />
+                                                <img src="<?= $_SESSION['foto_perfil']; ?>" alt class="w-px-40 h-px-40 rounded-circle object-fit-cover" />
                                             </div>
                                         </div>
                                         <div class="flex-grow-1">
