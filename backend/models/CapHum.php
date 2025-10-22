@@ -4,7 +4,6 @@ namespace Models;
 
 use Core\Model;
 use Core\Database;
-use Error;
 
 class CapHum extends Model
 {

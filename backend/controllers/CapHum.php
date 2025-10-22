@@ -836,7 +836,7 @@ class CapHum extends Controller
                             }
                             
                             const fotoUrl = persona.FOTO ? "/CapHum/getFotoPersona?personaId=" + persona.ID : "/assets/img/misc/user.svg"
-                            const fotoHtml = '<img src="' + fotoUrl + '" alt="Foto" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">'
+                            const fotoHtml = '<img src="' + fotoUrl + '" alt="Foto" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;" onClick="verFotoGrande(this)">'
 
                             const id = getID(persona.ID, persona.EMPRESA, persona.EMPRESA_NOMBRE)
                             const colaborador = getColaborador(persona.NOMBRE_COMPLETO, persona.PUESTO)
@@ -889,6 +889,19 @@ class CapHum extends Controller
                         contenedor.append(curpElem)
                     }
                     return contenedor.prop('outerHTML')
+                }
+
+                const verFotoGrande = (imgElement) => {
+                    const src = $(imgElement).attr('src')
+                    Swal.fire({
+                        imageUrl: src,
+                        imageWidth: '100%',
+                        heightAuto: false,
+                        imageAlt: 'Foto del colaborador',
+                        showCloseButton: true,
+                        showConfirmButton: false,
+                        width: '25%'
+                    })
                 }
 
                 const nuevaPersona = () => {
