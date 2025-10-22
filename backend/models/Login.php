@@ -34,7 +34,8 @@ class Login extends Model
                         ) CONTEO WHERE CONTEO.ID = PERSONA.ID
                     ) > 0 THEN 1
                     ELSE 0
-                END AS ES_JEFE
+                END AS ES_JEFE, 
+                USUARIO
             FROM
                 USUARIO
                 LEFT JOIN PERSONA ON PERSONA.ID = USUARIO.PERSONA
