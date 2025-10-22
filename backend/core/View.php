@@ -12,7 +12,7 @@ function getMenu()
                 [
                     'label' => 'Mis Solicitudes',
                     'url' => '/Viaticos/Solicitud',
-                    'permisos' => [25, 26]
+                    'permisos' => [25, 26, 90]
                 ]
             ]
         ],
@@ -32,22 +32,22 @@ function getMenu()
                 [
                     'label' => '1. Entrega de Viáticos',
                     'url' => '/Viaticos/Entrega',
-                    'permisos' => [25, 26]
+                    'permisos' => [25, 26, 90]
                 ],
                 [
                     'label' => '1.1 Entrega (Analista)',
                     'url' => '/Viaticos/EntregasPendientes',
-                    'permisos' => [25, 26]
+                    'permisos' => [25, 26, 90]
                 ],
                 [
                     'label' => '2. Comprobación',
                     'url' => '/Viaticos/Validacion',
-                    'permisos' => [25, 26, 50]
+                    'permisos' => [25, 26, 50, 90]
                 ],
                 [
                     'label' => '3. Ajustes',
                     'url' => '/Viaticos/Ajustes',
-                    'permisos' => [25, 26]
+                    'permisos' => [25, 26, 90]
                 ]
             ]
         ],
@@ -82,7 +82,7 @@ function getMenu()
                 [
                     'label' => 'Resumen Tesorería',
                     'url' => 'app-viaticos-dashboard.html',
-                    'permisos' => [25, 26]
+                    'permisos' => [25, 26, 90]
                 ]
             ]
         ],

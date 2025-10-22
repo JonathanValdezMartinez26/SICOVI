@@ -135,6 +135,7 @@ class Login extends Controller
             $_SESSION['autorizador_id'] = $datos['AUTORIZADOR_ID'];
             $_SESSION['autorizador_nombre'] = $datos['AUTORIZADOR_NOMBRE'];
             $_SESSION['autorizacion_propia'] = $datos['AUTORIZACION_PROPIA'];
+            $_SESSION['es_jefe'] = $validacion['ES_JEFE'];
 
             $respuesta = self::respuesta(true, 'Bienvenido', [
                 'url' => '/' . VISTA_DEFECTO
