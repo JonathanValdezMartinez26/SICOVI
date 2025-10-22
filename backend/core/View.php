@@ -22,7 +22,8 @@ function getMenu()
                 [
                     'label' => 'Pendientes',
                     'url' => '/Viaticos/Autorizacion',
-                    'permisos' => [25, 26]
+                    'permisos' => [25, 26, 90],
+                    'soloJefes' => true
                 ],
             ]
         ],
@@ -114,6 +115,9 @@ function getMenu()
         $submenu = '';
         foreach ($item['subItems'] as $subItem) {
             if (in_array($_SESSION['perfil_id'], $subItem['permisos'])) {
+                if ($_SESSION['perfil_id'] != 25 && isset($subItem['soloJefes']) && $subItem['soloJefes'] === true) {
+                    if (!isset($_SESSION['es_jefe']) || $_SESSION['es_jefe'] != 1) continue;
+                }
                 $activo = strtolower($subItem['url']) == strtolower($_SERVER['REQUEST_URI']) ? 'active' : '';
                 $submenu .= <<<HTML
                     <li class="menu-item $activo">

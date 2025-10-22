@@ -24,13 +24,26 @@ class Login extends Model
                 , USUARIO.AUTORIZADOR AS AUTORIZADOR_ID
                 , GET_NOMBRE_PERSONA(USUARIO.AUTORIZADOR) AS AUTORIZADOR_NOMBRE
                 , PERFIL.AUTORIZACION_PROPIA
+                , CASE
+                    WHEN (
+                        SELECT COUNT(*)
+                        FROM (
+                            SELECT JEFE AS ID FROM NOMINA WHERE ESTATUS = 1
+                            UNION ALL
+                            SELECT AUTORIZADOR AS ID FROM USUARIO WHERE ESTATUS = 1
+                        ) CONTEO WHERE CONTEO.ID = PERSONA.ID
+                    ) > 0 THEN 1
+                    ELSE 0
+                END AS ES_JEFE
             FROM
                 USUARIO
                 LEFT JOIN PERSONA ON PERSONA.ID = USUARIO.PERSONA
                 LEFT JOIN PERFIL ON PERFIL.ID = USUARIO.PERFIL
-                LEFT JOIN SUCURSALES_REGIONES RS ON RS.EMPRESA = USUARIO.EMPRESA AND RS.REGION = USUARIO.REGION AND RS.SUCURSAL = USUARIO.SUCURSAL 
+                LEFT JOIN SUCURSALES_REGIONES RS ON RS.EMPRESA = USUARIO.EMPRESA AND RS.REGION = USUARIO.REGION AND RS.SUCURSAL = USUARIO.SUCURSAL
+                LEFT JOIN NOMINA ON NOMINA.PERSONA = PERSONA.ID
             WHERE
                 USUARIO.ESTATUS = 1
+                AND NOMINA.ESTATUS = 1
                 AND USUARIO.USUARIO = :usuario
                 AND USUARIO.PASS = CIFRA_PASS(:password)
         SQL;
