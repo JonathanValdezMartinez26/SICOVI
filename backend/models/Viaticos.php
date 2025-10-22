@@ -1394,13 +1394,18 @@ class Viaticos extends Model
         $qry = <<<SQL
             SELECT
                 V.ID
+                , V.PROYECTO
                 , GET_NOMBRE_USUARIO(V.USUARIO) AS USUARIO_NOMBRE
                 , GET_NOMBRE_USUARIO(V.ENTREGA_USUARIO) AS ENTREGA_NOMBRE
                 , V.ENTREGA_MONTO
                 , V.COMPROBACION_MONTO
                 , V.DIFERENCIA_MONTO
+                , TO_CHAR(V.DIFERENCIA_FECHA, 'DD/MM/YYYY') AS DIFERENCIA_FECHA
+                , SR.SUCURSAL
+                , SR.SUCURSAL_NOMBRE
             FROM
                 VIATICOS V
+                LEFT JOIN SUCURSALES_REGIONES SR ON SR.EMPRESA = V.EMPRESA AND SR.REGION = V.REGION AND SR.SUCURSAL = V.SUCURSAL
             WHERE
                 V.ID = :solicitudId
                 AND V.DIFERENCIA_MONTO IS NOT NULL

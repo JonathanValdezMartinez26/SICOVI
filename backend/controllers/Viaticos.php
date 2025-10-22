@@ -3115,7 +3115,7 @@ class Viaticos extends Controller
         $mpdf->WriteHTML($plantilla['cuerpo'], 2);
 
         $duplicado = <<<HTML
-            <div style="border-top: 1px dashed #000; margin-top: 10px;">
+            <div style="border-top: 1px dashed #000; margin-top: 80px;">
                 {$plantilla['cuerpo']}
             </div>
         HTML;
@@ -3140,6 +3140,8 @@ class Viaticos extends Controller
         $diferencia = $fmt->formatCurrency($diferencia, 'MXN');
         $entregado = $fmt->formatCurrency($datos['ENTREGA_MONTO'], 'MXN');
         $comprobado = $fmt->formatCurrency($datos['COMPROBACION_MONTO'], 'MXN');
+
+        $nombre_empresa = 'Lizbeth Fuentes';
 
         $estilo = <<<HTML
             <style>
@@ -3255,13 +3257,13 @@ class Viaticos extends Controller
                     <td class="left">
                         <div class="field-row">
                             <span class="field-label">Empresa:</span>
-                            <span class="field-value">[NOMBRE DE LA EMPRESA]</span>
+                            <span class="field-value">{$nombre_empresa}</span>
                         </div>
                     </td>
                     <td class="right">
                         <div class="field-row">
                             <span class="field-label">Folio:</span>
-                            <span class="field-value">[000001]</span>
+                            <span class="field-value">{$datos['ID']}</span>
                         </div>
                     </td>
                 </tr>
@@ -3269,13 +3271,13 @@ class Viaticos extends Controller
                     <td class="left">
                         <div class="field-row">
                             <span class="field-label">Sucursal:</span>
-                            <span class="field-value">[SUCURSAL]</span>
+                            <span class="field-value">{$datos['SUCURSAL_NOMBRE']}</span>
                         </div>
                     </td>
                     <td class="right">
                         <div class="field-row">
                             <span class="field-label">Fecha:</span>
-                            <span class="field-value">[DD/MM/AAAA]</span>
+                            <span class="field-value">{$datos['DIFERENCIA_FECHA']}</span>
                         </div>
                     </td>
                 </tr>
@@ -3284,8 +3286,8 @@ class Viaticos extends Controller
 
             <!-- Contenido principal -->
             <div class="content-section">
-                <p>Por medio del presente documento se hace constar el <strong>$tipo</strong> al epleado <strong>[EMPLEADO]</strong>
-                por concepto de una diferencia entre el monto de gastos entregados ($entregado) contra lo comprobado ($comprobado), correspondiente al proyecto <strong>[PROYECTO]</strong>.</p>
+                <p>Por medio del presente documento se hace constar el <strong>$tipo</strong> al epleado <strong>{$datos['USUARIO_NOMBRE']}</strong>
+                por concepto de una diferencia entre el monto de gastos entregados ($entregado) contra lo comprobado ($comprobado), correspondiente al proyecto <strong>{$datos['PROYECTO']}</strong>.</p>
             </div>
 
             <!-- Monto -->
