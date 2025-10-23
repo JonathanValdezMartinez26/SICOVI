@@ -149,7 +149,7 @@ class Viaticos extends Controller
                     if (estatus == catEstatus_VG.entregada) estatus = "ENTREGADA<br>(POR TESORERÍA)<br>(PENDIENTE DE COMPROBACIÓN)"
                     if (estatus == catEstatus_VG.comprobada) estatus = "COMPROBANTES REGISTRADOS<br>(PENDIENTE DE AUTORIZACIÓN)"
                     if (estatus == catEstatus_VG.aceptada) estatus = "ACEPTADA<br>(COMPROBANTES AUTORIZADOS<br>POR EL JEFE)<br>(PENDIENTE DE VALIDACIÓN POR RECURSOS MATERIALES)"
-                    if (estatus == catEstatus_VG.validada) estatus = "COMPROBANTES VALIDADOS<br>(POR TESORERÍA)"
+                    if (estatus == catEstatus_VG.validada) estatus = "COMPROBANTES VALIDADOS<br>(POR RECURSOS MATERIALES)"
 
                     return "<div class='d-flex flex-column align-items-center justify-content-center'>" +
                         "<span class='badge rounded-pill " + color + "'>" + estatus + "</span>" +
