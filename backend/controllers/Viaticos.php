@@ -1464,7 +1464,8 @@ class Viaticos extends Controller
 
                     const parametros = {
                         fechaI: fechas.inicio,
-                        fechaF: fechas.fin
+                        fechaF: fechas.fin,
+                        usuario: "{$_SESSION['usuario_id']}"
                     }
 
                     consultaServidor("/viaticos/getSolicitudesAutorizacion", parametros, (respuesta) => {
