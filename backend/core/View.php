@@ -12,7 +12,7 @@ function getMenu()
                 [
                     'label' => 'Mis Solicitudes',
                     'url' => '/Viaticos/Solicitud',
-                    'permisos' => [25, 26, 90]
+                    'permisos' => [25, 26, 90, 30]
                 ]
             ]
         ],
