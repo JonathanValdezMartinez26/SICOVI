@@ -91,6 +91,111 @@ class Database
         return $error;
     }
 
+    private function registrarLog($sql, $valores = null)
+    {
+        $operacionesModificacion = ['INSERT', 'UPDATE', 'DELETE'];
+        $sqlUpper = strtoupper(trim($sql));
+        $tipoOperacion = null;
+        $esModificacion = false;
+
+        foreach ($operacionesModificacion as $operacion) {
+            if (strpos($sqlUpper, $operacion) === 0) {
+                $esModificacion = true;
+                $tipoOperacion = $operacion;
+                break;
+            }
+        }
+
+        $esSelect = strpos($sqlUpper, 'SELECT') === 0;
+        if ($esSelect) $tipoOperacion = 'SELECT';
+
+        $registrarSelect = false;
+        if ($esSelect) {
+            $horaActual = (int)date('G');
+            $registrarSelect = ($horaActual >= 19 || $horaActual < 8);
+        }
+
+        if ((!$esModificacion && !$registrarSelect) ||
+            strpos($sqlUpper, 'INTO LOG') !== false ||
+            strpos($sqlUpper, 'UPDATE LOG') !== false ||
+            strpos($sqlUpper, 'FROM LOG') !== false
+        ) return;
+
+        if ($this->db === null || !is_object($this->db)) return;
+
+        try {
+            $usuarioId = $_SESSION['usuario_id'] ?? null;
+            $personaId = $_SESSION['persona_id'] ?? null;
+            $ip = $this->getClientIP();
+            $trace = $this->getSimpleTrace();
+            $parametersJson = $valores ? json_encode($valores, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : null;
+
+            $logSql = "INSERT INTO LOG (USUARIO, PERSONA, IP, QUERY_TEXT, PARAMETERS_JSON, TRACE, TIPO) 
+                       VALUES (:usuario, :persona, :ip, :query_text, :parameters_json, :trace, :tipo)";
+
+            $logValores = [
+                'usuario' => $usuarioId,
+                'persona' => $personaId,
+                'ip' => $ip,
+                'query_text' => $sql,
+                'parameters_json' => $parametersJson,
+                'trace' => $trace,
+                'tipo' => $tipoOperacion
+            ];
+
+            $stmtLog = $this->db->prepare($logSql);
+            if ($stmtLog !== false) {
+                foreach ($logValores as $key => $value) {
+                    $stmtLog->bindValue(":$key", $value);
+                }
+                $stmtLog->execute();
+            }
+        } catch (\Exception $e) {
+            error_log("Error al registrar en LOG: " . $e->getMessage());
+        }
+    }
+
+    private function getClientIP()
+    {
+        $ip = '';
+
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+            $ip = trim($ips[0]);
+        } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+
+        return $ip;
+    }
+
+    private function getSimpleTrace()
+    {
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+        $simplifiedTrace = [];
+
+        foreach ($trace as $item) {
+            if (isset($item['class']) && $item['class'] === 'Core\Database') continue;
+
+            $line = '';
+            if (isset($item['file'])) {
+                $file = str_replace($_SERVER['DOCUMENT_ROOT'] ?? '', '', $item['file']);
+                $line .= $file;
+            }
+
+            if (isset($item['line'])) $line .= ':' . $item['line'];
+
+            if (isset($item['class'])) $line .= ' - ' . $item['class'] . $item['type'] . $item['function'] . '()';
+            elseif (isset($item['function'])) $line .= ' - ' . $item['function'] . '()';
+
+            if ($line) $simplifiedTrace[] = $line;
+        }
+
+        return implode("\n", $simplifiedTrace);
+    }
+
     public function beginTransaction()
     {
         if ($this->db == null) throw new \Exception("No se ha establecido una conexión a la base de datos.");
@@ -153,6 +258,9 @@ class Database
             }
 
             $stmt->execute();
+
+            $this->registrarLog($sql, $valores);
+
             return $stmt;
         } catch (\PDOException $e) {
             throw new \Exception($this->getError($e, $sql, $valores, $retorno));
