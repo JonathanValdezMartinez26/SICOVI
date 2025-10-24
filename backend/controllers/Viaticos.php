@@ -149,7 +149,7 @@ class Viaticos extends Controller
                     if (estatus == catEstatus_VG.entregada) estatus = "ENTREGADA<br>(POR TESORERÍA)<br>(PENDIENTE DE COMPROBACIÓN)"
                     if (estatus == catEstatus_VG.comprobada) estatus = "COMPROBANTES REGISTRADOS<br>(PENDIENTE DE AUTORIZACIÓN)"
                     if (estatus == catEstatus_VG.aceptada) estatus = "ACEPTADA<br>(COMPROBANTES AUTORIZADOS<br>POR EL JEFE)<br>(PENDIENTE DE VALIDACIÓN POR RECURSOS MATERIALES)"
-                    if (estatus == catEstatus_VG.validada) estatus = "COMPROBANTES VALIDADOS<br>(POR TESORERÍA)"
+                    if (estatus == catEstatus_VG.validada) estatus = "COMPROBANTES VALIDADOS<br>(POR RECURSOS MATERIALES)"
 
                     return "<div class='d-flex flex-column align-items-center justify-content-center'>" +
                         "<span class='badge rounded-pill " + color + "'>" + estatus + "</span>" +
@@ -307,8 +307,8 @@ class Viaticos extends Controller
                         desde: fechas.inicio,
                         hasta: fechas.fin,
                         monto: numeral($("#montoVG").val()).value(),
-                        empresa: $("#sucursalEntrega option:selected").attr("data-empresa"), //$("#empresa").val(),
-                        region: $("#sucursalEntrega option:selected").attr("data-region"), //$("#region").val(),
+                        empresa: $("#sucursalEntrega option:selected").attr("data-empresa"),
+                        region: $("#sucursalEntrega option:selected").attr("data-region"),
                         sucursal: $("#sucursalEntrega").val(),
                     }
 
@@ -1196,19 +1196,36 @@ class Viaticos extends Controller
                     })
                     $("#btnFinalizarComprobacion").on("click", finalizarComprobacion)
                     $("#actualizarConcepto").on("click", actualizaConceptoSolicitud)
-                    // recorrer las sucursales par a mostrar solo las que coinciden con la empresa de usuario
-                    const empresaUsuario = "{$_SESSION['empresa_id']}"
-                    $("#sucursalEntrega option").each((_, option) => {
-                        const empresa = $(option).attr("data-empresa")
-                        if (empresa !== empresaUsuario) $(option).hide()
-                    });
+                    
+                    $("#empresa").on("change", () => {
+                        const empresaSeleccionada = $("#empresa").val()
+                        $("#sucursalEntrega option").each((_, option) => {
+                            const empresa = $(option).attr("data-empresa")
+                            
+                            if (empresa === empresaSeleccionada) $(option).show()
+                            else $(option).hide()
+                        })
+
+                        const primeraSucursal = $("#sucursalEntrega option").each((_, option) => {
+                            if ($(option).css("display") !== "none") {
+                                $("#sucursalEntrega").prop("selectedIndex", option.index)
+                                return false
+                            }
+                        })
+                    })
+
+                    $("#empresa").val("{$_SESSION['empresa_id']}").trigger("change")
+                    const sucEmpresa = $("#sucursalEntrega option").filter(function () {
+                        return $(this).attr("data-empresa") == "{$_SESSION['empresa_id']}" && $(this).val() == "{$_SESSION['sucursal_id']}"
+                    }).first().val()
+                    $("#sucursalEntrega").val(sucEmpresa)
 
                     getSolicitudes()
                 })
             </script>
         HTML;
 
-        $catSucursales = ViaticosDAO::getCatalogoSucursales();
+        $catSucursales = ViaticosDAO::getCatalogoSucursales($_SESSION['empresas_habilitadas'], true);
         if ($catSucursales['success']) $optionsSucursales = self::getOptionsSucursales($catSucursales['datos']);
 
         $catConceptos = ViaticosDAO::getCatalogoConceptosViaticos();
@@ -1225,6 +1242,7 @@ class Viaticos extends Controller
 
         self::set("titulo", "Solicitud de Viáticos y Gastos");
         self::set("script", $script);
+        self::set("empresas", $optionsSucursales['empresas']);
         self::set("sucursales", $optionsSucursales['sucursales']);
         self::set("conceptos", $conceptos);
         self::set("activas", $activas['datos']['ACTIVAS'] ?? 0);
@@ -1464,7 +1482,8 @@ class Viaticos extends Controller
 
                     const parametros = {
                         fechaI: fechas.inicio,
-                        fechaF: fechas.fin
+                        fechaF: fechas.fin,
+                        usuario: "{$_SESSION['usuario_id']}"
                     }
 
                     consultaServidor("/viaticos/getSolicitudesAutorizacion", parametros, (respuesta) => {
@@ -2456,6 +2475,7 @@ class Viaticos extends Controller
                     t2: "de",
                     total: 0
                 }
+                
                 let comprobaciones = null
                 let comprobacion = null
                 let comprobantes = null
@@ -2466,6 +2486,12 @@ class Viaticos extends Controller
                 let paginasTotales = 1
                 let zoomActual = 1.0
                 let fullScreen = false
+                let tipoArchivoActual = null
+                let isDragging = false
+                let startX = 0
+                let startY = 0
+                let scrollLeft = 0
+                let scrollTop = 0
 
                 const getComprobaciones = () => {
                     const parametros = getParametros()
@@ -2511,7 +2537,6 @@ class Viaticos extends Controller
 
                 const getParametros = () => {
                     const fechas = getInputFechas("#fechasComprobaciones", true)
-
                     return {
                         fechaI: fechas.inicio,
                         fechaF: fechas.fin
@@ -2534,11 +2559,7 @@ class Viaticos extends Controller
                 }
 
                 const getComprobantes = (solicitudId) => {
-                    $(".controlesPDF").addClass("d-none")
-                    $("#cargandoArchivo").removeClass("d-none")
-                    $("#sinArchivo").addClass("d-none")
-                    $("#errorArchivo").addClass("d-none")
-                    $("#visor").children().last().filter("canvas, img").remove()
+                    limpiarVisor()
                     $("#btnCompAnt").prop("disabled", true)
                     $("#btnCompSig").prop("disabled", true)
                     $("#btnRechazarComprobante").prop("disabled", true)
@@ -2581,7 +2602,8 @@ class Viaticos extends Controller
 
                 const actualizaDatosComprobante = (index = 0) => {
                     comprobante = comprobantes[index]
-                    $("#visor").children().last().filter("canvas, img").remove()
+                    limpiarVisor()
+                    
                     $("#fechaCaptura").val(comprobante && moment(comprobante.FECHA_REGISTRO).format(MOMENT_FRONT_HORA))
                     $("#concepto").val(comprobante?.CONCEPTO_NOMBRE)
                     $("#fechaComprobante").val(comprobante && moment(comprobante.FECHA_COMPROBANTE).format(MOMENT_FRONT))
@@ -2593,22 +2615,38 @@ class Viaticos extends Controller
                     $("#btnCompAnt").prop("disabled", leyendaNoComprobante.actual === 1)
                     $("#btnCompSig").prop("disabled", leyendaNoComprobante.actual === leyendaNoComprobante.total)
 
+                    resetZoom()
                     const url = "/viaticos/getComprobante_VG?comprobanteId=" + comprobante.ID
                     const tipo = comprobante.ARCHIVO_TIPO
-                    $(".controlesPDF").addClass("d-none")
-                    $("#cargandoArchivo").removeClass("d-none")
-
+                    
                     setTimeout(() => {
                         verArchivo(url, tipo)
-                    }, 1500)
+                    }, 300)
+                }
+
+                const limpiarVisor = () => {
+                    $(".controlesPDF").addClass("d-none")
+                    $("#controlesPaginacion").addClass("d-none")
+                    $("#cargandoArchivo").removeClass("d-none")
+                    $("#sinArchivo").addClass("d-none")
+                    $("#errorArchivo").addClass("d-none")
+                    $("#contenedorArchivo").addClass("d-none").empty()
+                    tipoArchivoActual = null
+                    pdfActual = null
                 }
 
                 const verArchivo = async (url, tipo) => {
                     try {
-                        if (tipo === "application/pdf") await verPDF(url)
-                        if (tipo.startsWith("image/")) await verImagen(url)
-                        if (!tipo) throw new Error("Tipo de archivo no soportado")
+                        tipoArchivoActual = tipo
+                        if (tipo === "application/pdf") {
+                            await verPDF(url)
+                        } else if (tipo.startsWith("image/")) {
+                            await verImagen(url)
+                        } else {
+                            throw new Error("Tipo de archivo no soportado")
+                        }
                     } catch (error) {
+                        console.error("Error al cargar archivo:", error)
                         $("#errorArchivo").removeClass("d-none")
                     } finally {
                         $("#cargandoArchivo").addClass("d-none")
@@ -2617,28 +2655,37 @@ class Viaticos extends Controller
 
                 const verImagen = async (url) => {
                     const img = document.createElement("img")
-                    img.className = "file-content no-select mw-100 mh-100"
-                    img.alt = "Archivo de imagen"
+                    img.id = "imagenActual"
+                    img.className = "file-content"
+                    img.alt = "Comprobante"
+                    img.style.transformOrigin = "center center"
+                    img.style.transition = "transform 0.1s ease"
 
                     await new Promise((resolve, reject) => {
                         img.onload = () => resolve()
                         img.onerror = () => reject(new Error("Error al cargar la imagen"))
                         img.src = url
-                    });
+                    })
 
-                    $("#visor").append(img)
+                    $("#contenedorArchivo").empty().append(img).removeClass("d-none")
+                    $(".controlesPDF").removeClass("d-none")
+                    aplicarZoom()
                 }
 
                 const verPDF = async (url) => {
                     const archivo = visorPDF.getDocument(url)
                     pdfActual = await archivo.promise
+                    paginaActual = 1
                     paginasTotales = pdfActual.numPages
                     await verPagina(1)
                     actualizaInfoVisor()
                     $(".controlesPDF").removeClass("d-none")
+                    $("#controlesPaginacion").removeClass("d-none")
                 }
 
                 const verPagina = async (noPagina) => {
+                    if (!pdfActual) return
+                    
                     const pagina = await pdfActual.getPage(noPagina)
                     const canvas = document.createElement("canvas")
                     const contextoCanvas = canvas.getContext("2d")
@@ -2646,7 +2693,8 @@ class Viaticos extends Controller
                     const viewport = pagina.getViewport({ scale: zoomActual })
                     canvas.height = viewport.height
                     canvas.width = viewport.width
-                    canvas.className = "pdf-canvas no-select no-context-menu"
+                    canvas.className = "pdf-canvas"
+                    canvas.id = "pdfCanvas"
 
                     const contexto = {
                         canvasContext: contextoCanvas,
@@ -2655,9 +2703,7 @@ class Viaticos extends Controller
 
                     await pagina.render(contexto).promise
 
-                    const visor = $("#visor")
-                    visor.find("canvas").remove()
-                    visor.append(canvas)
+                    $("#contenedorArchivo").empty().append(canvas).removeClass("d-none")
                 }
 
                 const actualizaInfoVisor = () => {
@@ -2685,31 +2731,100 @@ class Viaticos extends Controller
                 const aumentarZoom = async () => {
                     if (zoomActual < 3.0) {
                         zoomActual += 0.25
-                        if (pdfActual) {
-                            await verPagina(paginaActual)
-                        }
+                        await aplicarZoom()
                     }
                 }
 
                 const disminuirZoom = async () => {
                     if (zoomActual > 0.5) {
                         zoomActual -= 0.25
-                        if (pdfActual) {
-                            await verPagina(paginaActual)
+                        await aplicarZoom()
+                    }
+                }
+
+                const resetZoom = async () => {
+                    zoomActual = 1.0
+                    paginaActual = 1
+                    await aplicarZoom()
+                }
+
+                const aplicarZoom = async () => {
+                    const porcentaje = Math.round(zoomActual * 100) + "%"
+                    $("#nivelZoom").text(porcentaje)
+                    
+                    if (tipoArchivoActual === "application/pdf" && pdfActual) {
+                        await verPagina(paginaActual)
+                        actualizaInfoVisor()
+                    } else if (tipoArchivoActual?.startsWith("image/")) {
+                        const img = $("#imagenActual")
+                        if (img.length) {
+                            img.css("transform", "scale(" + zoomActual + ")")
                         }
+                    }
+                    
+                    // Habilitar drag si hay zoom
+                    if (zoomActual > 1.0) {
+                        $("#visor").addClass("draggable")
+                    } else {
+                        $("#visor").removeClass("draggable")
                     }
                 }
 
                 const cambiarFullscreen = () => {
+                    const visorArchivos = $("#visorArchivos")
+                    const menu = $("#layout-menu")
+                    const navbar = $("nav.layout-navbar")
+                    
                     if (fullScreen) {
                         fullScreen = false
-                        $("#visorArchivos").removeClass("fullscreen")
+                        visorArchivos.removeClass("fullscreen")
                         $("#btnFullscreen i").removeClass("fa-compress").addClass("fa-expand")
+                        menu.css("z-index", "")
+                        navbar.css("z-index", "")
                     } else {
                         fullScreen = true
-                        $("#visorArchivos").addClass("fullscreen")
+                        visorArchivos.addClass("fullscreen")
                         $("#btnFullscreen i").removeClass("fa-expand").addClass("fa-compress")
+                        menu.css("z-index", "1")
+                        navbar.css("z-index", "1")
                     }
+                }
+
+                const inicializarDrag = () => {
+                    const visor = document.getElementById("visor")
+                    
+                    visor.addEventListener("mousedown", (e) => {
+                        if (!$("#visor").hasClass("draggable")) return
+                        
+                        isDragging = true
+                        $("#visor").addClass("dragging")
+                        startX = e.pageX - visor.offsetLeft
+                        startY = e.pageY - visor.offsetTop
+                        scrollLeft = visor.scrollLeft
+                        scrollTop = visor.scrollTop
+                        e.preventDefault()
+                    })
+
+                    visor.addEventListener("mouseleave", () => {
+                        isDragging = false
+                        $("#visor").removeClass("dragging")
+                    })
+
+                    visor.addEventListener("mouseup", () => {
+                        isDragging = false
+                        $("#visor").removeClass("dragging")
+                    })
+
+                    visor.addEventListener("mousemove", (e) => {
+                        if (!isDragging) return
+                        e.preventDefault()
+                        const x = e.pageX - visor.offsetLeft
+                        const y = e.pageY - visor.offsetTop
+                        const walkX = (x - startX) * 1.5
+                        const walkY = (y - startY) * 1.5
+                        visor.scrollLeft = scrollLeft - walkX
+                        visor.scrollTop = scrollTop - walkY
+                    })
                 }
 
                 const rechazarComprobante = () => {
@@ -2792,7 +2907,7 @@ class Viaticos extends Controller
                                 getComprobaciones()
                                 comprobantes.splice(leyendaNoComprobante.actual - 1, 1)
                                 if (comprobantes.length === 0) {
-                                    $("#visor").children().last().filter("canvas, img").remove()
+                                    limpiarVisor()
                                     $("#sinArchivo").removeClass("d-none")
                                     setTimeout(() => {
                                         $("#solicitudDetalles").removeClass("show")
@@ -2811,20 +2926,28 @@ class Viaticos extends Controller
                     setInputFechas("#fechasComprobaciones", { rango: true, iniD: -30 })
                     $("#btnBuscarComprobaciones").on("click", getComprobaciones)
                     configuraTabla(tabla)
+                    
+                    // Controles de comprobantes
                     $("#btnCompAnt").on("click", comprobanteAnterior)
                     $("#btnCompSig").on("click", comprobanteSiguiente)
                     $("#btnRechazarComprobante").on("click", rechazarComprobante)
                     $("#btnAceptarComprobante").on("click", aceptarComprobante)
 
+                    // Controles del visor
                     $("#btnFullscreen").on("click", cambiarFullscreen)
-                    $(document).on("keydown", (e) => {
-                        if (e.key === "Escape" && fullScreen) cambiarFullscreen()
-                    })
+                    $("#btnResetZoom").on("click", resetZoom)
                     $("#btnMasZoom").on("click", aumentarZoom)
                     $("#btnMenosZoom").on("click", disminuirZoom)
                     $("#btnPagAnt").on("click", verPaginaAnterior)
                     $("#btnPagSig").on("click", verPaginaSiguiente)
+                    
+                    // Teclado
+                    $(document).on("keydown", (e) => {
+                        if (e.key === "Escape" && fullScreen) cambiarFullscreen()
+                    })
 
+                    // Inicializar funcionalidades
+                    inicializarDrag()
                     visorPDF = window.pdfjsLib
                     visorPDF.GlobalWorkerOptions.workerSrc = "/assets/vendor/libs/pdf-viewer/pdf.worker.mjs"
                     getComprobaciones()

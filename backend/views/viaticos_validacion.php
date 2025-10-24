@@ -85,18 +85,21 @@
                         <i class="fas fa-expand"></i>
                     </button>
 
-                    <div class="controlesPDF d-none d-flex justify-content-center align-items-center p-2">
-                        <div class="col d-flex justify-content-center">
-                            <button type="button" id="btnMenosZoom" class="btn btn-primary btn-sm" title="Alejar">
-                                <i class="fa fa-search-minus"></i>
-                            </button>
-                            <span class="mx-5">Zoom</span>
-                            <button type="button" id="btnMasZoom" class="btn btn-primary btn-sm" title="Acercar">
-                                <i class="fa fa-search-plus"></i>
-                            </button>
-                        </div>
+                    <!-- Controles superiores: Zoom -->
+                    <div class="controlesPDF d-none d-flex justify-content-center align-items-center p-2 gap-3">
+                        <button type="button" id="btnResetZoom" class="btn btn-secondary btn-sm" title="Restablecer vista">
+                            <i class="fa fa-undo"></i>
+                        </button>
+                        <button type="button" id="btnMenosZoom" class="btn btn-primary btn-sm" title="Alejar">
+                            <i class="fa fa-search-minus"></i>
+                        </button>
+                        <span class="mx-3" id="nivelZoom">100%</span>
+                        <button type="button" id="btnMasZoom" class="btn btn-primary btn-sm" title="Acercar">
+                            <i class="fa fa-search-plus"></i>
+                        </button>
                     </div>
 
+                    <!-- Visor principal -->
                     <div id="visor" class="flex-grow-1 d-flex justify-content-center align-items-center h-0 overflow-auto">
                         <div id="cargandoArchivo" class="loading-overlay d-flex flex-column justify-content-center align-items-center">
                             <img src="/assets/img/wait.svg" alt="Cargando archivo" class="loading-image">
@@ -108,15 +111,17 @@
                         <div id="errorArchivo" class="alert alert-danger m-3 d-none" role="alert">
                             <i class="fa fa-exclamation-triangle me-2">&nbsp;</i>Error al cargar el archivo.
                         </div>
+                        <div id="contenedorArchivo" class="content-container d-none"></div>
                     </div>
 
-                    <div class="controlesPDF d-none d-flex justify-content-center align-items-center p-2">
-                        <div class="col d-flex justify-content-center">
-                            <button type="button" id="btnPagAnt" class="btn btn-primary btn-sm" title="Anterior">
+                    <!-- Controles inferiores: Paginación (solo PDF) -->
+                    <div id="controlesPaginacion" class="controlesPDF d-none d-flex justify-content-center align-items-center p-2">
+                        <div class="col d-flex justify-content-center align-items-center gap-3">
+                            <button type="button" id="btnPagAnt" class="btn btn-primary btn-sm" title="Página anterior">
                                 <i class="fa fa-chevron-left"></i>
                             </button>
-                            <span id="paginaActual" class="mx-5 page-info">1 / 1</span>
-                            <button type="button" id="btnPagSig" class="btn btn-primary btn-sm" title="Siguiente">
+                            <span id="paginaActual" class="page-info">1 / 1</span>
+                            <button type="button" id="btnPagSig" class="btn btn-primary btn-sm" title="Página siguiente">
                                 <i class="fa fa-chevron-right"></i>
                             </button>
                         </div>

@@ -39,16 +39,28 @@ class Model
         }
     }
 
-    public static function getCatalogoSucursales()
+    public static function getCatalogoSucursales($filtroEmpresas = [], $ignorarRegion = false)
     {
         $query = <<<SQL
             SELECT
                 *
             FROM
                 SUCURSALES_REGIONES
+            WHERE
+                1 = 1
+                FILTROS
             ORDER BY
                 EMPRESA, REGION_NOMBRE, SUCURSAL_NOMBRE
         SQL;
+
+        if (is_array($filtroEmpresas) && count($filtroEmpresas) > 0) {
+            $empresas = implode(',', $filtroEmpresas);
+            $filtro = " AND EMPRESA IN ($empresas) ";
+            $query = str_replace('FILTROS', $filtro, $query);
+        }
+
+        $query = str_replace('FILTROS', '', $query);
+        if ($ignorarRegion) $query = str_replace('REGION_NOMBRE, ', '', $query);
 
         try {
             $db = new Database();

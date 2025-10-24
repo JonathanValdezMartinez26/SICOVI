@@ -842,13 +842,15 @@ class Viaticos extends Model
             WHERE
                 ((V.TIPO = 1 AND CEV.NOMBRE IN ('SOLICITADA', 'COMPROBADA')) OR (V.TIPO = 2 AND CEV.NOMBRE IN ('COMPROBADA', 'RECHAZADA')))
                 AND TRUNC(V.REGISTRO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
+                AND U.AUTORIZADOR = (SELECT PERSONA FROM USUARIO U_AUT WHERE U_AUT.ID = :usuario)
             ORDER BY
-                ID DESC
+                V.ID ASC
         SQL;
 
         $params = [
             'fechaI' => $datos['fechaI'],
-            'fechaF' => $datos['fechaF']
+            'fechaF' => $datos['fechaF'],
+            'usuario' => $datos['usuario']
         ];
 
         try {
@@ -1185,7 +1187,7 @@ class Viaticos extends Model
                 LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
             WHERE
                 (C.REGISTRADOS > 0 OR C.RECHAZADOS > 0)
-                AND CEV.NOMBRE = 'ACEPTADA'
+                AND CEV.NOMBRE = 'COMPROBADA' -- 'VALIDADA'
                 AND TRUNC(V.ACTUALIZADO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
             ORDER BY
                 V.ACTUALIZADO DESC
