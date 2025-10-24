@@ -38,9 +38,11 @@ class Inicio extends Controller
         // Comparar con el campo PASS
         if ($usuarioData['PASS'] === $usuarioHash && !in_array($usuarioSesion, $excluirUsuarios)) {
             // SweetAlert2 para actualizar contraseña
+            $usuarioSesion = $_SESSION['usuario'] ?? '';
             echo <<<HTML
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
             <script>
+             const usuarioSesion = '{$usuarioSesion}';
             Swal.fire({
                 title: 'Actualiza tu contraseña',
                 html:
@@ -75,10 +77,32 @@ class Inicio extends Controller
                         Swal.showValidationMessage('Debes llenar ambos campos');
                         return false;
                     }
+                    // Validación de longitud mínima
+                    if (newPass.length < 8) {
+                        Swal.showValidationMessage('La contraseña debe tener al menos 8 caracteres');
+                        return false;
+                    }
+                    
+                    if (newPass.length > 15) {
+                        Swal.showValidationMessage('La contraseña no puede tener más de 20 caracteres');
+                        return false;
+                    }
+                    
                     if (newPass !== confirmPass) {
                         Swal.showValidationMessage('Las contraseñas no coinciden');
                         return false;
                     }
+                    
+                    if (newPass.toUpperCase() === usuarioSesion.toUpperCase()) {
+                        Swal.showValidationMessage('La contraseña no puede ser igual al usuario');
+                        return false;
+                    }
+                      // No solo números
+                    if (/^\\d+$/.test(newPass)) {
+                        Swal.showValidationMessage('La contraseña no puede ser solo números');
+                        return false;
+                    }
+                    
                     return { newPass: newPass };
                 }
             }).then((result) => {
