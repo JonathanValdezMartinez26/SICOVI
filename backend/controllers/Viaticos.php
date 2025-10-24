@@ -307,8 +307,8 @@ class Viaticos extends Controller
                         desde: fechas.inicio,
                         hasta: fechas.fin,
                         monto: numeral($("#montoVG").val()).value(),
-                        empresa: $("#sucursalEntrega option:selected").attr("data-empresa"), //$("#empresa").val(),
-                        region: $("#sucursalEntrega option:selected").attr("data-region"), //$("#region").val(),
+                        empresa: $("#sucursalEntrega option:selected").attr("data-empresa"),
+                        region: $("#sucursalEntrega option:selected").attr("data-region"),
                         sucursal: $("#sucursalEntrega").val(),
                     }
 
@@ -1196,19 +1196,36 @@ class Viaticos extends Controller
                     })
                     $("#btnFinalizarComprobacion").on("click", finalizarComprobacion)
                     $("#actualizarConcepto").on("click", actualizaConceptoSolicitud)
-                    // recorrer las sucursales par a mostrar solo las que coinciden con la empresa de usuario
-                    const empresaUsuario = "{$_SESSION['empresa_id']}"
-                    $("#sucursalEntrega option").each((_, option) => {
-                        const empresa = $(option).attr("data-empresa")
-                        if (empresa !== empresaUsuario) $(option).hide()
-                    });
+                    
+                    $("#empresa").on("change", () => {
+                        const empresaSeleccionada = $("#empresa").val()
+                        $("#sucursalEntrega option").each((_, option) => {
+                            const empresa = $(option).attr("data-empresa")
+                            
+                            if (empresa === empresaSeleccionada) $(option).show()
+                            else $(option).hide()
+                        })
+
+                        const primeraSucursal = $("#sucursalEntrega option").each((_, option) => {
+                            if ($(option).css("display") !== "none") {
+                                $("#sucursalEntrega").prop("selectedIndex", option.index)
+                                return false
+                            }
+                        })
+                    })
+
+                    $("#empresa").val("{$_SESSION['empresa_id']}").trigger("change")
+                    const sucEmpresa = $("#sucursalEntrega option").filter(function () {
+                        return $(this).attr("data-empresa") == "{$_SESSION['empresa_id']}" && $(this).val() == "{$_SESSION['sucursal_id']}"
+                    }).first().val()
+                    $("#sucursalEntrega").val(sucEmpresa)
 
                     getSolicitudes()
                 })
             </script>
         HTML;
 
-        $catSucursales = ViaticosDAO::getCatalogoSucursales();
+        $catSucursales = ViaticosDAO::getCatalogoSucursales($_SESSION['empresas_habilitadas'], true);
         if ($catSucursales['success']) $optionsSucursales = self::getOptionsSucursales($catSucursales['datos']);
 
         $catConceptos = ViaticosDAO::getCatalogoConceptosViaticos();
@@ -1225,6 +1242,7 @@ class Viaticos extends Controller
 
         self::set("titulo", "Solicitud de Viáticos y Gastos");
         self::set("script", $script);
+        self::set("empresas", $optionsSucursales['empresas']);
         self::set("sucursales", $optionsSucursales['sucursales']);
         self::set("conceptos", $conceptos);
         self::set("activas", $activas['datos']['ACTIVAS'] ?? 0);
@@ -2458,7 +2476,6 @@ class Viaticos extends Controller
                     total: 0
                 }
                 
-                // Variables globales
                 let comprobaciones = null
                 let comprobacion = null
                 let comprobantes = null
@@ -2470,8 +2487,6 @@ class Viaticos extends Controller
                 let zoomActual = 1.0
                 let fullScreen = false
                 let tipoArchivoActual = null
-                
-                // Variables para pan/drag
                 let isDragging = false
                 let startX = 0
                 let startY = 0

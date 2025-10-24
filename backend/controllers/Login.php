@@ -127,6 +127,8 @@ class Login extends Controller
             $_SESSION['usuario_nombre'] = $datos['USUARIO_NOMBRE'];
             $_SESSION['perfil_id'] = $datos['PERFIL_ID'];
             $_SESSION['perfil_nombre'] = $datos['PERFIL_NOMBRE'];
+            $_SESSION['persona_id'] = $datos['PERSONA_ID'];
+            $_SESSION['persona_nombre'] = $datos['PERSONA_NOMBRE'];
             $_SESSION['sucursal_id'] = $datos['SUCURSAL_ID'];
             $_SESSION['sucursal_nombre'] = $datos['SUCURSAL_NOMBRE'];
             $_SESSION['region_id'] = $datos['REGION_ID'];
@@ -139,6 +141,15 @@ class Login extends Controller
             $_SESSION['es_jefe'] = $datos['ES_JEFE'];
             $_SESSION['foto_perfil'] = $datos['FOTO'] > 0 ? "/CapHum/getFotoPersona?personaId={$datos['FOTO']}" : "/assets/img/misc/user.svg";
 
+            $empresasHabilitadas = LoginDao::empresasHabilitadas(['persona_id' => $datos['PERSONA_ID']]);
+            if ($empresasHabilitadas['success'] && count($empresasHabilitadas['datos']) > 0) {
+                $empresas = array_map(function ($empresa) {
+                    return $empresa['EMPRESA'];
+                }, $empresasHabilitadas['datos']);
+                $_SESSION['empresas_habilitadas'] = $empresas;
+            } else {
+                $_SESSION['empresas_habilitadas'] = [];
+            }
 
             $respuesta = self::respuesta(true, 'Bienvenido', [
                 'url' => '/' . VISTA_DEFECTO

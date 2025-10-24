@@ -104,7 +104,9 @@
                     </div>
                     <div class="form-group col-7">
                         <label for="empresa" class="form-label">Empresa</label>
-                        <input type="text" id="empresa" name="empresa" class="form-control" maxlength="100" disabled value="<?= $_SESSION['empresa_nombre'] ?>">
+                        <select id="empresa" name="empresa" class="form-select">
+                            <?= $empresas ?>
+                        </select>
                     </div>
                     <div class="form-group col-5">
                         <label for="sucursalEntrega" class="form-label">Sucursal de entrega</label>
