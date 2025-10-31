@@ -12,7 +12,7 @@ function getMenu()
                 [
                     'label' => 'Mis Solicitudes',
                     'url' => '/Viaticos/Solicitud',
-                    'permisos' => [25, 26, 90, 30, 50]
+                    'permisos' => [25, 26, 27, 28, 90, 30, 50]
                 ]
             ]
         ],
@@ -22,7 +22,7 @@ function getMenu()
                 [
                     'label' => 'Pendientes',
                     'url' => '/Viaticos/Autorizacion',
-                    'permisos' => [25, 26, 90, 50],
+                    'permisos' => [25, 26, 27, 28, 90, 50],
                     'soloJefes' => true
                 ],
             ]
