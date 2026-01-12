@@ -1187,7 +1187,7 @@ class Viaticos extends Model
                 LEFT JOIN EMPRESA E ON E.ID = V.EMPRESA
             WHERE
                 (C.REGISTRADOS > 0 OR C.RECHAZADOS > 0)
-                AND CEV.NOMBRE = 'COMPROBADA' -- 'VALIDADA'
+                AND CEV.NOMBRE = 'ACEPTADA' -- 'VALIDADA'
                 AND TRUNC(V.ACTUALIZADO) BETWEEN TO_DATE(:fechaI, 'YYYY-MM-DD') AND TO_DATE(:fechaF , 'YYYY-MM-DD')
             ORDER BY
                 V.ACTUALIZADO DESC
