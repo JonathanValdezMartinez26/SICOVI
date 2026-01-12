@@ -3263,7 +3263,7 @@ class Viaticos extends Controller
         $diferencia = $fmt->formatCurrency($diferencia, 'MXN');
         $entregado = $fmt->formatCurrency($datos['ENTREGA_MONTO'], 'MXN');
         $comprobado = $fmt->formatCurrency($datos['COMPROBACION_MONTO'], 'MXN');
-
+        // Prueba cambio repositorio
         $nombre_empresa = 'Lizbeth Fuentes';
 
         $estilo = <<<HTML
@@ -3409,7 +3409,7 @@ class Viaticos extends Controller
 
             <!-- Contenido principal -->
             <div class="content-section">
-                <p>Por medio del presente documento se hace constar el <strong>$tipo</strong> al epleado <strong>{$datos['USUARIO_NOMBRE']}</strong>
+                <p>Por medio del presente documento se hace constar el <strong>$tipo</strong> al empleado <strong>{$datos['USUARIO_NOMBRE']}</strong>
                 por concepto de una diferencia entre el monto de gastos entregados ($entregado) contra lo comprobado ($comprobado), correspondiente al proyecto <strong>{$datos['PROYECTO']}</strong>.</p>
             </div>
 

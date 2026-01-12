@@ -10,22 +10,28 @@ class Database
 
     function __construct($dbEspecifica = null)
     {
+        $connectionData = $this->getConnectionData($dbEspecifica);
+        try {
+            $this->db = new PDO($connectionData['cadena'], $connectionData['usuario'], $connectionData['password']);
+        } catch (\PDOException $e) {
+            self::baseNoDisponible("{$e->getMessage()}\nDatos de conexión: {$connectionData['cadena']}");
+            $this->db = null;
+        }
+    }
+
+    private function getConnectionData($dbEspecifica = null)
+    {
         $dbEspecifica = $dbEspecifica ? strtoupper("_$dbEspecifica") : '';
 
         $servidor = CONFIGURACION["SERVIDOR$dbEspecifica"];
         $puerto = CONFIGURACION["PUERTO$dbEspecifica"];
         $esquema = CONFIGURACION["ESQUEMA$dbEspecifica"];
 
-        $cadena = "oci:dbname=//$servidor:$puerto/$esquema;charset=UTF8";
-        $usuario = CONFIGURACION["USUARIO$dbEspecifica"];
-        $password = CONFIGURACION["PASSWORD$dbEspecifica"];
-
-        try {
-            $this->db = new PDO($cadena, $usuario, $password);
-        } catch (\PDOException $e) {
-            self::baseNoDisponible("{$e->getMessage()}\nDatos de conexión: $cadena");
-            $this->db = null;
-        }
+        return [
+            'cadena' => "oci:dbname=//$servidor:$puerto/$esquema;charset=UTF8",
+            'usuario' => CONFIGURACION["USUARIO$dbEspecifica"],
+            'password' => CONFIGURACION["PASSWORD$dbEspecifica"],
+        ];
     }
 
     private function baseNoDisponible($mensaje)
@@ -121,9 +127,10 @@ class Database
             strpos($sqlUpper, 'FROM LOG') !== false
         ) return;
 
-        if ($this->db === null || !is_object($this->db)) return;
-
         try {
+            $dbData = $this->getConnectionData();
+            $db = new PDO($dbData['cadena'], $dbData['usuario'], $dbData['password']);
+
             $usuarioId = $_SESSION['usuario_id'] ?? null;
             $personaId = $_SESSION['persona_id'] ?? null;
             $ip = $this->getClientIP();
@@ -143,7 +150,7 @@ class Database
                 'tipo' => $tipoOperacion
             ];
 
-            $stmtLog = $this->db->prepare($logSql);
+            $stmtLog = $db->prepare($logSql);
             if ($stmtLog !== false) {
                 foreach ($logValores as $key => $value) {
                     $stmtLog->bindValue(":$key", $value);
@@ -151,6 +158,7 @@ class Database
                 $stmtLog->execute();
             }
         } catch (\Exception $e) {
+            var_dump('log', $e->getMessage());
             error_log("Error al registrar en LOG: " . $e->getMessage());
         }
     }
