@@ -31,9 +31,9 @@ class Login extends Model
                     WHEN (
                         SELECT COUNT(*)
                         FROM (
-                            SELECT JEFE AS ID FROM NOMINA WHERE ESTATUS = 1
+                            SELECT NVL(JEFE, 0) AS ID FROM NOMINA WHERE ESTATUS = 1
                             UNION ALL
-                            SELECT AUTORIZADOR AS ID FROM USUARIO WHERE ESTATUS = 1
+                            SELECT NVL(AUTORIZADOR, 0) AS ID FROM USUARIO WHERE ESTATUS = 1
                         ) CONTEO WHERE CONTEO.ID = P.ID
                     ) > 0 THEN 1
                     ELSE 0
@@ -60,6 +60,7 @@ class Login extends Model
         try {
             $db = new Database();
             $r = $db->queryOne($query, $params);
+
             if ($r === null) return self::resultado(false, 'Credenciales incorrectas.');
             return self::resultado(true, 'Credenciales correctas.', $r);
         } catch (\Exception $e) {

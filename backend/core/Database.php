@@ -158,7 +158,6 @@ class Database
                 $stmtLog->execute();
             }
         } catch (\Exception $e) {
-            var_dump('log', $e->getMessage());
             error_log("Error al registrar en LOG: " . $e->getMessage());
         }
     }
